@@ -1,0 +1,96 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
+
+export type Role = 'admin' | 'teacher' | 'parent' | 'student';
+
+export interface User {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  role: Role | null;
+  token: string | null;
+  isAuthenticated: boolean;
+}
+
+// Safely access localStorage
+const loadState = (): AuthState => {
+  if (typeof window === 'undefined') {
+    return {
+      user: null,
+      role: null,
+      token: null,
+      isAuthenticated: false,
+    };
+  }
+
+  try {
+    const serializedState = localStorage.getItem('authState');
+    if (serializedState === null) {
+      return {
+        user: null,
+        role: null,
+        token: null,
+        isAuthenticated: false,
+      };
+    }
+    return JSON.parse(serializedState);
+  } catch {
+    return {
+      user: null,
+      role: null,
+      token: null,
+      isAuthenticated: false,
+    };
+  }
+};
+
+const initialState: AuthState = loadState();
+
+const saveState = (state: AuthState) => {
+  if (typeof window !== 'undefined') {
+    try {
+      const serializedState = JSON.stringify(state);
+      localStorage.setItem('authState', serializedState);
+    } catch {
+      // Ignore write errors
+    }
+  }
+};
+
+export const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    login: (
+      state,
+      action: PayloadAction<{ user: User; role: Role; token: string }>
+    ) => {
+      state.user = action.payload.user;
+      state.role = action.payload.role;
+      state.token = action.payload.token;
+      state.isAuthenticated = true;
+      saveState(state);
+    },
+    logout: (state) => {
+      state.user = null;
+      state.role = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      saveState(state);
+    },
+  },
+});
+
+export const { login, logout } = authSlice.actions;
+
+// Selectors
+export const selectUser = (state: RootState) => state.auth.user;
+export const selectRole = (state: RootState) => state.auth.role;
+export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+export const selectToken = (state: RootState) => state.auth.token;
+
+export default authSlice.reducer;

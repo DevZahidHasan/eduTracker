@@ -1,11 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './features/authSlice';
+import studentsReducer from './features/studentsSlice';
+import marksReducer from './features/marksSlice';
+import attendanceReducer from './features/attendanceSlice';
+import aiInsightsReducer from './features/aiInsightsSlice';
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
-      // Add your feature reducers here.
-      // This is a placeholder to prevent the "Store does not have a valid reducer" error on startup.
-      _placeholder: (state = null) => state,
+      auth: authReducer,
+      students: studentsReducer,
+      marks: marksReducer,
+      attendance: attendanceReducer,
+      aiInsights: aiInsightsReducer,
     },
     devTools: process.env.NODE_ENV !== 'production',
   });
