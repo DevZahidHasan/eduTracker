@@ -12,6 +12,8 @@ export interface Mark {
   score: number;
   maxScore: number;
   date: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MarksState {

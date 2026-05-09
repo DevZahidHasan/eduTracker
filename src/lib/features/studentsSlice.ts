@@ -18,6 +18,8 @@ export interface Student {
   address?: string | null;
   admissionDate?: string;
   profileImage?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface StudentsState {

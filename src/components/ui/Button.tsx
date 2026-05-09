@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -12,18 +12,20 @@ export function Button({
   className = '', 
   ...props 
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
   
   const variants = {
-    primary: 'bg-transparent border border-neon text-neon hover:bg-neon hover:text-background hover:glow-strong focus:glow-strong',
-    secondary: 'bg-transparent border border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white focus:border-gray-400',
-    danger: 'bg-transparent border border-red-500 text-red-500 hover:bg-red-500 hover:text-black focus:bg-red-500 focus:text-black',
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    outline: 'bg-transparent border border-border text-foreground hover:bg-secondary hover:border-secondary-foreground/20',
+    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+    ghost: 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-secondary',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm gap-1.5',
-    md: 'px-4 py-2 text-base gap-2',
-    lg: 'px-6 py-3 text-lg gap-3',
+    sm: 'px-3 py-1.5 text-xs gap-1.5',
+    md: 'px-4 py-2 text-sm gap-2',
+    lg: 'px-6 py-2.5 text-base gap-3',
   };
 
   return (

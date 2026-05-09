@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { GraduationCap, ArrowRight, Lock, Mail, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -49,7 +50,6 @@ export default function LoginPage() {
 
       const { user, token } = result.data;
 
-      // Dispatch login action with real data
       dispatch(
         login({
           user: {
@@ -62,7 +62,6 @@ export default function LoginPage() {
         })
       );
 
-      // Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
@@ -72,92 +71,122 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <Card className="w-full max-w-md border-neon glow">
-        <CardHeader>
-          <CardTitle className="text-center text-3xl font-bold text-neon text-glow mb-2">
-            EduTracker Login
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in duration-700">
+      <div className="absolute inset-0 bg-[url('/bg-pattern.svg')] opacity-[0.03] pointer-events-none"></div>
+      
+      <Card className="w-full max-w-[460px] border-slate-200/60 shadow-xl shadow-slate-200/50 p-2 sm:p-4 rounded-3xl bg-white relative z-10">
+        <CardHeader className="pt-8 pb-4 text-center">
+          <div className="mx-auto h-16 w-16 bg-primary rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-100 ring-8 ring-blue-50">
+            <GraduationCap size={36} />
+          </div>
+          <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Welcome Back
           </CardTitle>
-          <p className="text-center text-gray-400 text-sm">
-            Enter your credentials to access the system
+          <p className="text-slate-500 font-medium mt-2">
+            Login to your EduTrack AI portal
           </p>
         </CardHeader>
-        <CardContent>
-          <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-4">
+        
+        <CardContent className="px-4 sm:px-6 pb-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
               {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-500/10 border border-red-500 rounded-xl">
+                <div className="p-4 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
+                  <div className="h-5 w-5 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
                   {error}
                 </div>
               )}
-              <Input
-                label="Email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-              <Input
-                label="Password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="current-password"
-              />
               
-              <div className="flex flex-col gap-1.5 w-full">
-                <label className="text-sm font-medium text-gray-300">
-                  Role
+              <div className="relative group">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                  <Mail size={18} />
+                </div>
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="e.g. admin@school.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-11 h-12"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="relative group">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                  <Lock size={18} />
+                </div>
+                <Input
+                  label="Account Password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-11 h-12"
+                  required
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
+              </div>
+              
+              <div className="flex flex-col gap-1.5 w-full relative group">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10 pointer-events-none">
+                  <UserCheck size={18} />
+                </div>
+                <label className="text-sm font-semibold text-slate-700 ml-0.5">
+                  Access Role
                 </label>
                 <select
-                  className="w-full px-4 py-2 rounded-xl bg-background border border-gray-700 text-foreground transition-all duration-300 focus:outline-none focus:border-neon focus:glow disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  className="w-full h-12 px-11 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm font-medium focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard shadow-sm outline-none appearance-none cursor-pointer"
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
                   required
                   disabled={isLoading}
                 >
-                  <option value="" disabled>Select your role</option>
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
+                  <option value="" disabled>Select access level</option>
+                  <option value="student">Student Portal</option>
+                  <option value="teacher">Staff / Teacher</option>
+                  <option value="admin">System Administrator</option>
                 </select>
+                <div className="absolute right-3.5 top-[38px] pointer-events-none text-slate-400">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3"></path></svg>
+                </div>
               </div>
             </div>
 
             <Button 
               type="submit" 
-              variant="primary" 
               size="lg" 
-              className="w-full mt-2 relative"
+              className="w-full h-12 rounded-xl text-sm font-black uppercase tracking-widest shadow-xl shadow-blue-100 transition-standard group"
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-neon" xmlns="http://www.w300.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Authenticating...
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Verifying...
+                </div>
               ) : (
-                'Sign In'
+                <div className="flex items-center gap-2">
+                  Authorize Access
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </div>
               )}
             </Button>
             
-            <p className="text-center text-sm text-gray-400 mt-2">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-neon hover:underline">
-                Sign Up
+            <div className="text-center">
+              <span className="text-sm text-slate-400 font-medium">New to EduTrack AI? </span>
+              <Link href="/register" className="text-sm font-bold text-primary hover:text-blue-700 transition-standard">
+                Create institutional account
               </Link>
-            </p>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <div className="fixed bottom-6 text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+        &copy; 2026 EduTrack AI &bull; Enterprise Grade School Management
+      </div>
     </div>
   );
 }

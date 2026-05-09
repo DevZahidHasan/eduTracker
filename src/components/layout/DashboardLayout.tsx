@@ -5,11 +5,14 @@ import { Sidebar } from './Sidebar';
 import { TopNavbar } from './TopNavbar';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchConfig, selectConfigInitialized } from '@/lib/features/configSlice';
+import { usePathname } from 'next/navigation';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const dispatch = useAppDispatch();
   const configInitialized = useAppSelector(selectConfigInitialized);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!configInitialized) {
@@ -17,17 +20,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }, [dispatch, configInitialized]);
 
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[url('/bg-pattern.svg')] bg-cover bg-center bg-no-repeat bg-black text-foreground">
-      {/* Optional: Add a subtle overlay to the background */}
-      <div className="absolute inset-0 bg-black/80 z-[-1]" />
+    <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
+      {/* Sidebar Component */}
+      <Sidebar 
+        collapsed={collapsed} 
+        setCollapsed={setCollapsed} 
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
 
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <TopNavbar />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-7xl">{children}</div>
+      <div className="flex flex-1 flex-col overflow-hidden relative">
+        <TopNavbar onMenuClick={() => setIsMobileOpen(true)} />
+        
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>

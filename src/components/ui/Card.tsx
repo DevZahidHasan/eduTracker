@@ -1,16 +1,21 @@
 import React from 'react';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  glowOnHover?: boolean;
+  variant?: 'default' | 'outline' | 'glass';
 }
 
-export function Card({ children, className = '', glowOnHover = false, ...props }: CardProps) {
+export function Card({ children, className = '', variant = 'default', ...props }: CardProps) {
+  const variants = {
+    default: 'bg-white shadow-sm border border-border',
+    outline: 'bg-transparent border border-border',
+    glass: 'bg-white/70 backdrop-blur-md border border-white/20 shadow-sm',
+  };
+
   return (
     <div 
       className={`
-        bg-[#0a0a0a] border border-gray-800 rounded-2xl p-6
-        transition-all duration-300
-        ${glowOnHover ? 'hover:border-neon hover:glow' : ''}
+        rounded-xl p-6 transition-standard
+        ${variants[variant]}
         ${className}
       `}
       {...props}
@@ -21,11 +26,11 @@ export function Card({ children, className = '', glowOnHover = false, ...props }
 }
 
 export function CardHeader({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={`mb-4 flex flex-col gap-1.5 ${className}`}>{children}</div>;
+  return <div className={`mb-6 flex flex-col gap-1 ${className}`}>{children}</div>;
 }
 
 export function CardTitle({ children, className = '' }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={`text-xl font-semibold text-foreground ${className}`}>{children}</h3>;
+  return <h3 className={`text-lg font-semibold text-foreground tracking-tight ${className}`}>{children}</h3>;
 }
 
 export function CardContent({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
@@ -33,5 +38,5 @@ export function CardContent({ children, className = '' }: React.HTMLAttributes<H
 }
 
 export function CardFooter({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={`mt-6 pt-4 border-t border-gray-800 flex items-center ${className}`}>{children}</div>;
+  return <div className={`mt-6 pt-4 border-t border-border flex items-center ${className}`}>{children}</div>;
 }
