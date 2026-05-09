@@ -1,0 +1,53 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { ApiError } from '../utils/apiError';
+import { asyncHandler } from '../utils/asyncHandler';
+import prisma from '../prisma';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+
+export interface AuthRequest extends Request {
+  user?: any;
+}
+
+export const authMiddleware = asyncHandler(
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+
+      if (!user) {
+        throw new ApiError(401, 'User not found');
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      throw new ApiError(401, 'Invalid or expired token');
+    }
+  }
+);
+
+// Optional: Role-based authorization middleware
+export const authorize = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      throw new ApiError(403, 'You do not have permission to perform this action');
+    }
+    next();
+  };
+};
