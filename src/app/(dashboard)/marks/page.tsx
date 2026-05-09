@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { selectAllStudents } from '@/lib/features/studentsSlice';
-import { selectAllMarks, addMarks } from '@/lib/features/marksSlice';
+import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
+import { selectAllMarks, fetchMarks, addMarksThunk } from '@/lib/features/marksSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,6 +23,9 @@ export default function MarksPage() {
   const dispatch = useAppDispatch();
   const students = useAppSelector(selectAllStudents);
   const marks = useAppSelector(selectAllMarks);
+  
+  const loadingMarks = useAppSelector((state) => state.marks.loading);
+  const errorMarks = useAppSelector((state) => state.marks.error);
 
   const [studentId, setStudentId] = useState('');
   const [subject, setSubject] = useState('');
@@ -30,6 +33,11 @@ export default function MarksPage() {
   const [maxScore, setMaxScore] = useState('100');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+  
+  useEffect(() => {
+    dispatch(fetchStudents());
+    dispatch(fetchMarks());
+  }, [dispatch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +55,7 @@ export default function MarksPage() {
     }
 
     dispatch(
-      addMarks({
-        id: crypto.randomUUID(),
+      addMarksThunk({
         studentId,
         subject,
         score: numScore,
@@ -62,7 +69,8 @@ export default function MarksPage() {
   };
 
   const getStudentName = (id: string) => {
-    return students.find((s) => s.id === id)?.name || 'Unknown';
+    const student = students.find((s) => s.id === id);
+    return student ? `${student.firstName} ${student.lastName}` : 'Unknown';
   };
 
   return (
@@ -95,7 +103,7 @@ export default function MarksPage() {
                   <option value="">Select a student...</option>
                   {students.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({s.grade})
+                      {s.firstName} {s.lastName} ({s.studentId})
                     </option>
                   ))}
                 </select>
@@ -156,7 +164,10 @@ export default function MarksPage() {
             <CardTitle>Recent Marks</CardTitle>
           </CardHeader>
           <CardContent>
-            {marks.length === 0 ? (
+            {errorMarks && <div className="text-red-500 mb-4">{errorMarks}</div>}
+            {loadingMarks ? (
+              <div className="text-center py-12 text-gray-500">Loading marks data...</div>
+            ) : marks.length === 0 ? (
               <div className="text-center py-12 text-gray-500 border border-dashed border-gray-800 rounded-xl">
                 No marks recorded yet. Add some marks to see them here.
               </div>

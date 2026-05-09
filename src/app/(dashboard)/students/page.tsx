@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, FileText } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
   selectAllStudents, 
-  addStudent, 
-  updateStudent, 
-  deleteStudent,
+  addStudentThunk, 
+  updateStudentThunk, 
+  deleteStudentThunk,
+  fetchStudents,
   Student
 } from '@/lib/features/studentsSlice';
-import { selectAllMarks } from '@/lib/features/marksSlice';
-import { selectAttendanceSummary } from '@/lib/features/attendanceSlice';
+import { selectAllMarks, fetchMarks } from '@/lib/features/marksSlice';
+import { selectAttendanceSummary, fetchAttendance } from '@/lib/features/attendanceSlice';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -22,6 +23,9 @@ export default function StudentsPage() {
   const students = useAppSelector(selectAllStudents);
   const allMarks = useAppSelector(selectAllMarks);
   const attendanceSummary = useAppSelector(selectAttendanceSummary);
+  
+  const loadingStudents = useAppSelector((state) => state.students.loading);
+  const errorStudents = useAppSelector((state) => state.students.error);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,13 +36,22 @@ export default function StudentsPage() {
   const [isMarksModalOpen, setIsMarksModalOpen] = useState(false);
   const [viewingMarksStudent, setViewingMarksStudent] = useState<Student | null>(null);
 
+  useEffect(() => {
+    dispatch(fetchStudents());
+    dispatch(fetchMarks());
+    dispatch(fetchAttendance());
+  }, [dispatch]);
+
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return students;
-    return students.filter((student) => 
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.grade.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return students.filter((student) => {
+      const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+      const email = student.email ? student.email.toLowerCase() : '';
+      const stdId = student.studentId ? student.studentId.toLowerCase() : '';
+      return fullName.includes(searchQuery.toLowerCase()) ||
+             email.includes(searchQuery.toLowerCase()) ||
+             stdId.includes(searchQuery.toLowerCase());
+    });
   }, [students, searchQuery]);
 
   const studentMarks = useMemo(() => {
@@ -48,7 +61,7 @@ export default function StudentsPage() {
 
   const handleAddClick = () => {
     setIsEditing(false);
-    setCurrentStudent({ name: '', email: '', grade: '' });
+    setCurrentStudent({ firstName: '', lastName: '', email: '', studentId: '' });
     setIsModalOpen(true);
   };
 
@@ -60,7 +73,7 @@ export default function StudentsPage() {
 
   const handleDeleteClick = (id: string) => {
     if (confirm('Are you sure you want to delete this student?')) {
-      dispatch(deleteStudent(id));
+      dispatch(deleteStudentThunk(id));
     }
   };
 
@@ -69,17 +82,16 @@ export default function StudentsPage() {
     setIsMarksModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentStudent.name || !currentStudent.email || !currentStudent.grade) return;
+    if (!currentStudent.firstName || !currentStudent.lastName || !currentStudent.studentId) return;
 
     if (isEditing && currentStudent.id) {
-      dispatch(updateStudent(currentStudent as Student));
+      await dispatch(updateStudentThunk(currentStudent as Student));
     } else {
-      dispatch(addStudent({
+      await dispatch(addStudentThunk({
         ...currentStudent,
-        id: Math.random().toString(36).substr(2, 9),
-      } as Student));
+      } as Partial<Student>));
     }
     setIsModalOpen(false);
   };
@@ -105,30 +117,36 @@ export default function StudentsPage() {
           />
         </div>
 
+        {errorStudents && <div className="text-red-500 mb-4">{errorStudents}</div>}
+
         <div className="overflow-x-auto rounded-xl border border-cyan-800/50 bg-black/40">
           <table className="w-full text-left text-sm">
             <thead className="bg-cyan-950/30 text-cyan-400 border-b border-cyan-800/50">
               <tr>
                 <th className="px-6 py-4 font-medium">Name</th>
                 <th className="px-6 py-4 font-medium">Email</th>
-                <th className="px-6 py-4 font-medium">Grade</th>
+                <th className="px-6 py-4 font-medium">Student ID</th>
                 <th className="px-6 py-4 font-medium">Attendance</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-cyan-800/30">
-              {filteredStudents.length > 0 ? (
+              {loadingStudents ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">Loading students...</td>
+                </tr>
+              ) : filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => {
                   const studentAttendance = attendanceSummary[student.id];
                   const attendancePct = studentAttendance ? studentAttendance.percentage : null;
 
                   return (
                     <tr key={student.id} className="hover:bg-cyan-900/10 transition-colors">
-                      <td className="px-6 py-4 font-medium text-white">{student.name}</td>
-                      <td className="px-6 py-4 text-gray-300">{student.email}</td>
+                      <td className="px-6 py-4 font-medium text-white">{`${student.firstName} ${student.lastName}`}</td>
+                      <td className="px-6 py-4 text-gray-300">{student.email || 'N/A'}</td>
                       <td className="px-6 py-4 text-gray-300">
                         <span className="inline-flex items-center rounded-full bg-cyan-950/50 px-2.5 py-0.5 text-xs font-medium text-cyan-400 border border-cyan-800/50">
-                          {student.grade}
+                          {student.studentId}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-300">
@@ -185,26 +203,34 @@ export default function StudentsPage() {
         title={isEditing ? 'Edit Student' : 'Add Student'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input 
-            label="Full Name"
-            placeholder="John Doe"
-            value={currentStudent.name || ''}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })}
-            required
-          />
+          <div className="flex gap-4">
+            <Input 
+              label="First Name"
+              placeholder="John"
+              value={currentStudent.firstName || ''}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
+              required
+            />
+            <Input 
+              label="Last Name"
+              placeholder="Doe"
+              value={currentStudent.lastName || ''}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, lastName: e.target.value })}
+              required
+            />
+          </div>
           <Input 
             label="Email Address"
             type="email"
             placeholder="john@example.com"
             value={currentStudent.email || ''}
             onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })}
-            required
           />
           <Input 
-            label="Grade/Class"
-            placeholder="10A"
-            value={currentStudent.grade || ''}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, grade: e.target.value })}
+            label="Student ID"
+            placeholder="STU-001"
+            value={currentStudent.studentId || ''}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, studentId: e.target.value })}
             required
           />
           <div className="flex justify-end gap-3 mt-4">
@@ -222,7 +248,7 @@ export default function StudentsPage() {
       <Modal
         isOpen={isMarksModalOpen}
         onClose={() => setIsMarksModalOpen(false)}
-        title={`Marks for ${viewingMarksStudent?.name || 'Student'}`}
+        title={`Marks for ${viewingMarksStudent ? viewingMarksStudent.firstName + ' ' + viewingMarksStudent.lastName : 'Student'}`}
       >
         <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
           {studentMarks.length > 0 ? (

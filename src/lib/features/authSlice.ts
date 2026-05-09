@@ -50,6 +50,8 @@ const loadState = (): AuthState => {
 
 const initialState: AuthState = loadState();
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 const saveState = (state: AuthState) => {
   if (typeof window !== 'undefined') {
     try {

@@ -6,26 +6,25 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useAppDispatch } from '@/lib/hooks';
-import { login, Role } from '@/lib/features/authSlice';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role | ''>('');
+  const [role, setRole] = useState('TEACHER');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !role) {
-      setError('Please fill in all fields');
+    if (!email || !password || !name) {
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -33,39 +32,26 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name, role }),
       });
 
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Invalid credentials');
+        throw new Error(result.message || 'Registration failed');
       }
 
-      const { user, token } = result.data;
-
-      // Dispatch login action with real data
-      dispatch(
-        login({
-          user: {
-            id: user.id.toString(),
-            name: user.name || user.email.split('@')[0],
-            email: user.email,
-          },
-          role: user.role.toLowerCase() as Role,
-          token: token,
-        })
-      );
-
-      // Redirect to dashboard
-      router.push('/dashboard');
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
+      setError(err.message || 'An error occurred during registration');
     } finally {
       setIsLoading(false);
     }
@@ -76,10 +62,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-neon glow">
         <CardHeader>
           <CardTitle className="text-center text-3xl font-bold text-neon text-glow mb-2">
-            EduTracker Login
+            Create Account
           </CardTitle>
           <p className="text-center text-gray-400 text-sm">
-            Enter your credentials to access the system
+            Join EduTracker to manage your institution
           </p>
         </CardHeader>
         <CardContent>
@@ -90,6 +76,22 @@ export default function LoginPage() {
                   {error}
                 </div>
               )}
+              {success && (
+                <div className="p-3 text-sm text-green-500 bg-green-500/10 border border-green-500 rounded-xl">
+                  Registration successful! Redirecting to login...
+                </div>
+              )}
+              
+              <Input
+                label="Full Name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+              
               <Input
                 label="Email"
                 type="email"
@@ -99,6 +101,7 @@ export default function LoginPage() {
                 required
                 disabled={isLoading}
               />
+              
               <Input
                 label="Password"
                 type="password"
@@ -107,7 +110,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
               
               <div className="flex flex-col gap-1.5 w-full">
@@ -117,14 +120,12 @@ export default function LoginPage() {
                 <select
                   className="w-full px-4 py-2 rounded-xl bg-background border border-gray-700 text-foreground transition-all duration-300 focus:outline-none focus:border-neon focus:glow disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
                   value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
+                  onChange={(e) => setRole(e.target.value)}
                   required
                   disabled={isLoading}
                 >
-                  <option value="" disabled>Select your role</option>
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="ADMIN">Admin</option>
                 </select>
               </div>
             </div>
@@ -134,25 +135,15 @@ export default function LoginPage() {
               variant="primary" 
               size="lg" 
               className="w-full mt-2 relative"
-              disabled={isLoading}
+              disabled={isLoading || success}
             >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-neon" xmlns="http://www.w300.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Authenticating...
-                </span>
-              ) : (
-                'Sign In'
-              )}
+              {isLoading ? 'Creating Account...' : 'Sign Up'}
             </Button>
             
             <p className="text-center text-sm text-gray-400 mt-2">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-neon hover:underline">
-                Sign Up
+              Already have an account?{' '}
+              <Link href="/login" className="text-neon hover:underline">
+                Sign In
               </Link>
             </p>
           </form>

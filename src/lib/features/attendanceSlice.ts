@@ -1,20 +1,20 @@
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
+import { RootState } from '@/lib/store';
 
-export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export interface AttendanceRecord {
   id: string;
   studentId: string;
   date: string; // YYYY-MM-DD format
   status: AttendanceStatus;
-  notes?: string;
 }
 
 export interface AttendanceSummary {
-  present: number;
-  absent: number;
-  late: number;
-  excused: number;
+  PRESENT: number;
+  ABSENT: number;
+  LATE: number;
+  EXCUSED: number;
   total: number;
   percentage: number;
 }
@@ -33,101 +33,148 @@ const initialState: AttendanceState = {
   error: null,
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export const fetchAttendance = createAsyncThunk(
+  'attendance/fetchAttendance',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/attendance`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch attendance');
+      }
+      const json = await response.json();
+      return json.data as AttendanceRecord[];
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addDailyRecordsBulkThunk = createAsyncThunk(
+  'attendance/addDailyRecordsBulk',
+  async (records: Partial<AttendanceRecord>[], { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const allRecords = state.attendance.dailyRecords as AttendanceRecord[];
+      
+      const promises = records.map(record => {
+        const existingRecord = allRecords.find(r => r.studentId === record.studentId && r.date === record.date);
+        if (existingRecord) {
+          return fetch(`${API_URL}/attendance/${existingRecord.id}`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ ...record, studentId: Number(record.studentId) }),
+          }).then(res => res.json()).then(json => json.data);
+        } else {
+          return fetch(`${API_URL}/attendance`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ ...record, studentId: Number(record.studentId) }),
+          }).then(res => res.json()).then(json => json.data);
+        }
+      });
+
+      const results = await Promise.all(promises);
+      return results;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Helper function to recalculate summary for a student
 const calculateStudentSummary = (records: AttendanceRecord[], studentId: string): AttendanceSummary => {
   const studentRecords = records.filter(r => r.studentId === studentId);
   
   const summary = studentRecords.reduce(
     (acc, record) => {
-      acc[record.status] += 1;
+      acc[record.status] = (acc[record.status] || 0) + 1;
       acc.total += 1;
       return acc;
     },
-    { present: 0, absent: 0, late: 0, excused: 0, total: 0 }
+    { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0, total: 0 } as AttendanceSummary
   );
 
-  // Consider 'late' as present for basic percentage, or adjust as per business logic.
-  // For now, percentage = ((present + late) / total) * 100
-  const attendedClasses = summary.present + summary.late;
+  const attendedClasses = summary.PRESENT + summary.LATE;
   summary.percentage = summary.total > 0 ? Math.round((attendedClasses / summary.total) * 100) : 0;
 
-  return { ...summary, percentage: summary.percentage };
+  return summary;
 };
 
 const attendanceSlice = createSlice({
   name: 'attendance',
   initialState,
-  reducers: {
-    setAttendanceLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setAttendanceError: (state, action: PayloadAction<string>) => {
-      state.error = action.payload;
-      state.loading = false;
-    },
-    setDailyRecords: (state, action: PayloadAction<AttendanceRecord[]>) => {
-      state.dailyRecords = action.payload;
-      
-      // Recalculate summaries for all affected students
-      const studentIds = new Set(action.payload.map(r => r.studentId));
-      studentIds.forEach(id => {
-        state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
-      });
-      
-      state.loading = false;
-      state.error = null;
-    },
-    addDailyRecord: (state, action: PayloadAction<AttendanceRecord>) => {
-      // Check if record already exists for this student on this date, update if so
-      const existingIndex = state.dailyRecords.findIndex(
-        r => r.studentId === action.payload.studentId && r.date === action.payload.date
-      );
-      
-      if (existingIndex !== -1) {
-        state.dailyRecords[existingIndex] = action.payload;
-      } else {
-        state.dailyRecords.push(action.payload);
-      }
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchAttendance.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAttendance.fulfilled, (state, action) => {
+        state.loading = false;
+        state.dailyRecords = action.payload.map((r: any) => ({
+          ...r,
+          id: r.id.toString(),
+          studentId: r.studentId.toString(),
+          date: r.date.substring(0, 10), // Formatting date to YYYY-MM-DD
+          status: r.status.toUpperCase() as AttendanceStatus,
+        }));
+        
+        // Recalculate summaries for all affected students
+        const studentIds = new Set(state.dailyRecords.map(r => r.studentId));
+        studentIds.forEach(id => {
+          state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
+        });
+      })
+      .addCase(fetchAttendance.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(addDailyRecordsBulkThunk.fulfilled, (state, action) => {
+        action.payload.forEach((r: any) => {
+          const newRecord = {
+            ...r,
+            id: r.id.toString(),
+            studentId: r.studentId.toString(),
+            date: r.date.substring(0, 10),
+            status: r.status.toUpperCase() as AttendanceStatus,
+          };
+          
+          const existingIndex = state.dailyRecords.findIndex(
+            (rec) => rec.studentId === newRecord.studentId && rec.date === newRecord.date
+          );
+          if (existingIndex !== -1) {
+            state.dailyRecords[existingIndex] = newRecord;
+          } else {
+            state.dailyRecords.push(newRecord);
+          }
+        });
 
-      // Update summary for the student
-      state.summary[action.payload.studentId] = calculateStudentSummary(state.dailyRecords, action.payload.studentId);
-    },
-    addDailyRecordsBulk: (state, action: PayloadAction<AttendanceRecord[]>) => {
-      action.payload.forEach(newRecord => {
-        const existingIndex = state.dailyRecords.findIndex(
-          r => r.studentId === newRecord.studentId && r.date === newRecord.date
-        );
-        if (existingIndex !== -1) {
-          state.dailyRecords[existingIndex] = newRecord;
-        } else {
-          state.dailyRecords.push(newRecord);
-        }
+        // Recalculate summaries
+        const studentIds = new Set(action.payload.map((r: any) => r.studentId.toString()));
+        studentIds.forEach(id => {
+          state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
+        });
       });
-
-      // Recalculate summaries for affected students
-      const studentIds = new Set(action.payload.map(r => r.studentId));
-      studentIds.forEach(id => {
-        state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
-      });
-    },
-    removeDailyRecord: (state, action: PayloadAction<string>) => {
-      const record = state.dailyRecords.find(r => r.id === action.payload);
-      if (record) {
-        state.dailyRecords = state.dailyRecords.filter(r => r.id !== action.payload);
-        state.summary[record.studentId] = calculateStudentSummary(state.dailyRecords, record.studentId);
-      }
-    },
   },
 });
-
-export const {
-  setAttendanceLoading,
-  setAttendanceError,
-  setDailyRecords,
-  addDailyRecord,
-  addDailyRecordsBulk,
-  removeDailyRecord,
-} = attendanceSlice.actions;
 
 // Selectors
 export const selectAllAttendanceRecords = (state: { attendance: AttendanceState }) => state.attendance.dailyRecords;
@@ -136,7 +183,7 @@ export const selectOverallAttendanceRate = createSelector(
   (records) => {
     if (records.length === 0) return 0;
     const presentCount = records.filter(
-      (r) => r.status === 'present' || r.status === 'late'
+      (r) => r.status === 'PRESENT' || r.status === 'LATE'
     ).length;
     return Math.round((presentCount / records.length) * 100);
   }
@@ -151,10 +198,10 @@ export const selectAttendanceBreakdownData = createSelector(
     let excused = 0;
 
     records.forEach(r => {
-      if (r.status === 'present') present++;
-      if (r.status === 'absent') absent++;
-      if (r.status === 'late') late++;
-      if (r.status === 'excused') excused++;
+      if (r.status === 'PRESENT') present++;
+      if (r.status === 'ABSENT') absent++;
+      if (r.status === 'LATE') late++;
+      if (r.status === 'EXCUSED') excused++;
     });
 
     return [
@@ -175,7 +222,7 @@ export const selectAttendanceTrendData = createSelector(
       if (!attByDate[r.date]) {
         attByDate[r.date] = { present: 0, total: 0 };
       }
-      if (r.status === 'present' || r.status === 'late') {
+      if (r.status === 'PRESENT' || r.status === 'LATE') {
         attByDate[r.date].present += 1;
       }
       attByDate[r.date].total += 1;

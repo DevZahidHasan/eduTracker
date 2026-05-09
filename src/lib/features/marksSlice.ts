@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
+import { RootState } from '@/lib/store';
 
 export interface Mark {
   id: string;
@@ -23,48 +24,105 @@ const initialState: MarksState = {
   error: null,
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export const fetchMarks = createAsyncThunk(
+  'marks/fetchMarks',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/marks`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch marks');
+      }
+      const json = await response.json();
+      return json.data as Mark[];
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addMarksThunk = createAsyncThunk(
+  'marks/addMarks',
+  async (mark: Partial<Mark>, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/marks`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...mark, studentId: Number(mark.studentId) }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add mark');
+      }
+      const json = await response.json();
+      return json.data as Mark;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const marksSlice = createSlice({
   name: 'marks',
   initialState,
   reducers: {
-    setMarksLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setMarksError: (state, action: PayloadAction<string>) => {
-      state.error = action.payload;
-      state.loading = false;
-    },
     setSubjects: (state, action: PayloadAction<string[]>) => {
       state.subjects = action.payload;
     },
-    setMarksData: (state, action: PayloadAction<Mark[]>) => {
-      state.data = action.payload;
-      state.loading = false;
-      state.error = null;
-    },
-    addMarks: (state, action: PayloadAction<Mark | Mark[]>) => {
-      if (Array.isArray(action.payload)) {
-        state.data.push(...action.payload);
-      } else {
-        state.data.push(action.payload);
-      }
-    },
-    updateMarks: (state, action: PayloadAction<Mark>) => {
-      const index = state.data.findIndex((m) => m.id === action.payload.id);
-      if (index !== -1) {
-        state.data[index] = action.payload;
-      }
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchMarks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMarks.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload.map((m: any) => ({
+          ...m,
+          id: m.id.toString(),
+          studentId: m.studentId.toString(),
+          date: m.date.substring(0, 10), // Formatting date to YYYY-MM-DD
+        }));
+        
+        // Extract subjects dynamically
+        const subjects = Array.from(new Set(state.data.map((m) => m.subject)));
+        state.subjects = subjects;
+      })
+      .addCase(fetchMarks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(addMarksThunk.fulfilled, (state, action) => {
+        const newMark = {
+          ...action.payload,
+          id: action.payload.id.toString(),
+          studentId: action.payload.studentId.toString(),
+          date: action.payload.date.substring(0, 10),
+        };
+        state.data.push(newMark);
+        if (!state.subjects.includes(newMark.subject)) {
+          state.subjects.push(newMark.subject);
+        }
+      });
   },
 });
 
 export const {
-  setMarksLoading,
-  setMarksError,
   setSubjects,
-  setMarksData,
-  addMarks,
-  updateMarks,
 } = marksSlice.actions;
 
 // Selectors

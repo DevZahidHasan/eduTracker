@@ -38,23 +38,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     // Role-based access control
     const allowedRoles = ROUTE_ROLES[pathname as keyof typeof ROUTE_ROLES];
-    if (allowedRoles && role && !allowedRoles.includes(role)) {
+    if (allowedRoles && (!role || !allowedRoles.includes(role))) {
       // If user doesn't have the required role, redirect them to dashboard (or an unauthorized page)
-      router.push('/dashboard');
+      // If they are already on dashboard and not allowed (unlikely based on ROUTE_ROLES), this could loop, 
+      // but dashboard allows all roles.
+      if (pathname !== '/dashboard') {
+        router.push('/dashboard');
+      }
     }
   }, [isAuthenticated, isMounted, pathname, role, router]);
 
   // Show nothing or a loader while checking authentication status to prevent flashing protected content
-  if (!isMounted) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
+  if (!isMounted || !isAuthenticated) {
     return null;
   }
 
   const allowedRoles = ROUTE_ROLES[pathname as keyof typeof ROUTE_ROLES];
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
     return null; // Will redirect in useEffect
   }
 

@@ -1,10 +1,14 @@
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
+import { RootState } from '@/lib/store';
 
 export interface Student {
-  id: string;
-  name: string;
-  grade: string;
-  email: string;
+  id: string; // The db id or studentId
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  dateOfBirth?: string;
+  enrollmentDate?: string;
 }
 
 export interface StudentsState {
@@ -21,53 +25,157 @@ const initialState: StudentsState = {
   error: null,
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export const fetchStudents = createAsyncThunk(
+  'students/fetchStudents',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/students`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch students');
+      }
+      const json = await response.json();
+      return json.data as Student[];
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addStudentThunk = createAsyncThunk(
+  'students/addStudent',
+  async (student: Partial<Student>, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/students`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(student),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add student');
+      }
+      const json = await response.json();
+      return json.data as Student;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateStudentThunk = createAsyncThunk(
+  'students/updateStudent',
+  async (student: Student, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/students/${student.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(student),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update student');
+      }
+      const json = await response.json();
+      return json.data as Student;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteStudentThunk = createAsyncThunk(
+  'students/deleteStudent',
+  async (id: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/students/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete student');
+      }
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const studentsSlice = createSlice({
   name: 'students',
   initialState,
   reducers: {
-    setStudentsLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setStudents: (state, action: PayloadAction<Student[]>) => {
-      state.list = action.payload;
-      state.loading = false;
-      state.error = null;
-    },
-    setStudentsError: (state, action: PayloadAction<string>) => {
-      state.error = action.payload;
-      state.loading = false;
-    },
-    addStudent: (state, action: PayloadAction<Student>) => {
-      state.list.push(action.payload);
-    },
-    updateStudent: (state, action: PayloadAction<Student>) => {
-      const index = state.list.findIndex((s) => s.id === action.payload.id);
-      if (index !== -1) {
-        state.list[index] = action.payload;
-      }
-      if (state.selectedStudent?.id === action.payload.id) {
-        state.selectedStudent = action.payload;
-      }
-    },
-    deleteStudent: (state, action: PayloadAction<string>) => {
-      state.list = state.list.filter((s) => s.id !== action.payload);
-      if (state.selectedStudent?.id === action.payload) {
-        state.selectedStudent = null;
-      }
-    },
     setSelectedStudent: (state, action: PayloadAction<Student | null>) => {
       state.selectedStudent = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchStudents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStudents.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload.map((s: any) => ({
+          ...s,
+          id: s.id.toString(),
+        }));
+      })
+      .addCase(fetchStudents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Add Student
+      .addCase(addStudentThunk.fulfilled, (state, action) => {
+        const newStudent = { ...action.payload, id: action.payload.id.toString() };
+        state.list.push(newStudent);
+      })
+      // Update Student
+      .addCase(updateStudentThunk.fulfilled, (state, action) => {
+        const index = state.list.findIndex((s) => s.id === action.payload.id.toString());
+        if (index !== -1) {
+          state.list[index] = { ...action.payload, id: action.payload.id.toString() };
+        }
+        if (state.selectedStudent?.id === action.payload.id.toString()) {
+          state.selectedStudent = { ...action.payload, id: action.payload.id.toString() };
+        }
+      })
+      // Delete Student
+      .addCase(deleteStudentThunk.fulfilled, (state, action) => {
+        state.list = state.list.filter((s) => s.id !== action.payload.toString());
+        if (state.selectedStudent?.id === action.payload.toString()) {
+          state.selectedStudent = null;
+        }
+      });
+  },
 });
 
 export const {
-  setStudentsLoading,
-  setStudents,
-  setStudentsError,
-  addStudent,
-  updateStudent,
-  deleteStudent,
   setSelectedStudent,
 } = studentsSlice.actions;
 

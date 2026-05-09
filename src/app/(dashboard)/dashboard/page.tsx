@@ -1,16 +1,20 @@
 "use client";
 
-import React from 'react';
-import { Users, BookOpen, Calendar, TrendingUp } from 'lucide-react';
-import { useAppSelector } from '@/lib/hooks';
-import { selectTotalStudents } from '@/lib/features/studentsSlice';
-import { selectAverageMarks, selectMarksTrendData } from '@/lib/features/marksSlice';
+import React, { useEffect } from 'react';
+import { Users, BookOpen, Calendar, TrendingUp, Sparkles } from 'lucide-react';
+import { useAppSelector, useAppDispatch } from '@/lib/hooks';
+import { selectTotalStudents, fetchStudents } from '@/lib/features/studentsSlice';
+import { selectAverageMarks, selectMarksTrendData, selectAllMarks, fetchMarks } from '@/lib/features/marksSlice';
 import { 
   selectOverallAttendanceRate, 
   selectAttendanceBreakdownData, 
-  selectAttendanceTrendData 
+  selectAttendanceTrendData,
+  selectAllAttendanceRecords,
+  fetchAttendance
 } from '@/lib/features/attendanceSlice';
+import { generateInsights } from '@/lib/features/aiInsightsSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import {
   LineChart,
   Line,
@@ -30,6 +34,14 @@ import {
 const COLORS = ['#22c55e', '#ef4444', '#eab308', '#3b82f6'];
 
 export default function DashboardPage() {
+  const dispatch = useAppDispatch();
+  
+  useEffect(() => {
+    dispatch(fetchStudents());
+    dispatch(fetchMarks());
+    dispatch(fetchAttendance());
+  }, [dispatch]);
+
   // --- Metrics & Charts Data from Redux Selectors ---
   const totalStudents = useAppSelector(selectTotalStudents);
   const averageMarks = useAppSelector(selectAverageMarks);
@@ -38,6 +50,15 @@ export default function DashboardPage() {
   const marksTrendData = useAppSelector(selectMarksTrendData);
   const attendanceBreakdownData = useAppSelector(selectAttendanceBreakdownData);
   const attendanceTrendData = useAppSelector(selectAttendanceTrendData);
+
+  // --- AI Insights Data ---
+  const allMarks = useAppSelector(selectAllMarks);
+  const allAttendance = useAppSelector(selectAllAttendanceRecords);
+  const { result: aiResult, loading: aiLoading, error: aiError } = useAppSelector((state) => state.aiInsights);
+
+  const handleGenerateInsights = () => {
+    dispatch(generateInsights({ marks: allMarks, attendance: allAttendance }));
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -84,6 +105,36 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insights Section */}
+      <Card className="border-fuchsia-800 bg-black/50 hover:border-fuchsia-500 transition-colors">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="flex items-center gap-2 text-fuchsia-400">
+            <Sparkles size={20} />
+            AI Performance Analysis
+          </CardTitle>
+          <Button 
+            onClick={handleGenerateInsights} 
+            disabled={aiLoading}
+            className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
+          >
+            {aiLoading ? 'Generating...' : 'Generate Insights'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {aiError ? (
+            <div className="text-red-400 p-4 bg-red-950/50 rounded-xl">{aiError}</div>
+          ) : aiResult ? (
+            <div className="p-4 bg-fuchsia-950/30 border border-fuchsia-900/50 rounded-xl text-gray-200">
+              {aiResult}
+            </div>
+          ) : (
+            <div className="text-gray-500 italic p-4 text-center border border-dashed border-gray-800 rounded-xl">
+              Click generate to analyze current marks and attendance data.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Charts Grid */}
       <div className="grid gap-6 md:grid-cols-2">

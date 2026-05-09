@@ -3,23 +3,31 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Save, CheckCircle, XCircle } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { selectAllStudents } from '@/lib/features/studentsSlice';
+import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { 
   selectAllAttendanceRecords, 
-  addDailyRecordsBulk,
+  addDailyRecordsBulkThunk,
+  fetchAttendance,
   AttendanceRecord,
   AttendanceStatus
 } from '@/lib/features/attendanceSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 
 export default function AttendancePage() {
   const dispatch = useAppDispatch();
   const students = useAppSelector(selectAllStudents);
   
+  const loadingAttendance = useAppSelector((state) => state.attendance.loading);
+  const errorAttendance = useAppSelector((state) => state.attendance.error);
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
+  useEffect(() => {
+    dispatch(fetchStudents());
+    dispatch(fetchAttendance());
+  }, [dispatch]);
+
   // Get records from Redux for the currently selected date
   const allRecords = useAppSelector(selectAllAttendanceRecords);
   const storeRecords = React.useMemo(() => 
@@ -58,17 +66,17 @@ export default function AttendancePage() {
   };
 
   const handleSave = () => {
-    const recordsToSave: AttendanceRecord[] = students.map(student => {
+    const recordsToSave: Partial<AttendanceRecord>[] = students.map(student => {
       const existingRecord = storeRecords.find(r => r.studentId === student.id);
       return {
-        id: existingRecord?.id || crypto.randomUUID(),
+        id: existingRecord?.id, // Let backend assign id if new
         studentId: student.id,
         date: selectedDate,
-        status: localAttendance[student.id] || 'absent', // Default to absent if untouched
+        status: localAttendance[student.id] || 'ABSENT', // Default to absent if untouched
       };
     });
 
-    dispatch(addDailyRecordsBulk(recordsToSave));
+    dispatch(addDailyRecordsBulkThunk(recordsToSave));
     setIsDirty(false);
   };
 
@@ -95,16 +103,19 @@ export default function AttendancePage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Class List</CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => handleMarkAll('present')}>
+            <Button size="sm" variant="secondary" onClick={() => handleMarkAll('PRESENT')}>
               Mark All Present
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => handleMarkAll('absent')}>
+            <Button size="sm" variant="secondary" onClick={() => handleMarkAll('ABSENT')}>
               Mark All Absent
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {students.length === 0 ? (
+          {errorAttendance && <div className="text-red-500 mb-4">{errorAttendance}</div>}
+          {loadingAttendance ? (
+            <div className="text-center py-12 text-gray-500">Loading attendance data...</div>
+          ) : students.length === 0 ? (
             <div className="text-center py-12 text-gray-500 border border-dashed border-gray-800 rounded-xl">
               No students found. Add students first to take attendance.
             </div>
@@ -115,7 +126,7 @@ export default function AttendancePage() {
                   <thead className="bg-cyan-950/30 text-cyan-400 border-b border-cyan-800/50">
                     <tr>
                       <th className="px-6 py-4 font-medium">Student Name</th>
-                      <th className="px-6 py-4 font-medium">Grade</th>
+                      <th className="px-6 py-4 font-medium">Student ID</th>
                       <th className="px-6 py-4 font-medium text-center">Status</th>
                     </tr>
                   </thead>
@@ -125,14 +136,14 @@ export default function AttendancePage() {
                       
                       return (
                         <tr key={student.id} className="hover:bg-cyan-900/10 transition-colors">
-                          <td className="px-6 py-4 font-medium text-white">{student.name}</td>
-                          <td className="px-6 py-4 text-gray-400">{student.grade}</td>
+                          <td className="px-6 py-4 font-medium text-white">{`${student.firstName} ${student.lastName}`}</td>
+                          <td className="px-6 py-4 text-gray-400">{student.studentId}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <button
-                                onClick={() => handleStatusChange(student.id, 'present')}
+                                onClick={() => handleStatusChange(student.id, 'PRESENT')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
-                                  currentStatus === 'present'
+                                  currentStatus === 'PRESENT'
                                     ? 'bg-green-500/20 border-green-500 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]'
                                     : 'border-gray-800 text-gray-500 hover:border-gray-600'
                                 }`}
@@ -141,9 +152,9 @@ export default function AttendancePage() {
                                 Present
                               </button>
                               <button
-                                onClick={() => handleStatusChange(student.id, 'absent')}
+                                onClick={() => handleStatusChange(student.id, 'ABSENT')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 ${
-                                  currentStatus === 'absent'
+                                  currentStatus === 'ABSENT'
                                     ? 'bg-red-500/20 border-red-500 text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]'
                                     : 'border-gray-800 text-gray-500 hover:border-gray-600'
                                 }`}
