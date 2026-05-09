@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './features/authSlice';
+import configReducer from './features/configSlice';
 import studentsReducer from './features/studentsSlice';
 import marksReducer from './features/marksSlice';
 import attendanceReducer from './features/attendanceSlice';
@@ -9,6 +10,7 @@ export const makeStore = () => {
   return configureStore({
     reducer: {
       auth: authReducer,
+      config: configReducer,
       students: studentsReducer,
       marks: marksReducer,
       attendance: attendanceReducer,

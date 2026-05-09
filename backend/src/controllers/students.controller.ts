@@ -5,7 +5,20 @@ import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 
 export const getAllStudents = asyncHandler(async (req: Request, res: Response) => {
-  const students = await prisma.student.findMany();
+  const { className } = req.query;
+  const where: any = {};
+  
+  if (className) {
+    where.className = className;
+  }
+
+  const students = await prisma.student.findMany({
+    where,
+    orderBy: {
+      rollNumber: 'asc'
+    }
+  });
+  
   return res.status(200).json(
     new ApiResponse(200, students, 'Students fetched successfully')
   );
@@ -28,44 +41,125 @@ export const getStudentById = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const createStudent = asyncHandler(async (req: Request, res: Response) => {
-  const { studentId, firstName, lastName, email, dateOfBirth } = req.body;
+  const {
+    studentId, fullName, rollNumber, className, section, gender,
+    email, dateOfBirth, bloodGroup, phone, parentName, parentPhone,
+    address, admissionDate, profileImage
+  } = req.body;
 
-  if (!studentId || !firstName || !lastName) {
-    throw new ApiError(400, 'Student ID, first name and last name are required');
+  if (!studentId || !fullName || !rollNumber || !className || !section || !gender) {
+    throw new ApiError(400, 'Student ID, full name, roll number, class, section, and gender are required');
   }
 
-  const student = await prisma.student.create({
-    data: {
-      studentId,
-      firstName,
-      lastName,
-      email,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-    },
+  // Check if studentId already exists
+  const existingId = await prisma.student.findUnique({
+    where: { studentId }
+  });
+  if (existingId) {
+    throw new ApiError(400, `Student ID '${studentId}' is already assigned to another student.`);
+  }
+
+  // Check if email already exists
+  if (email) {
+    const existingEmail = await prisma.student.findUnique({
+      where: { email }
+    });
+    if (existingEmail) {
+      throw new ApiError(400, `Email address '${email}' is already in use.`);
+    }
+  }
+
+  // Check if phone already exists
+  if (phone) {
+    const existingPhone = await prisma.student.findFirst({
+      where: { phone }
+    });
+    if (existingPhone) {
+      throw new ApiError(400, `Phone number '${phone}' is already in use.`);
+    }
+  }
+
+  // Check if Roll Number already exists in the same Class and Section
+  const existingRoll = await prisma.student.findUnique({
+    where: {
+      className_section_rollNumber: {
+        className,
+        section,
+        rollNumber
+      }
+    }
   });
 
-  return res.status(201).json(
-    new ApiResponse(201, student, 'Student created successfully')
-  );
+  if (existingRoll) {
+    throw new ApiError(400, `Roll Number '${rollNumber}' is already taken in ${className} Section ${section}.`);
+  }
+
+  try {
+    const student = await prisma.student.create({
+      data: {
+        studentId,
+        fullName,
+        rollNumber,
+        className,
+        section,
+        gender,
+        email: email || null,
+        dateOfBirth: (dateOfBirth && dateOfBirth !== '') ? new Date(dateOfBirth) : null,
+        bloodGroup: bloodGroup || null,
+        phone: phone || null,
+        parentName: parentName || null,
+        parentPhone: parentPhone || null,
+        address: address || null,
+        admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
+        profileImage: profileImage || null,
+      },
+    });
+
+    return res.status(201).json(
+      new ApiResponse(201, student, 'Student created successfully')
+    );
+  } catch (error: any) {
+    console.error('Error creating student:', error);
+    throw new ApiError(500, error.message || 'Failed to create student');
+  }
 });
 
 export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { firstName, lastName, email, dateOfBirth } = req.body;
+  const {
+    fullName, rollNumber, className, section, gender,
+    email, dateOfBirth, bloodGroup, phone, parentName, parentPhone,
+    address, admissionDate, profileImage
+  } = req.body;
 
-  const student = await prisma.student.update({
-    where: { id: Number(id) },
-    data: {
-      firstName,
-      lastName,
-      email,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-    },
-  });
+  try {
+    const student = await prisma.student.update({
+      where: { id: Number(id) },
+      data: {
+        fullName,
+        rollNumber,
+        className,
+        section,
+        gender,
+        email: email || null,
+        dateOfBirth: (dateOfBirth && dateOfBirth !== '') ? new Date(dateOfBirth) : null,
+        bloodGroup: bloodGroup || null,
+        phone: phone || null,
+        parentName: parentName || null,
+        parentPhone: parentPhone || null,
+        address: address || null,
+        admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
+        profileImage: profileImage || null,
+      },
+    });
 
-  return res.status(200).json(
-    new ApiResponse(200, student, 'Student updated successfully')
-  );
+    return res.status(200).json(
+      new ApiResponse(200, student, 'Student updated successfully')
+    );
+  } catch (error: any) {
+    console.error('Error updating student:', error);
+    throw new ApiError(500, error.message || 'Failed to update student');
+  }
 });
 
 export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {

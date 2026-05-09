@@ -11,19 +11,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInsights = void 0;
 const ai_service_1 = require("../services/ai.service");
-const getInsights = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { marks, attendance } = req.body;
-        if (!marks || !attendance) {
-            res.status(400).json({ error: 'Marks and attendance data are required.' });
-            return;
-        }
-        const insights = yield (0, ai_service_1.generatePerformanceInsights)(marks, attendance);
-        res.status(200).json({ result: insights });
+const asyncHandler_1 = require("../utils/asyncHandler");
+const apiError_1 = require("../utils/apiError");
+const apiResponse_1 = require("../utils/apiResponse");
+exports.getInsights = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { marks, attendance } = req.body;
+    if (!marks || !attendance) {
+        throw new apiError_1.ApiError(400, 'Marks and attendance data are required');
     }
-    catch (error) {
-        console.error('Error generating insights:', error);
-        res.status(500).json({ error: 'Failed to generate insights' });
-    }
-});
-exports.getInsights = getInsights;
+    const insights = yield (0, ai_service_1.generatePerformanceInsights)(marks, attendance);
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, { result: insights }, 'Insights generated successfully'));
+}));

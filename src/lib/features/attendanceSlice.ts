@@ -65,33 +65,22 @@ export const addDailyRecordsBulkThunk = createAsyncThunk(
       const state = getState() as RootState;
       const token = state.auth.token;
       
-      const allRecords = state.attendance.dailyRecords as AttendanceRecord[];
-      
-      const promises = records.map(record => {
-        const existingRecord = allRecords.find(r => r.studentId === record.studentId && r.date === record.date);
-        if (existingRecord) {
-          return fetch(`${API_URL}/attendance/${existingRecord.id}`, {
-            method: 'PUT',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ ...record, studentId: Number(record.studentId) }),
-          }).then(res => res.json()).then(json => json.data);
-        } else {
-          return fetch(`${API_URL}/attendance`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ ...record, studentId: Number(record.studentId) }),
-          }).then(res => res.json()).then(json => json.data);
-        }
+      const response = await fetch(`${API_URL}/attendance/bulk`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ records }),
       });
 
-      const results = await Promise.all(promises);
-      return results;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save bulk attendance');
+      }
+
+      const json = await response.json();
+      return json.data;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -168,7 +157,7 @@ const attendanceSlice = createSlice({
         });
 
         // Recalculate summaries
-        const studentIds = new Set(action.payload.map((r: any) => r.studentId.toString()));
+        const studentIds = new Set<string>(action.payload.map((r: any) => r.studentId.toString()));
         studentIds.forEach(id => {
           state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
         });

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import ToasterProvider from '../components/ToasterProvider';
 import StoreProvider from '../components/StoreProvider';
 import { GlobalErrorListener } from '@/components/layout/GlobalErrorListener';
 
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <StoreProvider>
           <GlobalErrorListener />
+          <ToasterProvider />
           {children}
         </StoreProvider>
       </body>

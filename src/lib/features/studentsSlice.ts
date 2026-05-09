@@ -4,11 +4,20 @@ import { RootState } from '@/lib/store';
 export interface Student {
   id: string; // The db id or studentId
   studentId: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
+  rollNumber: string;
+  className: string;
+  section: string;
+  gender: string;
   email: string | null;
   dateOfBirth?: string;
-  enrollmentDate?: string;
+  bloodGroup?: string | null;
+  phone?: string | null;
+  parentName?: string | null;
+  parentPhone?: string | null;
+  address?: string | null;
+  admissionDate?: string;
+  profileImage?: string | null;
 }
 
 export interface StudentsState {
@@ -65,10 +74,13 @@ export const addStudentThunk = createAsyncThunk(
         },
         body: JSON.stringify(student),
       });
-      if (!response.ok) {
-        throw new Error('Failed to add student');
-      }
+      
       const json = await response.json();
+
+      if (!response.ok) {
+        return rejectWithValue(json.message || 'Failed to add student');
+      }
+
       return json.data as Student;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -91,10 +103,13 @@ export const updateStudentThunk = createAsyncThunk(
         },
         body: JSON.stringify(student),
       });
-      if (!response.ok) {
-        throw new Error('Failed to update student');
-      }
+      
       const json = await response.json();
+
+      if (!response.ok) {
+        return rejectWithValue(json.message || 'Failed to update student');
+      }
+
       return json.data as Student;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -151,12 +166,26 @@ const studentsSlice = createSlice({
         state.error = action.payload as string;
       })
       // Add Student
+      .addCase(addStudentThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(addStudentThunk.fulfilled, (state, action) => {
+        state.loading = false;
         const newStudent = { ...action.payload, id: action.payload.id.toString() };
         state.list.push(newStudent);
       })
+      .addCase(addStudentThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
       // Update Student
+      .addCase(updateStudentThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateStudentThunk.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.list.findIndex((s) => s.id === action.payload.id.toString());
         if (index !== -1) {
           state.list[index] = { ...action.payload, id: action.payload.id.toString() };
@@ -164,6 +193,10 @@ const studentsSlice = createSlice({
         if (state.selectedStudent?.id === action.payload.id.toString()) {
           state.selectedStudent = { ...action.payload, id: action.payload.id.toString() };
         }
+      })
+      .addCase(updateStudentThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       })
       // Delete Student
       .addCase(deleteStudentThunk.fulfilled, (state, action) => {

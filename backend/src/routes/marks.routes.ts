@@ -5,11 +5,13 @@ import {
   createMark,
   updateMark,
   deleteMark,
+  bulkCreateMarks,
 } from '../controllers/marks.controller';
 
 const router = Router();
 
 router.get('/', getMarks);
+router.post('/bulk', bulkCreateMarks);
 router.get('/:id', getMarkById);
 router.post('/', createMark);
 router.put('/:id', updateMark);

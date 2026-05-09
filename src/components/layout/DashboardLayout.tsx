@@ -1,11 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopNavbar } from './TopNavbar';
+import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { fetchConfig, selectConfigInitialized } from '@/lib/features/configSlice';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const dispatch = useAppDispatch();
+  const configInitialized = useAppSelector(selectConfigInitialized);
+
+  useEffect(() => {
+    if (!configInitialized) {
+      dispatch(fetchConfig());
+    }
+  }, [dispatch, configInitialized]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[url('/bg-pattern.svg')] bg-cover bg-center bg-no-repeat bg-black text-foreground">

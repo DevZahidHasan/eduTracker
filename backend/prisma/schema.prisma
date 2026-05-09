@@ -24,29 +24,67 @@ enum Role {
 model Student {
   id             Int       @id @default(autoincrement())
   studentId      String    @unique
-  firstName      String
-  lastName       String
+  fullName       String
+  rollNumber     String
+  className      String
+  section        String
+  gender         Gender
   email          String?   @unique
   dateOfBirth    DateTime?
-  enrollmentDate DateTime  @default(now())
+  bloodGroup     String?
+  phone          String?
+  parentName     String?
+  parentPhone    String?
+  address        String?
+  admissionDate  DateTime  @default(now())
+  profileImage   String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   marks       Mark[]
   attendances Attendance[]
+  class       SchoolClass  @relation(fields: [className], references: [name])
+
+  @@unique([className, section, rollNumber])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model SchoolClass {
+  name     String    @id
+  students Student[]
 }
 
 model Mark {
   id        Int      @id @default(autoincrement())
   studentId Int
   subject   String
+  examType  String
   score     Float
   maxScore  Float    @default(100)
   date      DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectObj  Subject  @relation(fields: [subject], references: [name])
+  examTypeObj ExamType @relation(fields: [examType], references: [name])
+
+  @@unique([studentId, subject, examType])
+}
+
+model Subject {
+  name  String @id
+  marks Mark[]
+}
+
+model ExamType {
+  name  String @id
+  marks Mark[]
 }
 
 model Attendance {

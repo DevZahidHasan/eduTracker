@@ -5,15 +5,73 @@ import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
-  const { studentId, date } = req.query;
+  const { studentId, date, className } = req.query;
   const whereClause: any = {};
+  
   if (studentId) whereClause.studentId = Number(studentId);
   if (date) whereClause.date = { equals: new Date(date as string) };
   
-  const attendances = await prisma.attendance.findMany({ where: whereClause });
+  if (className) {
+    whereClause.student = {
+      className: className
+    };
+  }
+  
+  const attendances = await prisma.attendance.findMany({ 
+    where: whereClause,
+    include: {
+      student: {
+        select: {
+          fullName: true,
+          rollNumber: true,
+          studentId: true
+        }
+      }
+    }
+  });
   
   return res.status(200).json(
     new ApiResponse(200, attendances, 'Attendance records fetched successfully')
+  );
+});
+
+export const bulkCreateAttendance = asyncHandler(async (req: Request, res: Response) => {
+  const { records } = req.body; // Array of { studentId, date, status }
+
+  if (!records || !Array.isArray(records)) {
+    throw new ApiError(400, 'Attendance records array is required');
+  }
+
+  // Use a transaction to ensure all or nothing
+  const results = await prisma.$transaction(
+    records.map((record) => {
+      const { studentId, date, status } = record;
+      const attendanceDate = new Date(date);
+      
+      // Reset time to midnight for consistency
+      attendanceDate.setHours(0, 0, 0, 0);
+
+      return prisma.attendance.upsert({
+        where: {
+          studentId_date: {
+            studentId: Number(studentId),
+            date: attendanceDate,
+          },
+        },
+        update: {
+          status,
+        },
+        create: {
+          studentId: Number(studentId),
+          date: attendanceDate,
+          status,
+        },
+      });
+    })
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, results, 'Bulk attendance processed successfully')
   );
 });
 

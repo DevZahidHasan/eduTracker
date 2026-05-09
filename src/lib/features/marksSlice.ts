@@ -1,10 +1,14 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 
+export type ExamType = 'CLASS_TEST' | 'MONTHLY_EXAM' | 'MID_TERM' | 'FINAL_EXAM' | 'OTHER';
+export type Subject = 'BANGLA' | 'ENGLISH' | 'MATH' | 'SCIENCE' | 'ICT' | 'RELIGION' | 'SOCIAL_SCIENCE';
+
 export interface Mark {
   id: string;
   studentId: string;
-  subject: string;
+  subject: Subject;
+  examType: ExamType;
   score: number;
   maxScore: number;
   date: string;
@@ -75,6 +79,35 @@ export const addMarksThunk = createAsyncThunk(
   }
 );
 
+export const addMarksBulkThunk = createAsyncThunk(
+  'marks/addMarksBulk',
+  async (records: Partial<Mark>[], { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      const response = await fetch(`${API_URL}/marks/bulk`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ records }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save bulk marks');
+      }
+
+      const json = await response.json();
+      return json.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const marksSlice = createSlice({
   name: 'marks',
   initialState,
@@ -113,10 +146,44 @@ const marksSlice = createSlice({
           studentId: action.payload.studentId.toString(),
           date: action.payload.date.substring(0, 10),
         };
-        state.data.push(newMark);
+        
+        const existingIndex = state.data.findIndex(
+          (m) => m.studentId === newMark.studentId && m.subject === newMark.subject && m.examType === newMark.examType
+        );
+
+        if (existingIndex !== -1) {
+          state.data[existingIndex] = newMark;
+        } else {
+          state.data.push(newMark);
+        }
+
         if (!state.subjects.includes(newMark.subject)) {
           state.subjects.push(newMark.subject);
         }
+      })
+      .addCase(addMarksBulkThunk.fulfilled, (state, action) => {
+        action.payload.forEach((m: any) => {
+          const newMark = {
+            ...m,
+            id: m.id.toString(),
+            studentId: m.studentId.toString(),
+            date: m.date.substring(0, 10),
+          };
+
+          const existingIndex = state.data.findIndex(
+            (rec) => rec.studentId === newMark.studentId && rec.subject === newMark.subject && rec.examType === newMark.examType
+          );
+
+          if (existingIndex !== -1) {
+            state.data[existingIndex] = newMark;
+          } else {
+            state.data.push(newMark);
+          }
+
+          if (!state.subjects.includes(newMark.subject)) {
+            state.subjects.push(newMark.subject);
+          }
+        });
       });
   },
 });
