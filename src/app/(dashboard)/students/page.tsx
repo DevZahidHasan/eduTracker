@@ -107,8 +107,10 @@ export default function StudentsPage() {
         toast.success('New student added successfully');
       }
       setIsModalOpen(false);
-    } catch (err: any) {
-      const errorMessage = typeof err === 'string' ? err : (err?.message || 'An unexpected error occurred');
+    } catch (err: unknown) {
+      const errorMessage = typeof err === 'string'
+        ? err
+        : (err instanceof Error ? err.message : 'An unexpected error occurred');
       toast.error(errorMessage);
     }
   };
