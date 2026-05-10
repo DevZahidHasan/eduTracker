@@ -180,3 +180,19 @@ enum AttendanceStatus {
   LATE
   EXCUSED
 }
+
+model SchoolProfile {
+  id           Int      @id @default(1)
+  name         String   @default("EduTrack Academy")
+  address      String?
+  phone        String?
+  email        String?
+  academicYear String   @default("2026-2027")
+  logo         String?
+  updatedAt    DateTime @updatedAt
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+}

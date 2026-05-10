@@ -7,6 +7,7 @@ import attendanceReducer from './features/attendanceSlice';
 import aiInsightsReducer from './features/aiInsightsSlice';
 import classesReducer from './features/classesSlice';
 import reportsReducer from './features/reportsSlice';
+import settingsReducer from './features/settingsSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -19,6 +20,7 @@ export const makeStore = () => {
       aiInsights: aiInsightsReducer,
       classes: classesReducer,
       reports: reportsReducer,
+      settings: settingsReducer,
     },
   });
 };

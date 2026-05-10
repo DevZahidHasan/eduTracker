@@ -8,6 +8,7 @@ export interface User {
   email: string;
   name: string | null;
   role: Role;
+  createdAt?: string;
 }
 
 export interface Student {
@@ -91,4 +92,19 @@ export interface Attendance {
   studentId: number;
   date: string;
   status: AttendanceStatus;
+}
+
+export interface SchoolProfile {
+  id: number;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  academicYear: string;
+  logo: string | null;
+  updatedAt?: string;
+}
+
+export interface SystemSettings {
+  [key: string]: string;
 }

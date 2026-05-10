@@ -33,6 +33,10 @@ export function CardTitle({ children, className = '' }: React.HTMLAttributes<HTM
   return <h3 className={`text-lg font-semibold text-foreground tracking-tight ${className}`}>{children}</h3>;
 }
 
+export function CardDescription({ children, className = '' }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={`text-sm text-slate-500 ${className}`}>{children}</p>;
+}
+
 export function CardContent({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={`${className}`}>{children}</div>;
 }
