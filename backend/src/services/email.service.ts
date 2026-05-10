@@ -76,3 +76,58 @@ export const sendDailyAttendanceReport = async () => {
     console.error('Error sending daily report:', error);
   }
 };
+
+export const sendParentAttendanceNotification = async (attendanceId: number) => {
+  const settings = await prisma.systemSetting.findUnique({
+    where: { key: 'parentNotifications' }
+  });
+
+  if (settings?.value !== 'true') {
+    return;
+  }
+
+  const attendance = await prisma.attendance.findUnique({
+    where: { id: attendanceId },
+    include: { student: true }
+  });
+
+  if (!attendance || !attendance.student.email) {
+    return;
+  }
+
+  const transporter = getTransporter();
+  const { student, status, date } = attendance;
+  const recipientEmail = student.email as string;
+
+  const statusText = status === 'ABSENT' ? '<span style="color: red; font-weight: bold;">ABSENT</span>' : 
+                    status === 'PRESENT' ? '<span style="color: green; font-weight: bold;">PRESENT</span>' : 
+                    status;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <h2 style="color: #2563eb;">Attendance Update</h2>
+      <p>Dear Parent/Guardian,</p>
+      <p>This is to inform you about the attendance status of <strong>${student.fullName}</strong> (Roll: ${student.rollNumber}) for <strong>${date.toLocaleDateString()}</strong>.</p>
+      
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; font-size: 18px;">Status: ${statusText}</p>
+      </div>
+
+      <p>If you have any questions, please contact the school administration.</p>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+      <p style="font-size: 12px; color: #64748b;">This is an automated message from EduTrack AI.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"EduTrack AI" <noreply@edutrack.ai>',
+      to: recipientEmail,
+      subject: `Attendance Notification: ${student.fullName} - ${status}`,
+      html,
+    });
+    console.log(`Parent notification sent for student ${student.fullName}`);
+  } catch (error) {
+    console.error('Error sending parent notification:', error);
+  }
+};

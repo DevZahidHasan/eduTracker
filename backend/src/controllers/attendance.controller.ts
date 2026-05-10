@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma, AttendanceStatus } from '@prisma/client';
+import { sendParentAttendanceNotification } from '../services/email.service';
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, date, className } = req.query;
@@ -71,6 +72,13 @@ export const bulkCreateAttendance = asyncHandler(async (req: Request, res: Respo
     })
   );
 
+  // Trigger parent notifications in background
+  results.forEach(record => {
+    sendParentAttendanceNotification(record.id).catch(err => 
+      console.error(`Failed to send notification for attendance ${record.id}:`, err)
+    );
+  });
+
   return res.status(200).json(
     new ApiResponse(200, results, 'Bulk attendance processed successfully')
   );
@@ -104,6 +112,10 @@ export const createAttendance = asyncHandler(async (req: Request, res: Response)
     },
   });
 
+  sendParentAttendanceNotification(attendance.id).catch(err => 
+    console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
+  );
+
   return res.status(201).json(
     new ApiResponse(201, attendance, 'Attendance record created successfully')
   );
@@ -120,6 +132,10 @@ export const updateAttendance = asyncHandler(async (req: Request, res: Response)
       date: date ? new Date(date) : undefined,
     },
   });
+
+  sendParentAttendanceNotification(attendance.id).catch(err => 
+    console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
+  );
 
   return res.status(200).json(
     new ApiResponse(200, attendance, 'Attendance record updated successfully')
