@@ -144,6 +144,17 @@ model ExamType {
   reports AcademicReport[]
 }
 
+model MarkLock {
+  id        Int      @id @default(autoincrement())
+  className String
+  subject   String
+  examType  String
+  lockedAt  DateTime @default(now())
+  lockedBy  Int      // User ID who locked it
+
+  @@unique([className, subject, examType])
+}
+
 model AcademicReport {
   id           Int      @id @default(autoincrement())
   studentId    Int

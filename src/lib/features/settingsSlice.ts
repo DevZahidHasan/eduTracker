@@ -122,6 +122,45 @@ export const fetchUsers = createAsyncThunk(
   }
 );
 
+export const updateUserThunk = createAsyncThunk(
+  'settings/updateUser',
+  async (user: Partial<User>, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/settings/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}` 
+        },
+        body: JSON.stringify(user)
+      });
+      if (!response.ok) throw new Error('Failed to update user');
+      const json = await response.json();
+      return json.data as User;
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+    }
+  }
+);
+
+export const deleteUserThunk = createAsyncThunk(
+  'settings/deleteUser',
+  async (userId: number, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/settings/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${state.auth.token}` }
+      });
+      if (!response.ok) throw new Error('Failed to delete user');
+      return userId;
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+    }
+  }
+);
+
 export const triggerEndOfDayThunk = createAsyncThunk(
   'settings/triggerEndOfDay',
   async (_, { rejectWithValue, getState }) => {

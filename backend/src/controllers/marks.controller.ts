@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma } from '@prisma/client';
+import { sendMarkFinalizationAlert } from '../services/email.service';
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, subject, examType, className } = req.query;
@@ -152,5 +153,59 @@ export const deleteMark = asyncHandler(async (req: Request, res: Response) => {
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Mark deleted successfully')
+  );
+});
+
+export const finalizeMarks = asyncHandler(async (req: Request, res: Response) => {
+  const { className, subject, examType } = req.body;
+  const user = (req as any).user;
+
+  if (!className || !subject || !examType) {
+    throw new ApiError(400, 'Class, Subject and Exam Type are required');
+  }
+
+  const markLock = await prisma.markLock.upsert({
+    where: {
+      className_subject_examType: { className, subject, examType }
+    },
+    update: {
+      lockedAt: new Date(),
+      lockedBy: user.id
+    },
+    create: {
+      className,
+      subject,
+      examType,
+      lockedBy: user.id
+    }
+  });
+
+  // Trigger email notification
+  sendMarkFinalizationAlert(className, subject, examType, user.name || user.email);
+
+  return res.status(200).json(
+    new ApiResponse(200, markLock, 'Marks finalized and locked successfully')
+  );
+});
+
+export const checkMarkLock = asyncHandler(async (req: Request, res: Response) => {
+  const { className, subject, examType } = req.query;
+
+  if (!className || !subject || !examType) {
+    throw new ApiError(400, 'Class, Subject and Exam Type are required');
+  }
+
+  const markLock = await prisma.markLock.findUnique({
+    where: {
+      className_subject_examType: { 
+        className: className as string, 
+        subject: subject as string, 
+        examType: examType as string 
+      }
+    }
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { isLocked: !!markLock, lockDetails: markLock }, 'Lock status fetched')
   );
 });

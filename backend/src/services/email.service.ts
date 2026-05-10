@@ -131,3 +131,55 @@ export const sendParentAttendanceNotification = async (attendanceId: number) => 
     console.error('Error sending parent notification:', error);
   }
 };
+
+export const sendMarkFinalizationAlert = async (className: string, subject: string, examType: string, lockedBy: string) => {
+  const settings = await prisma.systemSetting.findUnique({
+    where: { key: 'marksAlerts' }
+  });
+
+  if (settings?.value !== 'true') {
+    return;
+  }
+
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN' },
+    select: { email: true }
+  });
+
+  if (admins.length === 0) {
+    return;
+  }
+
+  const transporter = getTransporter();
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <h2 style="color: #2563eb;">Marks Finalized</h2>
+      <p>Hello Admin,</p>
+      <p>The examination marks have been finalized and locked for the following:</p>
+      
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 5px 0;"><strong>Class:</strong> ${className}</p>
+        <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+        <p style="margin: 5px 0;"><strong>Exam:</strong> ${examType}</p>
+        <p style="margin: 5px 0;"><strong>Finalized By:</strong> ${lockedBy}</p>
+        <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+
+      <p>These marks are now locked for regular editing. Only administrators can unlock them if changes are required.</p>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+      <p style="font-size: 12px; color: #64748b;">This is an automated notification from EduTrack AI.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"EduTrack AI" <noreply@edutrack.ai>',
+      to: admins.map(a => a.email).join(', '),
+      subject: `[ALERT] Marks Finalized: ${className} - ${subject} - ${examType}`,
+      html,
+    });
+    console.log(`Mark finalization alert sent to ${admins.length} admins`);
+  } catch (error) {
+    console.error('Error sending mark finalization alert:', error);
+  }
+};

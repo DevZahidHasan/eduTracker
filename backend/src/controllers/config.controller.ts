@@ -35,6 +35,30 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
+export const createClass = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.body;
+  const newClass = await prisma.schoolClass.create({
+    data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+  });
+  return res.status(201).json(new ApiResponse(201, newClass, 'Class created successfully'));
+});
+
+export const createSubject = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.body;
+  const subject = await prisma.subject.create({
+    data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+  });
+  return res.status(201).json(new ApiResponse(201, subject, 'Subject created successfully'));
+});
+
+export const createExamType = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.body;
+  const examType = await prisma.examType.create({
+    data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+  });
+  return res.status(201).json(new ApiResponse(201, examType, 'Exam type created successfully'));
+});
+
 function formatLabel(str: string): string {
   // Convert UPPER_CASE to Title Case (e.g. CLASS_1 -> Class 1)
   return str

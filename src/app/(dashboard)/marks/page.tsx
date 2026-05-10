@@ -20,12 +20,14 @@ import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { 
   selectAllMarks, 
   addMarksBulkThunk,
-  fetchMarks
+  fetchMarks,
+  finalizeMarksThunk
 } from '@/lib/features/marksSlice';
 import { Mark } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { RootState } from '@/lib/store';
 
 export default function MarksPage() {
   const dispatch = useAppDispatch();
@@ -34,6 +36,7 @@ export default function MarksPage() {
   const CLASSES = useAppSelector(selectClasses);
   const SUBJECTS = useAppSelector(selectSubjects);
   const EXAM_TYPES = useAppSelector(selectExamTypes);
+  const auth = useAppSelector((state) => state.auth);
   
   const loadingMarks = useAppSelector((state) => state.marks.loading);
 
@@ -43,6 +46,7 @@ export default function MarksPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [maxScore, setMaxScore] = useState<string>('100');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLocked, setIsLocked] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,6 +60,21 @@ export default function MarksPage() {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
   }, [dispatch]);
+
+  // Check lock status
+  useEffect(() => {
+    if (selectedClass && selectedSubject && selectedExamType) {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      fetch(`${API_URL}/marks/lock-status?className=${selectedClass}&subject=${selectedSubject}&examType=${selectedExamType}`, {
+        headers: { 'Authorization': `Bearer ${auth.token}` }
+      })
+      .then(res => res.json())
+      .then(json => {
+        setIsLocked(json.data.isLocked);
+      })
+      .catch(err => console.error('Failed to fetch lock status:', err));
+    }
+  }, [selectedClass, selectedSubject, selectedExamType, auth.token]);
 
   // Filter students based on selected class
   const classStudents = useMemo(() => {
@@ -150,6 +169,24 @@ export default function MarksPage() {
     setIsDirty(false);
   };
 
+  const handleFinalize = () => {
+    if (!selectedClass || !selectedSubject || !selectedExamType) return;
+    
+    if (confirm('Finalizing marks will lock them for regular editing and notify all administrators. Are you sure?')) {
+      dispatch(finalizeMarksThunk({
+        className: selectedClass,
+        subject: selectedSubject,
+        examType: selectedExamType
+      }))
+      .unwrap()
+      .then(() => {
+        toast.success('Marks finalized and locked successfully');
+        setIsLocked(true);
+      })
+      .catch((err) => toast.error(err || 'Failed to finalize marks'));
+    }
+  };
+
   const isFormValid = selectedClass && selectedSubject && selectedExamType && maxScore;
 
   return (
@@ -162,6 +199,12 @@ export default function MarksPage() {
         </div>
         
         <div className="flex items-center gap-3 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+          {isLocked && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100 font-bold text-xs">
+              <AlertCircle size={16} />
+              LOCKED
+            </div>
+          )}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-primary rounded-lg border border-blue-100">
             <Trophy size={16} className="text-amber-500" />
             <div className="flex flex-col">
@@ -170,18 +213,29 @@ export default function MarksPage() {
                 type="number" 
                 value={maxScore} 
                 onChange={(e) => setMaxScore(e.target.value)}
-                className="bg-transparent text-slate-900 border-none focus:outline-none w-12 font-bold text-sm h-4 mt-0.5"
+                disabled={isLocked}
+                className="bg-transparent text-slate-900 border-none focus:outline-none w-12 font-bold text-sm h-4 mt-0.5 disabled:opacity-50"
               />
             </div>
           </div>
           <Button 
             onClick={handleSave} 
-            disabled={!isDirty || !isFormValid}
+            disabled={!isDirty || !isFormValid || isLocked}
             className="shadow-md shadow-blue-100 px-6 py-2 h-10"
           >
             <Save size={18} className="mr-2" />
-            Save Results
+            {isLocked ? 'Locked' : 'Save Results'}
           </Button>
+          {!isLocked && isFormValid && (
+            <Button 
+              onClick={handleFinalize} 
+              variant="outline"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50 h-10"
+            >
+              <ClipboardCheck size={18} className="mr-2" />
+              Finalize
+            </Button>
+          )}
         </div>
       </div>
 
@@ -349,7 +403,8 @@ export default function MarksPage() {
                                   value={score}
                                   placeholder="0"
                                   onChange={(e) => handleMarkChange(student.id, e.target.value)}
-                                  className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg"
+                                  disabled={isLocked}
+                                  className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50"
                                 />
                               </div>
                               <span className="text-slate-400 font-bold text-xs tracking-widest">/ {maxScore}</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -10,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  GraduationCap,
   LayoutGrid,
   PieChart,
   Settings,
@@ -61,20 +61,21 @@ export function Sidebar({
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="flex h-16 items-center justify-between px-6 border-b border-slate-50 shrink-0">
-          <div className={`flex items-center gap-2 text-primary ${collapsed && !isMobileOpen ? 'mx-auto' : ''}`}>
-            <GraduationCap size={28} />
-            {(!collapsed || isMobileOpen) && (
-              <span className="text-xl font-bold tracking-tight text-slate-900 whitespace-nowrap overflow-hidden">
-                EduTrack AI
-              </span>
-            )}
+        <div className="flex h-28 items-center px-4 border-b border-slate-50 shrink-0 overflow-hidden">
+          <div className={`relative h-28 transition-all duration-300 ease-in-out ${collapsed && !isMobileOpen ? 'w-12 mx-auto' : 'w-full px-2'}`}>
+            <Image 
+              src="/edutrackerLogo.png" 
+              alt="EduTracker Logo" 
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
           
           {isMobileOpen && (
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden p-2 text-slate-400 hover:text-primary transition-standard"
+              className="lg:hidden p-2 text-slate-400 hover:text-primary transition-standard absolute right-4"
             >
               <X size={20} />
             </button>
@@ -82,7 +83,7 @@ export function Sidebar({
 
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`hidden lg:flex absolute -right-3 top-12 h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm hover:text-primary transition-standard z-50`}
+            className={`hidden lg:flex absolute -right-3 top-14 h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm hover:text-primary transition-standard z-50`}
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>

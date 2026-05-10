@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAppSelector } from '@/lib/hooks';
 import { selectIsAuthenticated } from '@/lib/features/authSlice';
-import { GraduationCap, ArrowRight, ShieldCheck, Zap, BarChart3, Users } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, BarChart3, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function Home() {
@@ -23,11 +24,16 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
       {/* Navbar */}
       <nav className="h-20 px-8 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-50">
-        <div className="flex items-center gap-2.5 text-primary">
-          <GraduationCap size={32} />
-          <span className="text-2xl font-black tracking-tighter text-slate-900">
-            EduTrack AI
-          </span>
+        <div className="flex items-center">
+          <div className="relative h-28 w-48">
+            <Image 
+              src="/edutrackerLogo.png" 
+              alt="EduTracker Logo" 
+              fill
+              className="object-contain object-left"
+              priority
+            />
+          </div>
         </div>
         
         <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-500 uppercase tracking-widest">
@@ -105,8 +111,15 @@ export default function Home() {
           <div className="mt-20 relative px-4 max-w-6xl mx-auto animate-in zoom-in-95 duration-1000">
             <div className="absolute inset-0 bg-gradient-to-t from-slate-50 to-transparent z-10 h-64 -bottom-1"></div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/50">
-              <div className="rounded-2xl bg-slate-50 aspect-video flex items-center justify-center border border-slate-100 border-dashed">
-                <GraduationCap size={80} className="text-slate-200" />
+              <div className="rounded-2xl bg-slate-50 aspect-video flex items-center justify-center border border-slate-100 border-dashed relative overflow-hidden">
+                <div className="relative h-32 w-32 opacity-20">
+                  <Image 
+                    src="/edutrackerLogo.png" 
+                    alt="EduTracker Preview Logo" 
+                    fill
+                    className="object-contain"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -149,11 +162,15 @@ export default function Home() {
       {/* Footer */}
       <footer className="px-8 py-12 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-2.5 text-slate-300">
-            <GraduationCap size={24} />
-            <span className="text-lg font-black tracking-tighter">
-              EduTrack AI
-            </span>
+          <div className="flex items-center">
+            <div className="relative h-10 w-32 overflow-hidden opacity-40 grayscale hover:grayscale-0 transition-all cursor-default">
+              <Image 
+                src="/edutrackerLogo.png" 
+                alt="EduTracker Footer Logo" 
+                fill
+                className="object-contain object-left"
+              />
+            </div>
           </div>
           <div className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">
             &copy; 2026 Built for Excellence &bull; All Systems Operational

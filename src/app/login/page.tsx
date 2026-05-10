@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GraduationCap, ArrowRight, Lock, Mail, UserCheck } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Lock, Mail, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -65,8 +66,8 @@ export default function LoginPage() {
       );
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -78,8 +79,13 @@ export default function LoginPage() {
       
       <Card className="w-full max-w-[460px] border-slate-200/60 shadow-xl shadow-slate-200/50 p-2 sm:p-4 rounded-3xl bg-white relative z-10">
         <CardHeader className="pt-8 pb-4 text-center">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-100 ring-8 ring-blue-50">
-            <GraduationCap size={36} />
+          <div className="mx-auto h-20 w-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-blue-50 ring-8 ring-blue-50/30 overflow-hidden relative">
+            <Image 
+              src="/edutrackerLogo.png" 
+              alt="EduTracker Logo" 
+              fill
+              className="object-contain p-2"
+            />
           </div>
           <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Welcome Back

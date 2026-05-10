@@ -70,3 +70,34 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
   });
   return res.status(200).json(new ApiResponse(200, users, 'Users fetched successfully'));
 });
+
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, email, role } = req.body;
+
+  const user = await prisma.user.update({
+    where: { id: Number(id) },
+    data: { name, email, role },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true
+    }
+  });
+
+  return res.status(200).json(new ApiResponse(200, user, 'User updated successfully'));
+});
+
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // Prevent deleting the last admin or yourself if we had auth info here
+  // For now, just a simple delete
+  await prisma.user.delete({
+    where: { id: Number(id) }
+  });
+
+  return res.status(200).json(new ApiResponse(200, null, 'User deleted successfully'));
+});

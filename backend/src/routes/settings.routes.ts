@@ -5,6 +5,8 @@ import {
   getSystemSettings, 
   updateSystemSettings, 
   getUsers,
+  updateUser,
+  deleteUser,
   triggerEndOfDay
 } from '../controllers/settings.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
@@ -20,6 +22,8 @@ router.get('/system', getSystemSettings);
 router.post('/system', updateSystemSettings);
 
 router.get('/users', getUsers);
+router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 router.post('/end-of-day', triggerEndOfDay);
 

@@ -9,7 +9,9 @@ import {
   Bell, 
   ShieldCheck, 
   Save,
-  Plus
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
@@ -18,15 +20,27 @@ import {
   fetchSystemSettings, 
   updateSystemSettingsThunk,
   fetchUsers,
+  updateUserThunk,
+  deleteUserThunk,
   triggerEndOfDayThunk,
   selectSchoolProfile,
   selectSystemSettings,
   selectUsers
 } from '@/lib/features/settingsSlice';
-import { selectClasses, selectSubjects, selectExamTypes, fetchConfig } from '@/lib/features/configSlice';
+import { 
+  selectClasses, 
+  selectSubjects, 
+  selectExamTypes, 
+  fetchConfig,
+  addClassThunk,
+  addSubjectThunk,
+  addExamTypeThunk
+} from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { User } from '@/types/models';
 import toast from 'react-hot-toast';
 
 type TabId = 'profile' | 'academic' | 'users' | 'theme' | 'notifications' | 'security';
@@ -49,6 +63,15 @@ export default function SettingsPage() {
   });
   const [settingsData, setSettingsData] = useState<Record<string, string>>({});
   const [isTriggering, setIsTriggering] = useState(false);
+
+  // Modal States
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<Partial<User> | null>(null);
+  const [academicModal, setAcademicModal] = useState<{ isOpen: boolean; type: 'class' | 'subject' | 'examType'; value: string }>({
+    isOpen: false,
+    type: 'class',
+    value: ''
+  });
 
   useEffect(() => {
     dispatch(fetchSchoolProfile());
@@ -104,6 +127,62 @@ export default function SettingsPage() {
       .then((msg) => toast.success(msg || 'End of day tasks completed'))
       .catch((err) => toast.error(err || 'Failed to run tasks'))
       .finally(() => setIsTriggering(false));
+  };
+
+  // User Handlers
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = (userId: number) => {
+    if (confirm('Are you sure you want to delete this user?')) {
+      dispatch(deleteUserThunk(userId))
+        .unwrap()
+        .then(() => {
+          toast.success('User deleted successfully');
+          dispatch(fetchUsers());
+        })
+        .catch((err) => toast.error(err || 'Failed to delete user'));
+    }
+  };
+
+  const handleUpdateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    dispatch(updateUserThunk(editingUser))
+      .unwrap()
+      .then(() => {
+        toast.success('User updated successfully');
+        setIsUserModalOpen(false);
+        dispatch(fetchUsers());
+      })
+      .catch((err) => toast.error(err || 'Failed to update user'));
+  };
+
+  // Academic Handlers
+  const handleAddAcademic = (type: 'class' | 'subject' | 'examType') => {
+    setAcademicModal({ isOpen: true, type, value: '' });
+  };
+
+  const submitAcademic = (e: React.FormEvent) => {
+    e.preventDefault();
+    const { type, value } = academicModal;
+    if (!value.trim()) return;
+
+    let thunk;
+    if (type === 'class') thunk = addClassThunk;
+    else if (type === 'subject') thunk = addSubjectThunk;
+    else thunk = addExamTypeThunk;
+
+    dispatch(thunk(value))
+      .unwrap()
+      .then(() => {
+        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added successfully`);
+        setAcademicModal({ ...academicModal, isOpen: false, value: '' });
+        dispatch(fetchConfig());
+      })
+      .catch((err) => toast.error(err || `Failed to add ${type}`));
   };
 
   const TABS: { id: TabId; label: string; icon: any }[] = [
@@ -216,7 +295,7 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Configured Classes</CardTitle>
                       <CardDescription>Active grades and class levels</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm"><Plus size={16} className="mr-1"/> Add Class</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('class')}><Plus size={16} className="mr-1"/> Add Class</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -237,7 +316,7 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Academic Subjects</CardTitle>
                       <CardDescription>Curriculum subjects taught across classes</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm"><Plus size={16} className="mr-1"/> Add Subject</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('subject')}><Plus size={16} className="mr-1"/> Add Subject</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -258,7 +337,7 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Assessment Types</CardTitle>
                       <CardDescription>Standardized exam definitions</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm"><Plus size={16} className="mr-1"/> Add Exam Type</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('examType')}><Plus size={16} className="mr-1"/> Add Exam Type</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -292,11 +371,12 @@ export default function SettingsPage() {
                       <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Email</th>
                       <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Role</th>
                       <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Joined</th>
+                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {users.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={u.id} className="hover:bg-slate-50 transition-colors group">
                         <td className="px-6 py-4 font-bold text-slate-900">{u.name || 'Unknown'}</td>
                         <td className="px-6 py-4 text-slate-600 font-medium">{u.email}</td>
                         <td className="px-6 py-4">
@@ -307,6 +387,22 @@ export default function SettingsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-slate-500">{new Date(u.createdAt || '').toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleEditUser(u)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {users.length === 0 && (
@@ -500,6 +596,63 @@ export default function SettingsPage() {
 
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        title="Edit User Profile"
+      >
+        <form onSubmit={handleUpdateUser} className="space-y-4">
+          <Input 
+            label="Full Name"
+            value={editingUser?.name || ''}
+            onChange={(e) => setEditingUser(prev => ({ ...prev, name: e.target.value }))}
+          />
+          <Input 
+            label="Email Address"
+            type="email"
+            value={editingUser?.email || ''}
+            onChange={(e) => setEditingUser(prev => ({ ...prev, email: e.target.value }))}
+          />
+          <div className="space-y-1">
+            <label className="text-sm font-bold text-slate-700">Role</label>
+            <select
+              value={editingUser?.role || 'TEACHER'}
+              onChange={(e) => setEditingUser(prev => ({ ...prev, role: e.target.value as any }))}
+              className="w-full h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="ADMIN">Admin</option>
+              <option value="TEACHER">Teacher</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsUserModalOpen(false)}>Cancel</Button>
+            <Button type="submit">Update User</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Academic Add Modal */}
+      <Modal
+        isOpen={academicModal.isOpen}
+        onClose={() => setAcademicModal({ ...academicModal, isOpen: false })}
+        title={`Add New ${academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}`}
+      >
+        <form onSubmit={submitAcademic} className="space-y-4">
+          <Input 
+            label="Name"
+            placeholder={`e.g. ${academicModal.type === 'class' ? 'Class 11' : academicModal.type === 'subject' ? 'Physics' : 'Mid Term'}`}
+            value={academicModal.value}
+            onChange={(e) => setAcademicModal({ ...academicModal, value: e.target.value })}
+            autoFocus
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setAcademicModal({ ...academicModal, isOpen: false })}>Cancel</Button>
+            <Button type="submit">Add {academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

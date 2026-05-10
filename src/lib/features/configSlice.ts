@@ -63,6 +63,69 @@ export const fetchConfig = createAsyncThunk(
   }
 );
 
+export const addClassThunk = createAsyncThunk(
+  'config/addClass',
+  async (name: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/config/classes`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}` 
+        },
+        body: JSON.stringify({ name })
+      });
+      if (!response.ok) throw new Error('Failed to add class');
+      return await response.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addSubjectThunk = createAsyncThunk(
+  'config/addSubject',
+  async (name: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/config/subjects`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}` 
+        },
+        body: JSON.stringify({ name })
+      });
+      if (!response.ok) throw new Error('Failed to add subject');
+      return await response.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const addExamTypeThunk = createAsyncThunk(
+  'config/addExamType',
+  async (name: string, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/config/exam-types`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}` 
+        },
+        body: JSON.stringify({ name })
+      });
+      if (!response.ok) throw new Error('Failed to add exam type');
+      return await response.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const configSlice = createSlice({
   name: 'config',
   initialState,
