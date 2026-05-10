@@ -10,6 +10,7 @@ export interface AppConfig {
   classes: ConfigOption[];
   subjects: ConfigOption[];
   examTypes: ConfigOption[];
+  teachers: ConfigOption[];
 }
 
 export interface ConfigState {
@@ -25,6 +26,7 @@ const initialState: ConfigState = {
     classes: [],
     subjects: [],
     examTypes: [],
+    teachers: [],
   },
   loading: false,
   error: null,
@@ -87,6 +89,7 @@ export const selectConfig = (state: RootState) => state.config.data;
 export const selectClasses = (state: RootState) => state.config.data.classes;
 export const selectSubjects = (state: RootState) => state.config.data.subjects;
 export const selectExamTypes = (state: RootState) => state.config.data.examTypes;
+export const selectTeachers = (state: RootState) => state.config.data.teachers;
 export const selectGenders = (state: RootState) => state.config.genders;
 export const selectConfigInitialized = (state: RootState) => state.config.initialized;
 

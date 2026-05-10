@@ -9,9 +9,9 @@ import {
   selectAllAttendanceRecords, 
   addDailyRecordsBulkThunk,
   fetchAttendance,
-  AttendanceRecord,
-  AttendanceStatus
+  AttendanceSummary
 } from '@/lib/features/attendanceSlice';
+import { Attendance, AttendanceStatus } from '@/types/models';
 import { selectClasses } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -62,12 +62,12 @@ export default function AttendancePage() {
   [allRecords, selectedDate]);
 
   // Local state to manage toggles before saving
-  const [localAttendance, setLocalAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [localAttendance, setLocalAttendance] = useState<Record<number, AttendanceStatus>>({});
   const [isDirty, setIsDirty] = useState(false);
 
   // Sync local attendance state when selectedDate, storeRecords, or classStudents change
   useEffect(() => {
-    const attendanceMap: Record<string, AttendanceStatus> = {};
+    const attendanceMap: Record<number, AttendanceStatus> = {};
     
     classStudents.forEach(student => {
       const record = storeRecords.find(r => r.studentId === student.id);
@@ -80,7 +80,7 @@ export default function AttendancePage() {
     setIsDirty(false);
   }, [storeRecords, selectedDate, classStudents]);
 
-  const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+  const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
     setLocalAttendance(prev => ({
       ...prev,
       [studentId]: status
@@ -89,7 +89,7 @@ export default function AttendancePage() {
   };
 
   const handleMarkAll = (status: AttendanceStatus) => {
-    const newMap: Record<string, AttendanceStatus> = {};
+    const newMap: Record<number, AttendanceStatus> = {};
     classStudents.forEach(student => {
       newMap[student.id] = status;
     });
@@ -98,7 +98,7 @@ export default function AttendancePage() {
   };
 
   const handleSave = () => {
-    const recordsToSave: Partial<AttendanceRecord>[] = classStudents.map(student => {
+    const recordsToSave: Partial<Attendance>[] = classStudents.map(student => {
       const existingRecord = storeRecords.find(r => r.studentId === student.id);
       return {
         id: existingRecord?.id,

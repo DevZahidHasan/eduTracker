@@ -3,13 +3,14 @@ import prisma from '../prisma';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
+import { Prisma } from '@prisma/client';
 
 export const getAllStudents = asyncHandler(async (req: Request, res: Response) => {
   const { className } = req.query;
-  const where: any = {};
+  const where: Prisma.StudentWhereInput = {};
   
   if (className) {
-    where.className = className;
+    where.className = className as string;
   }
 
   const students = await prisma.student.findMany({

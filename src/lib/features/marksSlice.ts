@@ -1,20 +1,6 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
-
-export type ExamType = 'CLASS_TEST' | 'MONTHLY_EXAM' | 'MID_TERM' | 'FINAL_EXAM' | 'OTHER';
-export type Subject = 'BANGLA' | 'ENGLISH' | 'MATH' | 'SCIENCE' | 'ICT' | 'RELIGION' | 'SOCIAL_SCIENCE';
-
-export interface Mark {
-  id: string;
-  studentId: string;
-  subject: Subject;
-  examType: ExamType;
-  score: number;
-  maxScore: number;
-  date: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Mark } from '@/types/models';
 
 export interface MarksState {
   data: Mark[];
@@ -49,8 +35,8 @@ export const fetchMarks = createAsyncThunk(
       }
       const json = await response.json();
       return json.data as Mark[];
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch marks');
     }
   }
 );
@@ -75,8 +61,8 @@ export const addMarksThunk = createAsyncThunk(
       }
       const json = await response.json();
       return json.data as Mark;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add mark');
     }
   }
 );
@@ -103,9 +89,9 @@ export const addMarksBulkThunk = createAsyncThunk(
       }
 
       const json = await response.json();
-      return json.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+      return json.data as Mark[];
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to save bulk marks');
     }
   }
 );
@@ -126,10 +112,8 @@ const marksSlice = createSlice({
       })
       .addCase(fetchMarks.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload.map((m: any) => ({
+        state.data = action.payload.map((m) => ({
           ...m,
-          id: m.id.toString(),
-          studentId: m.studentId.toString(),
           date: m.date.substring(0, 10), // Formatting date to YYYY-MM-DD
         }));
         
@@ -144,8 +128,6 @@ const marksSlice = createSlice({
       .addCase(addMarksThunk.fulfilled, (state, action) => {
         const newMark = {
           ...action.payload,
-          id: action.payload.id.toString(),
-          studentId: action.payload.studentId.toString(),
           date: action.payload.date.substring(0, 10),
         };
         
@@ -164,11 +146,9 @@ const marksSlice = createSlice({
         }
       })
       .addCase(addMarksBulkThunk.fulfilled, (state, action) => {
-        action.payload.forEach((m: any) => {
+        action.payload.forEach((m) => {
           const newMark = {
             ...m,
-            id: m.id.toString(),
-            studentId: m.studentId.toString(),
             date: m.date.substring(0, 10),
           };
 
@@ -195,7 +175,7 @@ export const {
 } = marksSlice.actions;
 
 // Selectors
-export const selectAllMarks = (state: { marks: MarksState }) => state.marks.data;
+export const selectAllMarks = (state: RootState) => state.marks.data;
 export const selectAverageMarks = createSelector(
   [selectAllMarks],
   (marks) => {
@@ -228,10 +208,10 @@ export const selectMarksTrendData = createSelector(
   }
 );
 
-export const selectMarksByStudentId = (studentId: string) => (state: { marks: MarksState }) =>
+export const selectMarksByStudentId = (studentId: number) => (state: RootState) =>
   state.marks.data.filter((mark) => mark.studentId === studentId);
-export const selectSubjects = (state: { marks: MarksState }) => state.marks.subjects;
-export const selectMarksLoading = (state: { marks: MarksState }) => state.marks.loading;
-export const selectMarksError = (state: { marks: MarksState }) => state.marks.error;
+export const selectSubjects = (state: RootState) => state.marks.subjects;
+export const selectMarksLoading = (state: RootState) => state.marks.loading;
+export const selectMarksError = (state: RootState) => state.marks.error;
 
 export default marksSlice.reducer;

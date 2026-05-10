@@ -6,8 +6,17 @@ import prisma from '../prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
+import { Role } from '@prisma/client';
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string | null;
+  role: Role;
+}
+
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: AuthUser;
 }
 
 export const authMiddleware = asyncHandler(
@@ -19,7 +28,7 @@ export const authMiddleware = asyncHandler(
     }
 
     try {
-      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
         select: {
@@ -34,7 +43,7 @@ export const authMiddleware = asyncHandler(
         throw new ApiError(401, 'User not found');
       }
 
-      req.user = user;
+      req.user = user as AuthUser;
       next();
     } catch (error) {
       throw new ApiError(401, 'Invalid or expired token');

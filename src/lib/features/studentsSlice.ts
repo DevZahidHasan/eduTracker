@@ -1,26 +1,6 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
-
-export interface Student {
-  id: string; // The db id or studentId
-  studentId: string;
-  fullName: string;
-  rollNumber: string;
-  className: string;
-  section: string;
-  gender: string;
-  email: string | null;
-  dateOfBirth?: string;
-  bloodGroup?: string | null;
-  phone?: string | null;
-  parentName?: string | null;
-  parentPhone?: string | null;
-  address?: string | null;
-  admissionDate?: string;
-  profileImage?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Student } from '@/types/models';
 
 export interface StudentsState {
   list: Student[];
@@ -55,8 +35,8 @@ export const fetchStudents = createAsyncThunk(
       }
       const json = await response.json();
       return json.data as Student[];
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch students');
     }
   }
 );
@@ -84,8 +64,8 @@ export const addStudentThunk = createAsyncThunk(
       }
 
       return json.data as Student;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add student');
     }
   }
 );
@@ -113,15 +93,15 @@ export const updateStudentThunk = createAsyncThunk(
       }
 
       return json.data as Student;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update student');
     }
   }
 );
 
 export const deleteStudentThunk = createAsyncThunk(
   'students/deleteStudent',
-  async (id: string, { rejectWithValue, getState }) => {
+  async (id: number, { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
       const token = state.auth.token;
@@ -136,8 +116,8 @@ export const deleteStudentThunk = createAsyncThunk(
         throw new Error('Failed to delete student');
       }
       return id;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete student');
     }
   }
 );
@@ -158,10 +138,7 @@ const studentsSlice = createSlice({
       })
       .addCase(fetchStudents.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload.map((s: any) => ({
-          ...s,
-          id: s.id.toString(),
-        }));
+        state.list = action.payload;
       })
       .addCase(fetchStudents.rejected, (state, action) => {
         state.loading = false;
@@ -174,8 +151,7 @@ const studentsSlice = createSlice({
       })
       .addCase(addStudentThunk.fulfilled, (state, action) => {
         state.loading = false;
-        const newStudent = { ...action.payload, id: action.payload.id.toString() };
-        state.list.push(newStudent);
+        state.list.push(action.payload);
       })
       .addCase(addStudentThunk.rejected, (state, action) => {
         state.loading = false;
@@ -188,12 +164,12 @@ const studentsSlice = createSlice({
       })
       .addCase(updateStudentThunk.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.list.findIndex((s) => s.id === action.payload.id.toString());
+        const index = state.list.findIndex((s) => s.id === action.payload.id);
         if (index !== -1) {
-          state.list[index] = { ...action.payload, id: action.payload.id.toString() };
+          state.list[index] = action.payload;
         }
-        if (state.selectedStudent?.id === action.payload.id.toString()) {
-          state.selectedStudent = { ...action.payload, id: action.payload.id.toString() };
+        if (state.selectedStudent?.id === action.payload.id) {
+          state.selectedStudent = action.payload;
         }
       })
       .addCase(updateStudentThunk.rejected, (state, action) => {
@@ -202,8 +178,8 @@ const studentsSlice = createSlice({
       })
       // Delete Student
       .addCase(deleteStudentThunk.fulfilled, (state, action) => {
-        state.list = state.list.filter((s) => s.id !== action.payload.toString());
-        if (state.selectedStudent?.id === action.payload.toString()) {
+        state.list = state.list.filter((s) => s.id !== action.payload);
+        if (state.selectedStudent?.id === action.payload) {
           state.selectedStudent = null;
         }
       });

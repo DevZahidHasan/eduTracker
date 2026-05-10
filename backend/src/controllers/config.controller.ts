@@ -16,11 +16,18 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
     orderBy: { name: 'asc' }
   });
 
+  const teachers = await prisma.user.findMany({
+    where: { role: 'TEACHER' },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' }
+  });
+
   // Map to the format the frontend expects (value/label)
   const config = {
     classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
     subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
-    examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name) }))
+    examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name) })),
+    teachers: teachers.map(t => ({ value: t.id.toString(), label: t.name || t.email }))
   };
 
   return res.status(200).json(

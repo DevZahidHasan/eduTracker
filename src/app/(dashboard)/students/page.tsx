@@ -93,7 +93,7 @@ export default function StudentsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id: number) => {
     if (confirm('Are you sure you want to delete this student?')) {
       dispatch(deleteStudentThunk(id))
         .unwrap()

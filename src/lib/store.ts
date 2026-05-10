@@ -5,6 +5,7 @@ import studentsReducer from './features/studentsSlice';
 import marksReducer from './features/marksSlice';
 import attendanceReducer from './features/attendanceSlice';
 import aiInsightsReducer from './features/aiInsightsSlice';
+import classesReducer from './features/classesSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -15,8 +16,8 @@ export const makeStore = () => {
       marks: marksReducer,
       attendance: attendanceReducer,
       aiInsights: aiInsightsReducer,
+      classes: classesReducer,
     },
-    devTools: process.env.NODE_ENV !== 'production',
   });
 };
 

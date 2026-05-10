@@ -1,4 +1,6 @@
-export const generatePerformanceInsights = async (marks: any[], attendance: any[]): Promise<string> => {
+import { Mark, Attendance } from '../types';
+
+export const generatePerformanceInsights = async (marks: Mark[], attendance: Attendance[]): Promise<string> => {
   // In a real application, you would pass this data to an LLM or an AI API.
   // Example: using fetch to call OpenAI or Gemini API.
   

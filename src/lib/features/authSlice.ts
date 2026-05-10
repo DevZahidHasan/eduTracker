@@ -1,13 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
-
-export type Role = 'admin' | 'teacher' | 'parent' | 'student';
-
-export interface User {
-  id: string;
-  name: string;
-  email?: string;
-}
+import { User, Role } from '@/types/models';
 
 export interface AuthState {
   user: User | null;

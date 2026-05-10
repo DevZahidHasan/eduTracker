@@ -20,11 +20,9 @@ import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { 
   selectAllMarks, 
   addMarksBulkThunk,
-  fetchMarks,
-  Mark,
-  ExamType,
-  Subject
+  fetchMarks
 } from '@/lib/features/marksSlice';
+import { Mark, ExamType, Subject } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -51,7 +49,7 @@ export default function MarksPage() {
   const itemsPerPage = 10;
 
   // Local marks state for bulk entry
-  const [localMarks, setLocalMarks] = useState<Record<string, string>>({});
+  const [localMarks, setLocalMarks] = useState<Record<number, string>>({});
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
@@ -93,7 +91,7 @@ export default function MarksPage() {
   // Sync local marks when filters change
   useEffect(() => {
     if (selectedClass && selectedSubject && selectedExamType) {
-      const marksMap: Record<string, string> = {};
+      const marksMap: Record<number, string> = {};
       classStudents.forEach(student => {
         const existingMark = allMarks.find(m => 
           m.studentId === student.id && 
@@ -111,7 +109,7 @@ export default function MarksPage() {
     }
   }, [allMarks, selectedClass, selectedSubject, selectedExamType, classStudents]);
 
-  const handleMarkChange = (studentId: string, score: string) => {
+  const handleMarkChange = (studentId: number, score: string) => {
     // Validate number input
     if (score !== '' && isNaN(Number(score))) return;
     if (Number(score) > Number(maxScore)) {

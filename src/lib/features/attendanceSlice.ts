@@ -1,14 +1,6 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
-
-export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
-
-export interface AttendanceRecord {
-  id: string;
-  studentId: string;
-  date: string; // YYYY-MM-DD format
-  status: AttendanceStatus;
-}
+import { Attendance, AttendanceStatus } from '@/types/models';
 
 export interface AttendanceSummary {
   PRESENT: number;
@@ -20,8 +12,8 @@ export interface AttendanceSummary {
 }
 
 export interface AttendanceState {
-  dailyRecords: AttendanceRecord[];
-  summary: Record<string, AttendanceSummary>; // Keyed by studentId
+  dailyRecords: Attendance[];
+  summary: Record<number, AttendanceSummary>; // Keyed by studentId
   loading: boolean;
   error: string | null;
 }
@@ -51,16 +43,16 @@ export const fetchAttendance = createAsyncThunk(
         throw new Error('Failed to fetch attendance');
       }
       const json = await response.json();
-      return json.data as AttendanceRecord[];
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+      return json.data as Attendance[];
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch attendance');
     }
   }
 );
 
 export const addDailyRecordsBulkThunk = createAsyncThunk(
   'attendance/addDailyRecordsBulk',
-  async (records: Partial<AttendanceRecord>[], { rejectWithValue, getState }) => {
+  async (records: Partial<Attendance>[], { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
       const token = state.auth.token;
@@ -80,15 +72,15 @@ export const addDailyRecordsBulkThunk = createAsyncThunk(
       }
 
       const json = await response.json();
-      return json.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+      return json.data as Attendance[];
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to save bulk attendance');
     }
   }
 );
 
 // Helper function to recalculate summary for a student
-const calculateStudentSummary = (records: AttendanceRecord[], studentId: string): AttendanceSummary => {
+const calculateStudentSummary = (records: Attendance[], studentId: number): AttendanceSummary => {
   const studentRecords = records.filter(r => r.studentId === studentId);
   
   const summary = studentRecords.reduce(
@@ -118,12 +110,9 @@ const attendanceSlice = createSlice({
       })
       .addCase(fetchAttendance.fulfilled, (state, action) => {
         state.loading = false;
-        state.dailyRecords = action.payload.map((r: any) => ({
+        state.dailyRecords = action.payload.map((r) => ({
           ...r,
-          id: r.id.toString(),
-          studentId: r.studentId.toString(),
           date: r.date.substring(0, 10), // Formatting date to YYYY-MM-DD
-          status: r.status.toUpperCase() as AttendanceStatus,
         }));
         
         // Recalculate summaries for all affected students
@@ -137,13 +126,10 @@ const attendanceSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(addDailyRecordsBulkThunk.fulfilled, (state, action) => {
-        action.payload.forEach((r: any) => {
+        action.payload.forEach((r) => {
           const newRecord = {
             ...r,
-            id: r.id.toString(),
-            studentId: r.studentId.toString(),
             date: r.date.substring(0, 10),
-            status: r.status.toUpperCase() as AttendanceStatus,
           };
           
           const existingIndex = state.dailyRecords.findIndex(
@@ -157,7 +143,7 @@ const attendanceSlice = createSlice({
         });
 
         // Recalculate summaries
-        const studentIds = new Set<string>(action.payload.map((r: any) => r.studentId.toString()));
+        const studentIds = new Set<number>(action.payload.map((r) => r.studentId));
         studentIds.forEach(id => {
           state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
         });
@@ -166,7 +152,7 @@ const attendanceSlice = createSlice({
 });
 
 // Selectors
-export const selectAllAttendanceRecords = (state: { attendance: AttendanceState }) => state.attendance.dailyRecords;
+export const selectAllAttendanceRecords = (state: RootState) => state.attendance.dailyRecords;
 export const selectOverallAttendanceRate = createSelector(
   [selectAllAttendanceRecords],
   (records) => {
@@ -227,14 +213,14 @@ export const selectAttendanceTrendData = createSelector(
   }
 );
 
-export const selectAttendanceRecordsByDate = (date: string) => (state: { attendance: AttendanceState }) =>
+export const selectAttendanceRecordsByDate = (date: string) => (state: RootState) =>
   state.attendance.dailyRecords.filter((record) => record.date === date);
-export const selectAttendanceRecordsByStudent = (studentId: string) => (state: { attendance: AttendanceState }) =>
+export const selectAttendanceRecordsByStudent = (studentId: number) => (state: RootState) =>
   state.attendance.dailyRecords.filter((record) => record.studentId === studentId);
-export const selectAttendanceSummary = (state: { attendance: AttendanceState }) => state.attendance.summary;
-export const selectAttendanceSummaryByStudent = (studentId: string) => (state: { attendance: AttendanceState }) => 
+export const selectAttendanceSummary = (state: RootState) => state.attendance.summary;
+export const selectAttendanceSummaryByStudent = (studentId: number) => (state: RootState) => 
   state.attendance.summary[studentId];
-export const selectAttendanceLoading = (state: { attendance: AttendanceState }) => state.attendance.loading;
-export const selectAttendanceError = (state: { attendance: AttendanceState }) => state.attendance.error;
+export const selectAttendanceLoading = (state: RootState) => state.attendance.loading;
+export const selectAttendanceError = (state: RootState) => state.attendance.error;
 
 export default attendanceSlice.reducer;

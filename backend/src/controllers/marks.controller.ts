@@ -3,18 +3,19 @@ import prisma from '../prisma';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
+import { Prisma } from '@prisma/client';
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, subject, examType, className } = req.query;
-  const whereClause: any = {};
+  const whereClause: Prisma.MarkWhereInput = {};
   
   if (studentId) whereClause.studentId = Number(studentId);
-  if (subject) whereClause.subject = subject;
-  if (examType) whereClause.examType = examType;
+  if (subject) whereClause.subject = subject as string;
+  if (examType) whereClause.examType = examType as string;
   
   if (className) {
     whereClause.student = {
-      className: className
+      className: className as string
     };
   }
   
@@ -37,7 +38,16 @@ export const getMarks = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const bulkCreateMarks = asyncHandler(async (req: Request, res: Response) => {
-  const { records } = req.body; // Array of { studentId, subject, examType, score, maxScore, date }
+  const { records } = req.body as { 
+    records: { 
+      studentId: number | string, 
+      subject: string, 
+      examType: string, 
+      score: number | string, 
+      maxScore: number | string, 
+      date: string 
+    }[] 
+  };
 
   if (!records || !Array.isArray(records)) {
     throw new ApiError(400, 'Marks records array is required');

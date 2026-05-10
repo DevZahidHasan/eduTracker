@@ -3,17 +3,18 @@ import prisma from '../prisma';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
+import { Prisma, AttendanceStatus } from '@prisma/client';
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, date, className } = req.query;
-  const whereClause: any = {};
+  const whereClause: Prisma.AttendanceWhereInput = {};
   
   if (studentId) whereClause.studentId = Number(studentId);
   if (date) whereClause.date = { equals: new Date(date as string) };
   
   if (className) {
     whereClause.student = {
-      className: className
+      className: className as string
     };
   }
   
@@ -36,7 +37,7 @@ export const getAttendance = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const bulkCreateAttendance = asyncHandler(async (req: Request, res: Response) => {
-  const { records } = req.body; // Array of { studentId, date, status }
+  const { records } = req.body as { records: { studentId: number | string, date: string, status: AttendanceStatus }[] };
 
   if (!records || !Array.isArray(records)) {
     throw new ApiError(400, 'Attendance records array is required');
@@ -97,7 +98,7 @@ export const createAttendance = asyncHandler(async (req: Request, res: Response)
 
   const attendance = await prisma.attendance.create({
     data: {
-      studentId,
+      studentId: Number(studentId),
       date: date ? new Date(date) : undefined,
       status,
     },

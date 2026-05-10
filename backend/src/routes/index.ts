@@ -5,6 +5,7 @@ import studentsRoutes from './students.routes';
 import marksRoutes from './marks.routes';
 import attendanceRoutes from './attendance.routes';
 import aiInsightsRoutes from './aiInsights.routes';
+import classesRoutes from './classes.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -18,5 +19,6 @@ router.use('/students', authMiddleware, studentsRoutes);
 router.use('/marks', authMiddleware, marksRoutes);
 router.use('/attendance', authMiddleware, attendanceRoutes);
 router.use('/ai-insights', authMiddleware, aiInsightsRoutes);
+router.use('/classes', authMiddleware, classesRoutes);
 
 export default router;
