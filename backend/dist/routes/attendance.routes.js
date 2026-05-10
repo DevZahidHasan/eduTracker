@@ -2,11 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const attendance_controller_1 = require("../controllers/attendance.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const validations_1 = require("../validations");
 const router = (0, express_1.Router)();
-router.get('/', attendance_controller_1.getAttendance);
-router.post('/bulk', attendance_controller_1.bulkCreateAttendance);
-router.get('/:id', attendance_controller_1.getAttendanceById);
+router.get('/', (0, validation_middleware_1.validate)(validations_1.attendanceQuerySchema), attendance_controller_1.getAttendance);
+router.post('/bulk', (0, validation_middleware_1.validate)(validations_1.bulkAttendanceSchema), attendance_controller_1.bulkCreateAttendance);
+router.get('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), attendance_controller_1.getAttendanceById);
 router.post('/', attendance_controller_1.createAttendance);
-router.put('/:id', attendance_controller_1.updateAttendance);
-router.delete('/:id', attendance_controller_1.deleteAttendance);
+router.put('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), attendance_controller_1.updateAttendance);
+router.delete('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), attendance_controller_1.deleteAttendance);
 exports.default = router;

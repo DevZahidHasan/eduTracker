@@ -5,33 +5,49 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Lock, User, ShieldCheck, ArrowRight } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { loginSchema } from '@/lib/validations'; // We will use a shared schema or add registerSchema
+import { z } from 'zod';
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['TEACHER', 'ADMIN']),
+});
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function RegisterPage() {
   const router = useRouter();
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('TEACHER');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password || !name) {
-      setError('Please fill in all required fields');
-      return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'TEACHER',
     }
+  });
 
+  const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
-    setError('');
+    setServerError('');
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -39,7 +55,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name, role }),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();
@@ -53,7 +69,7 @@ export default function RegisterPage() {
         router.push('/login');
       }, 2000);
     } catch (err: unknown) {
-      setError((err as Error).message || 'An error occurred during registration');
+      setServerError((err as Error).message || 'An error occurred during registration');
     } finally {
       setIsLoading(false);
     }
@@ -82,12 +98,12 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent className="px-4 sm:px-6 pb-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 gap-4">
-              {error && (
+              {serverError && (
                 <div className="p-4 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
                    <div className="h-5 w-5 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
-                  {error}
+                  {serverError}
                 </div>
               )}
               {success && (
@@ -98,74 +114,66 @@ export default function RegisterPage() {
               )}
               
               <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <User size={18} />
                 </div>
                 <Input
                   label="Display Name"
-                  type="text"
                   placeholder="e.g. Dr. Jane Smith"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register('name')}
+                  error={errors.name?.message}
                   className="pl-11 h-12"
-                  required
                   disabled={isLoading}
                 />
               </div>
               
               <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <Mail size={18} />
                 </div>
                 <Input
                   label="Institutional Email"
                   type="email"
                   placeholder="name@school-domain.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
+                  error={errors.email?.message}
                   className="pl-11 h-12"
-                  required
                   disabled={isLoading}
                 />
               </div>
               
               <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <Lock size={18} />
                 </div>
                 <Input
                   label="Security Password"
                   type="password"
                   placeholder="Create a strong password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register('password')}
+                  error={errors.password?.message}
                   className="pl-11 h-12"
-                  required
                   disabled={isLoading}
                   autoComplete="new-password"
                 />
               </div>
               
-              <div className="flex flex-col gap-1.5 w-full relative group">
+              <div className="relative group">
                 <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10 pointer-events-none">
                   <ShieldCheck size={18} />
                 </div>
-                <label className="text-sm font-semibold text-slate-700 ml-0.5">
-                  Administrative Position
-                </label>
-                <select
-                  className="w-full h-12 px-11 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm font-medium focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard shadow-sm outline-none appearance-none cursor-pointer"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  required
+                <Select
+                  label="Administrative Position"
+                  placeholder="Select position"
+                  {...register('role')}
+                  error={errors.role?.message}
+                  className="pl-11 h-12"
                   disabled={isLoading}
-                >
-                  <option value="TEACHER">Academic Staff / Teacher</option>
-                  <option value="ADMIN">System Administrator</option>
-                </select>
-                <div className="absolute right-3.5 top-[38px] pointer-events-none text-slate-400">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3"></path></svg>
-                </div>
+                  options={[
+                    { value: 'TEACHER', label: 'Academic Staff / Teacher' },
+                    { value: 'ADMIN', label: 'System Administrator' },
+                  ]}
+                />
               </div>
             </div>
 

@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const students_controller_1 = require("../controllers/students.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const validations_1 = require("../validations");
 const router = (0, express_1.Router)();
-router.get('/', students_controller_1.getAllStudents);
-router.get('/:id', students_controller_1.getStudentById);
-router.post('/', students_controller_1.createStudent);
-router.put('/:id', students_controller_1.updateStudent);
-router.delete('/:id', students_controller_1.deleteStudent);
+router.get('/', (0, validation_middleware_1.validate)(validations_1.studentQuerySchema), students_controller_1.getAllStudents);
+router.get('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), students_controller_1.getStudentById);
+router.post('/', (0, validation_middleware_1.validate)(validations_1.studentSchema), students_controller_1.createStudent);
+router.put('/:id', (0, validation_middleware_1.validate)(Object.assign(Object.assign({}, validations_1.studentSchema), validations_1.idParamSchema)), students_controller_1.updateStudent);
+router.delete('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), students_controller_1.deleteStudent);
 exports.default = router;
