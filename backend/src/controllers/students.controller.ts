@@ -4,6 +4,8 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma } from '@prisma/client';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { AuditService } from '../services/audit.service';
 
 export const getAllStudents = asyncHandler(async (req: Request, res: Response) => {
   const { className } = req.query;
@@ -41,7 +43,7 @@ export const getStudentById = asyncHandler(async (req: Request, res: Response) =
   );
 });
 
-export const createStudent = asyncHandler(async (req: Request, res: Response) => {
+export const createStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     studentId, fullName, rollNumber, className, section, gender,
     email, dateOfBirth, bloodGroup, phone, parentName, parentPhone,
@@ -116,6 +118,10 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
       },
     });
 
+    if (req.user) {
+      await AuditService.logChange('CREATE', 'Student', student.id, req.user.id, null, student);
+    }
+
     return res.status(201).json(
       new ApiResponse(201, student, 'Student created successfully')
     );
@@ -125,13 +131,21 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
+export const updateStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const {
     fullName, rollNumber, className, section, gender,
     email, dateOfBirth, bloodGroup, phone, parentName, parentPhone,
     address, admissionDate, profileImage
   } = req.body;
+
+  const oldStudent = await prisma.student.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldStudent) {
+    throw new ApiError(404, 'Student not found');
+  }
 
   try {
     const student = await prisma.student.update({
@@ -154,6 +168,10 @@ export const updateStudent = asyncHandler(async (req: Request, res: Response) =>
       },
     });
 
+    if (req.user) {
+      await AuditService.logChange('UPDATE', 'Student', id, req.user.id, oldStudent, student);
+    }
+
     return res.status(200).json(
       new ApiResponse(200, student, 'Student updated successfully')
     );
@@ -163,12 +181,24 @@ export const updateStudent = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {
+export const deleteStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
+  const oldStudent = await prisma.student.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldStudent) {
+    throw new ApiError(404, 'Student not found');
+  }
+
   await prisma.student.delete({
     where: { id: Number(id) },
   });
+
+  if (req.user) {
+    await AuditService.logChange('DELETE', 'Student', id, req.user.id, oldStudent, null);
+  }
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Student deleted successfully')

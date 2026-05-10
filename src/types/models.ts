@@ -109,3 +109,20 @@ export interface SchoolProfile {
 export interface SystemSettings {
   [key: string]: string;
 }
+
+export interface AuditLog {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue: any;
+  newValue: any;
+  performedBy: number;
+  timestamp: string;
+  user?: {
+    id: number;
+    name: string | null;
+    email: string;
+    role: string;
+  };
+}

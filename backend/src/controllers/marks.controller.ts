@@ -5,6 +5,8 @@ import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma } from '@prisma/client';
 import { sendMarkFinalizationAlert } from '../services/email.service';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { AuditService } from '../services/audit.service';
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, subject, examType, className } = req.query;
@@ -38,7 +40,7 @@ export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-export const bulkCreateMarks = asyncHandler(async (req: Request, res: Response) => {
+export const bulkCreateMarks = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { records } = req.body as { 
     records: { 
       studentId: number | string, 
@@ -85,6 +87,10 @@ export const bulkCreateMarks = asyncHandler(async (req: Request, res: Response) 
     })
   );
 
+  if (req.user) {
+    await AuditService.logChange('UPDATE', 'Mark', 'BULK', req.user.id, null, { count: results.length, records });
+  }
+
   return res.status(200).json(
     new ApiResponse(200, results, 'Bulk marks processed successfully')
   );
@@ -103,7 +109,7 @@ export const getMarkById = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-export const createMark = asyncHandler(async (req: Request, res: Response) => {
+export const createMark = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { studentId, subject, examType, score, maxScore, date } = req.body;
   
   if (!studentId || !subject || !examType || score === undefined) {
@@ -124,14 +130,25 @@ export const createMark = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
+  if (req.user) {
+    await AuditService.logChange('CREATE', 'Mark', mark.id, req.user.id, null, mark);
+  }
   return res.status(201).json(
     new ApiResponse(201, mark, 'Mark created successfully')
   );
 });
 
-export const updateMark = asyncHandler(async (req: Request, res: Response) => {
+export const updateMark = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { subject, examType, score, maxScore, date } = req.body;
+
+  const oldMark = await prisma.mark.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldMark) {
+    throw new ApiError(404, 'Mark not found');
+  }
 
   const markDate = date ? new Date(date) : undefined;
   if (markDate) markDate.setHours(0, 0, 0, 0);
@@ -147,26 +164,46 @@ export const updateMark = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
+  if (req.user) {
+    await AuditService.logChange('UPDATE', 'Mark', id, req.user.id, oldMark, mark);
+  }
+
   return res.status(200).json(
     new ApiResponse(200, mark, 'Mark updated successfully')
   );
 });
 
-export const deleteMark = asyncHandler(async (req: Request, res: Response) => {
+export const deleteMark = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
+  const oldMark = await prisma.mark.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldMark) {
+    throw new ApiError(404, 'Mark not found');
+  }
+
   await prisma.mark.delete({
     where: { id: Number(id) },
   });
+
+  if (req.user) {
+    await AuditService.logChange('DELETE', 'Mark', id, req.user.id, oldMark, null);
+  }
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Mark deleted successfully')
   );
 });
 
-export const finalizeMarks = asyncHandler(async (req: Request, res: Response) => {
+export const finalizeMarks = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { className, subject, examType, date } = req.body;
-  const user = (req as any).user;
+  const user = req.user;
+
+  if (!user) {
+    throw new ApiError(401, 'Unauthorized');
+  }
 
   if (!className || !subject || !examType || !date) {
     throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
@@ -192,6 +229,8 @@ export const finalizeMarks = asyncHandler(async (req: Request, res: Response) =>
     }
   });
 
+  await AuditService.logChange('UPDATE', 'MarkLock', `${className}-${subject}-${examType}`, user.id, null, markLock);
+
   // Trigger email notification
   sendMarkFinalizationAlert(className, subject, examType, user.name || user.email);
 
@@ -200,9 +239,13 @@ export const finalizeMarks = asyncHandler(async (req: Request, res: Response) =>
   );
 });
 
-export const unlockMarks = asyncHandler(async (req: Request, res: Response) => {
+export const unlockMarks = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { className, subject, examType, date } = req.body;
-  const user = (req as any).user;
+  const user = req.user;
+
+  if (!user) {
+    throw new ApiError(401, 'Unauthorized');
+  }
 
   if (user.role !== 'ADMIN') {
     throw new ApiError(403, 'Only administrators can unlock marks');
@@ -215,11 +258,19 @@ export const unlockMarks = asyncHandler(async (req: Request, res: Response) => {
   const lockDate = new Date(date);
   lockDate.setHours(0, 0, 0, 0);
 
+  const oldLock = await prisma.markLock.findUnique({
+    where: {
+      className_subject_examType_date: { className, subject, examType, date: lockDate }
+    }
+  });
+
   await prisma.markLock.delete({
     where: {
       className_subject_examType_date: { className, subject, examType, date: lockDate }
     }
   });
+
+  await AuditService.logChange('DELETE', 'MarkLock', `${className}-${subject}-${examType}`, user.id, oldLock, null);
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Marks unlocked successfully')

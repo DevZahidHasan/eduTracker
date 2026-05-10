@@ -17,6 +17,20 @@ model User {
 
   classSections ClassSection[]
   periods       Period[]
+  auditLogs     AuditLog[]
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  action      String   // CREATE, UPDATE, DELETE
+  entityType  String   // Student, Mark, Attendance, etc.
+  entityId    String   // ID of the entity
+  oldValue    Json?    // Previous state
+  newValue    Json?    // New state
+  performedBy Int      // User ID who performed the action
+  timestamp   DateTime @default(now())
+
+  user        User     @relation(fields: [performedBy], references: [id])
 }
 
 enum Role {

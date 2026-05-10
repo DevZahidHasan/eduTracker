@@ -5,6 +5,8 @@ import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma, AttendanceStatus } from '@prisma/client';
 import { sendParentAttendanceNotification } from '../services/email.service';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { AuditService } from '../services/audit.service';
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, date, className } = req.query;
@@ -37,7 +39,7 @@ export const getAttendance = asyncHandler(async (req: Request, res: Response) =>
   );
 });
 
-export const bulkCreateAttendance = asyncHandler(async (req: Request, res: Response) => {
+export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { records } = req.body as { records: { studentId: number | string, date: string, status: AttendanceStatus }[] };
 
   if (!records || !Array.isArray(records)) {
@@ -72,6 +74,10 @@ export const bulkCreateAttendance = asyncHandler(async (req: Request, res: Respo
     })
   );
 
+  if (req.user) {
+    await AuditService.logChange('UPDATE', 'Attendance', 'BULK', req.user.id, null, { count: results.length, records });
+  }
+
   // Trigger parent notifications in background
   results.forEach(record => {
     sendParentAttendanceNotification(record.id).catch(err => 
@@ -97,7 +103,7 @@ export const getAttendanceById = asyncHandler(async (req: Request, res: Response
   );
 });
 
-export const createAttendance = asyncHandler(async (req: Request, res: Response) => {
+export const createAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { studentId, date, status } = req.body;
   
   if (!studentId || !status) {
@@ -112,6 +118,10 @@ export const createAttendance = asyncHandler(async (req: Request, res: Response)
     },
   });
 
+  if (req.user) {
+    await AuditService.logChange('CREATE', 'Attendance', attendance.id, req.user.id, null, attendance);
+  }
+
   sendParentAttendanceNotification(attendance.id).catch(err => 
     console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
   );
@@ -121,9 +131,17 @@ export const createAttendance = asyncHandler(async (req: Request, res: Response)
   );
 });
 
-export const updateAttendance = asyncHandler(async (req: Request, res: Response) => {
+export const updateAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status, date } = req.body;
+
+  const oldAttendance = await prisma.attendance.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldAttendance) {
+    throw new ApiError(404, 'Attendance record not found');
+  }
 
   const attendance = await prisma.attendance.update({
     where: { id: Number(id) },
@@ -132,6 +150,10 @@ export const updateAttendance = asyncHandler(async (req: Request, res: Response)
       date: date ? new Date(date) : undefined,
     },
   });
+
+  if (req.user) {
+    await AuditService.logChange('UPDATE', 'Attendance', id, req.user.id, oldAttendance, attendance);
+  }
 
   sendParentAttendanceNotification(attendance.id).catch(err => 
     console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
@@ -142,12 +164,24 @@ export const updateAttendance = asyncHandler(async (req: Request, res: Response)
   );
 });
 
-export const deleteAttendance = asyncHandler(async (req: Request, res: Response) => {
+export const deleteAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
+  const oldAttendance = await prisma.attendance.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!oldAttendance) {
+    throw new ApiError(404, 'Attendance record not found');
+  }
+
   await prisma.attendance.delete({
     where: { id: Number(id) },
   });
+
+  if (req.user) {
+    await AuditService.logChange('DELETE', 'Attendance', id, req.user.id, oldAttendance, null);
+  }
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Attendance record deleted successfully')

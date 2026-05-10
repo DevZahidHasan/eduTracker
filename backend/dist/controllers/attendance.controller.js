@@ -18,6 +18,7 @@ const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
 const email_service_1 = require("../services/email.service");
+const audit_service_1 = require("../services/audit.service");
 exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, date, className } = req.query;
     const whereClause = {};
@@ -72,6 +73,9 @@ exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __
             },
         });
     }));
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('UPDATE', 'Attendance', 'BULK', req.user.id, null, { count: results.length, records });
+    }
     // Trigger parent notifications in background
     results.forEach(record => {
         (0, email_service_1.sendParentAttendanceNotification)(record.id).catch(err => console.error(`Failed to send notification for attendance ${record.id}:`, err));
@@ -98,12 +102,21 @@ exports.createAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
             status,
         },
     });
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('CREATE', 'Attendance', attendance.id, req.user.id, null, attendance);
+    }
     (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
     return res.status(201).json(new apiResponse_1.ApiResponse(201, attendance, 'Attendance record created successfully'));
 }));
 exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { status, date } = req.body;
+    const oldAttendance = yield prisma_1.default.attendance.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!oldAttendance) {
+        throw new apiError_1.ApiError(404, 'Attendance record not found');
+    }
     const attendance = yield prisma_1.default.attendance.update({
         where: { id: Number(id) },
         data: {
@@ -111,13 +124,25 @@ exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
             date: date ? new Date(date) : undefined,
         },
     });
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('UPDATE', 'Attendance', id, req.user.id, oldAttendance, attendance);
+    }
     (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
     return res.status(200).json(new apiResponse_1.ApiResponse(200, attendance, 'Attendance record updated successfully'));
 }));
 exports.deleteAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
+    const oldAttendance = yield prisma_1.default.attendance.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!oldAttendance) {
+        throw new apiError_1.ApiError(404, 'Attendance record not found');
+    }
     yield prisma_1.default.attendance.delete({
         where: { id: Number(id) },
     });
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('DELETE', 'Attendance', id, req.user.id, oldAttendance, null);
+    }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Attendance record deleted successfully'));
 }));

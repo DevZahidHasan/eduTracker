@@ -27,6 +27,7 @@ const navItems = [
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
+  { name: 'Audit Logs', href: '/audit', icon: LayoutDashboard, roles: ['ADMIN'] },
 ];
 
 interface SidebarProps {

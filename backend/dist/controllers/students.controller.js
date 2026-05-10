@@ -17,6 +17,7 @@ const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
+const audit_service_1 = require("../services/audit.service");
 exports.getAllStudents = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { className } = req.query;
     const where = {};
@@ -105,6 +106,9 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
                 profileImage: profileImage || null,
             },
         });
+        if (req.user) {
+            yield audit_service_1.AuditService.logChange('CREATE', 'Student', student.id, req.user.id, null, student);
+        }
         return res.status(201).json(new apiResponse_1.ApiResponse(201, student, 'Student created successfully'));
     }
     catch (error) {
@@ -115,6 +119,12 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
 exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { fullName, rollNumber, className, section, gender, email, dateOfBirth, bloodGroup, phone, parentName, parentPhone, address, admissionDate, profileImage } = req.body;
+    const oldStudent = yield prisma_1.default.student.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!oldStudent) {
+        throw new apiError_1.ApiError(404, 'Student not found');
+    }
     try {
         const student = yield prisma_1.default.student.update({
             where: { id: Number(id) },
@@ -135,6 +145,9 @@ exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
                 profileImage: profileImage || null,
             },
         });
+        if (req.user) {
+            yield audit_service_1.AuditService.logChange('UPDATE', 'Student', id, req.user.id, oldStudent, student);
+        }
         return res.status(200).json(new apiResponse_1.ApiResponse(200, student, 'Student updated successfully'));
     }
     catch (error) {
@@ -144,8 +157,17 @@ exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
 }));
 exports.deleteStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
+    const oldStudent = yield prisma_1.default.student.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!oldStudent) {
+        throw new apiError_1.ApiError(404, 'Student not found');
+    }
     yield prisma_1.default.student.delete({
         where: { id: Number(id) },
     });
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('DELETE', 'Student', id, req.user.id, oldStudent, null);
+    }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Student deleted successfully'));
 }));
