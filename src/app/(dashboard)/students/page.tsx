@@ -4,16 +4,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, FileText, Users, Filter, MoreVertical, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { 
-  selectAllStudents, 
-  addStudentThunk, 
-  updateStudentThunk, 
-  deleteStudentThunk,
-  fetchStudents
-} from '@/lib/features/studentsSlice';
+import { selectAllStudents, addStudentThunk, updateStudentThunk, deleteStudentThunk, fetchStudents } from '@/lib/features/studentsSlice';
 import { Student } from '@/types/models';
 import { selectAllMarks, fetchMarks } from '@/lib/features/marksSlice';
 import { selectAttendanceSummary, fetchAttendance } from '@/lib/features/attendanceSlice';
+import { selectClassesOverview, fetchClassesOverview } from '@/lib/features/classesSlice';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -31,14 +26,17 @@ export default function StudentsPage() {
   const attendanceSummary = useAppSelector(selectAttendanceSummary);
   const CLASSES = useAppSelector(selectClasses);
   const GENDERS = useAppSelector(selectGenders);
-  
+  const classesOverview = useAppSelector(selectClassesOverview);
+
   const loadingStudents = useAppSelector((state) => state.students.loading);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [classFilter, setClassFilter] = useState('');
+  const [sectionFilter, setSectionFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
+
   const {
     register,
     handleSubmit,
@@ -65,7 +63,7 @@ export default function StudentsPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
   // Marks modal state
   const [isMarksModalOpen, setIsMarksModalOpen] = useState(false);
   const [viewingMarksStudent, setViewingMarksStudent] = useState<Student | null>(null);
@@ -74,22 +72,55 @@ export default function StudentsPage() {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
     dispatch(fetchAttendance());
+    dispatch(fetchClassesOverview());
   }, [dispatch]);
+
+  // Get available sections for the selected class
+  const availableSections = useMemo(() => {
+    const allSectionsOption = { value: '', label: 'All Sections' };
+    if (!classFilter) return [allSectionsOption];
+    const classInfo = classesOverview.find(c => c.className === classFilter);
+    if (!classInfo) return [allSectionsOption];
+    return [
+      allSectionsOption,
+      ...classInfo.sections.map(s => ({ value: s.section, label: `Section ${s.section}` }))
+    ];
+  }, [classFilter, classesOverview]);
+
+  const classOptions = useMemo(() => {
+    return [
+      { value: '', label: 'All Classes' },
+      ...CLASSES
+    ];
+  }, [CLASSES]);
 
   const filteredStudents = useMemo(() => {
     let result = students;
+
+    // Filter by class
+    if (classFilter) {
+      result = result.filter(student => student.className === classFilter);
+    }
+
+    // Filter by section
+    if (sectionFilter) {
+      result = result.filter(student => student.section === sectionFilter);
+    }
+
+    // Filter by search query
     if (searchQuery) {
-      result = students.filter((student) => {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((student) => {
         const fullName = (student.fullName || '').toLowerCase();
-        const email = student.email ? student.email.toLowerCase() : '';
-        const stdId = student.studentId ? student.studentId.toLowerCase() : '';
-        return fullName.includes(searchQuery.toLowerCase()) ||
-               email.includes(searchQuery.toLowerCase()) ||
-               stdId.includes(searchQuery.toLowerCase());
+        const email = (student.email || '').toLowerCase();
+        const stdId = (student.studentId || '').toLowerCase();
+        return fullName.includes(query) ||
+               email.includes(query) ||
+               stdId.includes(query);
       });
     }
     return result;
-  }, [students, searchQuery]);
+  }, [students, searchQuery, classFilter, sectionFilter]);
 
   // Paginated students
   const paginatedStudents = useMemo(() => {
@@ -101,7 +132,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, classFilter, sectionFilter]);
 
   const studentMarks = useMemo(() => {
     if (!viewingMarksStudent) return [];
@@ -203,8 +234,8 @@ export default function StudentsPage() {
       </div>
 
       <Card className="border-slate-200/60 shadow-sm overflow-hidden flex flex-col p-0">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full sm:w-96">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col xl:flex-row items-center justify-between gap-4">
+          <div className="relative w-full xl:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text"
@@ -214,14 +245,46 @@ export default function StudentsPage() {
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 transition-standard focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/5 shadow-sm"
             />
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none gap-2">
-              <Filter size={14} />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm" className="p-2 aspect-square">
-              <MoreVertical size={14} />
-            </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+            <div className="w-full sm:w-44">
+              <Select
+                options={classOptions}
+                value={classFilter}
+                onChange={(e) => {
+                  setClassFilter(e.target.value);
+                  setSectionFilter(''); // Reset section when class changes
+                }}
+                className="bg-white"
+              />
+            </div>
+            <div className="w-full sm:w-44">
+              <Select
+                options={availableSections}
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+                disabled={!classFilter}
+                className="bg-white"
+              />
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {(classFilter || sectionFilter || searchQuery) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setClassFilter('');
+                    setSectionFilter('');
+                    setSearchQuery('');
+                  }}
+                  className="text-slate-500 hover:text-red-600 font-bold text-[11px] uppercase tracking-wider"
+                >
+                  Clear Filters
+                </Button>
+              )}
+              <Button variant="outline" size="sm" className="p-2 aspect-square">
+                <MoreVertical size={14} />
+              </Button>
+            </div>
           </div>
         </div>
 
