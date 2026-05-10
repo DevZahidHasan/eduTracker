@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 import { Mark } from '@/types/models';
+import api from '@/lib/api';
 
 export interface MarksState {
   data: Mark[];
@@ -16,134 +17,62 @@ const initialState: MarksState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchMarks = createAsyncThunk(
   'marks/fetchMarks',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/marks`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch marks');
-      }
-      const json = await response.json();
-      return json.data as Mark[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch marks');
+      const response = await api.get('/marks');
+      return response.data.data as Mark[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch marks');
     }
   }
 );
 
 export const addMarksThunk = createAsyncThunk(
   'marks/addMarks',
-  async (mark: Partial<Mark>, { rejectWithValue, getState }) => {
+  async (mark: Partial<Mark>, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/marks`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ...mark, studentId: Number(mark.studentId) }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add mark');
-      }
-      const json = await response.json();
-      return json.data as Mark;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add mark');
+      const response = await api.post('/marks', { ...mark, studentId: Number(mark.studentId) });
+      return response.data.data as Mark;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add mark');
     }
   }
 );
 
 export const addMarksBulkThunk = createAsyncThunk(
   'marks/addMarksBulk',
-  async (records: Partial<Mark>[], { rejectWithValue, getState }) => {
+  async (records: Partial<Mark>[], { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/marks/bulk`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ records }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save bulk marks');
-      }
-
-      const json = await response.json();
-      return json.data as Mark[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to save bulk marks');
+      const response = await api.post('/marks/bulk', { records });
+      return response.data.data as Mark[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save bulk marks');
     }
   }
 );
 
 export const finalizeMarksThunk = createAsyncThunk(
   'marks/finalizeMarks',
-  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue, getState }) => {
+  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/marks/finalize`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}`
-        },
-        body: JSON.stringify({ className, subject, examType, date }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to finalize marks');
-      }
-
-      return await response.json();
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to finalize marks');
+      const response = await api.post('/marks/finalize', { className, subject, examType, date });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to finalize marks');
     }
   }
 );
 
 export const unlockMarksThunk = createAsyncThunk(
   'marks/unlockMarks',
-  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue, getState }) => {
+  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/marks/unlock`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}`
-        },
-        body: JSON.stringify({ className, subject, examType, date }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to unlock marks');
-      }
-
-      return await response.json();
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to unlock marks');
+      const response = await api.post('/marks/unlock', { className, subject, examType, date });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to unlock marks');
     }
   }
 );

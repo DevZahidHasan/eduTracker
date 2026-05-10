@@ -70,6 +70,10 @@ export const authSlice = createSlice({
       state.isAuthenticated = true;
       saveState(state);
     },
+    updateToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      saveState(state);
+    },
     logout: (state) => {
       state.user = null;
       state.role = null;

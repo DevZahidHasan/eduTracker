@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
+import api from '@/lib/api';
 
 export interface ConfigOption {
   value: string;
@@ -42,111 +43,62 @@ const initialState: ConfigState = {
   ],
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchConfig = createAsyncThunk(
   'config/fetchConfig',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/config`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch application configuration');
-      }
-      const json = await response.json();
-      return json.data as AppConfig;
+      const response = await api.get('/config');
+      return response.data.data as AppConfig;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch configuration');
     }
   }
 );
 
 export const addClassThunk = createAsyncThunk(
   'config/addClass',
-  async (name: string, { rejectWithValue, getState }) => {
+  async (name: string, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/config/classes`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify({ name })
-      });
-      if (!response.ok) throw new Error('Failed to add class');
-      return await response.json();
+      const response = await api.post('/config/classes', { name });
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to add class');
     }
   }
 );
 
 export const addSubjectThunk = createAsyncThunk(
   'config/addSubject',
-  async (name: string, { rejectWithValue, getState }) => {
+  async (name: string, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/config/subjects`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify({ name })
-      });
-      if (!response.ok) throw new Error('Failed to add subject');
-      return await response.json();
+      const response = await api.post('/config/subjects', { name });
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to add subject');
     }
   }
 );
 
 export const addExamTypeThunk = createAsyncThunk(
   'config/addExamType',
-  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue, getState }) => {
+  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/config/exam-types`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify({ name, baseMark })
-      });
-      if (!response.ok) throw new Error('Failed to add exam type');
-      return await response.json();
+      const response = await api.post('/config/exam-types', { name, baseMark });
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to add exam type');
     }
   }
 );
 
 export const updateExamTypeThunk = createAsyncThunk(
   'config/updateExamType',
-  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue, getState }) => {
+  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/config/exam-types/${name}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify({ baseMark })
-      });
-      if (!response.ok) throw new Error('Failed to update exam type');
-      return await response.json();
+      const response = await api.patch(`/config/exam-types/${name}`, { baseMark });
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to update exam type');
     }
   }
 );

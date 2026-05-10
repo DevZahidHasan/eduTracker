@@ -4,7 +4,7 @@ import { ApiError } from '../utils/apiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import prisma from '../prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'access_secret_key';
 
 import { Role } from '@prisma/client';
 
@@ -28,7 +28,7 @@ export const authMiddleware = asyncHandler(
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+      const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as { id: number };
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
         select: {

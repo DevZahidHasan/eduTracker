@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 import { Attendance, AttendanceStatus } from '@/types/models';
+import api from '@/lib/api';
 
 export interface AttendanceSummary {
   PRESENT: number;
@@ -25,56 +26,26 @@ const initialState: AttendanceState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchAttendance = createAsyncThunk(
   'attendance/fetchAttendance',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/attendance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch attendance');
-      }
-      const json = await response.json();
-      return json.data as Attendance[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch attendance');
+      const response = await api.get('/attendance');
+      return response.data.data as Attendance[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch attendance');
     }
   }
 );
 
 export const addDailyRecordsBulkThunk = createAsyncThunk(
   'attendance/addDailyRecordsBulk',
-  async (records: Partial<Attendance>[], { rejectWithValue, getState }) => {
+  async (records: Partial<Attendance>[], { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/attendance/bulk`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ records }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save bulk attendance');
-      }
-
-      const json = await response.json();
-      return json.data as Attendance[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to save bulk attendance');
+      const response = await api.post('/attendance/bulk', { records });
+      return response.data.data as Attendance[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save bulk attendance');
     }
   }
 );

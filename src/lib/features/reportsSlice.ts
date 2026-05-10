@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { Student, Mark } from '@/types/models';
+import api from '@/lib/api';
 
 export interface StudentReport {
   student: Student;
@@ -57,86 +58,50 @@ const initialState: ReportsState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchStudentReport = createAsyncThunk(
   'reports/fetchStudentReport',
-  async ({ studentId, examType }: { studentId: number, examType: string }, { rejectWithValue, getState }) => {
+  async ({ studentId, examType }: { studentId: number, examType: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/reports/student?studentId=${studentId}&examType=${examType}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch student report');
-      const json = await response.json();
-      return json.data as StudentReport;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch student report');
+      const response = await api.get('/reports/student', { params: { studentId, examType } });
+      return response.data.data as StudentReport;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch student report');
     }
   }
 );
 
 export const updateRemarks = createAsyncThunk(
   'reports/updateRemarks',
-  async ({ studentId, examType, remarks }: { studentId: number, examType: string, remarks: string }, { rejectWithValue, getState }) => {
+  async ({ studentId, examType, remarks }: { studentId: number, examType: string, remarks: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/reports/remarks`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ studentId, examType, remarks }),
-      });
-      if (!response.ok) throw new Error('Failed to update remarks');
-      const json = await response.json();
-      return json.data;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update remarks');
+      const response = await api.post('/reports/remarks', { studentId, examType, remarks });
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update remarks');
     }
   }
 );
 
 export const fetchClassPerformance = createAsyncThunk(
   'reports/fetchClassPerformance',
-  async ({ className, examType }: { className: string, examType: string }, { rejectWithValue, getState }) => {
+  async ({ className, examType }: { className: string, examType: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/reports/performance?className=${className}&examType=${examType}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch class performance');
-      const json = await response.json();
-      return json.data as ClassPerformance;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch class performance');
+      const response = await api.get('/reports/performance', { params: { className, examType } });
+      return response.data.data as ClassPerformance;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch class performance');
     }
   }
 );
 
 export const fetchAttendanceSummary = createAsyncThunk(
   'reports/fetchAttendanceSummary',
-  async ({ className, startDate, endDate }: { className?: string, startDate?: string, endDate?: string }, { rejectWithValue, getState }) => {
+  async ({ className, startDate, endDate }: { className?: string, startDate?: string, endDate?: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      let url = `${API_URL}/reports/attendance?`;
-      if (className) url += `className=${className}&`;
-      if (startDate) url += `startDate=${startDate}&`;
-      if (endDate) url += `endDate=${endDate}&`;
-      
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch attendance summary');
-      const json = await response.json();
-      return json.data as AttendanceSummary[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch attendance summary');
+      const response = await api.get('/reports/attendance', { params: { className, startDate, endDate } });
+      return response.data.data as AttendanceSummary[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch attendance summary');
     }
   }
 );

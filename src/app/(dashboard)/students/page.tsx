@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses, selectGenders } from '@/lib/features/configSlice';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -302,14 +303,40 @@ export default function StudentsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loadingStudents ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                      <span className="text-slate-400 font-medium">Fetching students...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-slate-50">
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-12" /></td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-40" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-24 rounded-lg" /></td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Skeleton className="h-1.5 w-16 rounded-full" />
+                        <Skeleton className="h-3 w-8" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                        <Skeleton className="h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : paginatedStudents.length > 0 ? (
                 paginatedStudents.map((student) => {
                   const studentAttendance = attendanceSummary[student.id];

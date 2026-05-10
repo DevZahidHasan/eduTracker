@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { loginSchema } from '@/lib/validations'; // We will use a shared schema or add registerSchema
 import { z } from 'zod';
+import api from '@/lib/api';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -22,8 +22,6 @@ const registerSchema = z.object({
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -50,17 +48,10 @@ export default function RegisterPage() {
     setServerError('');
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await api.post('/auth/register', data);
+      const result = response.data;
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.message || 'Registration failed');
       }
 
@@ -68,8 +59,8 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (err: unknown) {
-      setServerError((err as Error).message || 'An error occurred during registration');
+    } catch (err: any) {
+      setServerError(err.response?.data?.message || err.message || 'An error occurred during registration');
     } finally {
       setIsLoading(false);
     }

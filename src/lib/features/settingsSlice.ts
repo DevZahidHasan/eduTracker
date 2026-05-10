@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { SchoolProfile, SystemSettings, User } from '@/types/models';
+import api from '@/lib/api';
 
 export interface SettingsState {
   schoolProfile: SchoolProfile | null;
@@ -26,155 +27,98 @@ const initialState: SettingsState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchSchoolProfile = createAsyncThunk(
   'settings/fetchSchoolProfile',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/profile`, {
-        headers: { 'Authorization': `Bearer ${state.auth.token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      const json = await response.json();
-      return json.data as SchoolProfile;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.get('/settings/profile');
+      return response.data.data as SchoolProfile;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
     }
   }
 );
 
 export const updateSchoolProfileThunk = createAsyncThunk(
   'settings/updateSchoolProfile',
-  async (profile: Partial<SchoolProfile>, { rejectWithValue, getState }) => {
+  async (profile: Partial<SchoolProfile>, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/profile`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify(profile)
-      });
-      if (!response.ok) throw new Error('Failed to update profile');
-      const json = await response.json();
-      return json.data as SchoolProfile;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.post('/settings/profile', profile);
+      return response.data.data as SchoolProfile;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
     }
   }
 );
 
 export const fetchSystemSettings = createAsyncThunk(
   'settings/fetchSystemSettings',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/system`, {
-        headers: { 'Authorization': `Bearer ${state.auth.token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch settings');
-      const json = await response.json();
-      return json.data as SystemSettings;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.get('/settings/system');
+      return response.data.data as SystemSettings;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch settings');
     }
   }
 );
 
 export const updateSystemSettingsThunk = createAsyncThunk(
   'settings/updateSystemSettings',
-  async (settings: SystemSettings, { rejectWithValue, getState }) => {
+  async (settings: SystemSettings, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/system`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify({ settings })
-      });
-      if (!response.ok) throw new Error('Failed to update settings');
+      await api.post('/settings/system', { settings });
       return settings;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update settings');
     }
   }
 );
 
 export const fetchUsers = createAsyncThunk(
   'settings/fetchUsers',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/users`, {
-        headers: { 'Authorization': `Bearer ${state.auth.token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch users');
-      const json = await response.json();
-      return json.data as User[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.get('/settings/users');
+      return response.data.data as User[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
     }
   }
 );
 
 export const updateUserThunk = createAsyncThunk(
   'settings/updateUser',
-  async (user: Partial<User>, { rejectWithValue, getState }) => {
+  async (user: Partial<User>, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/users/${user.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${state.auth.token}` 
-        },
-        body: JSON.stringify(user)
-      });
-      if (!response.ok) throw new Error('Failed to update user');
-      const json = await response.json();
-      return json.data as User;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.put(`/settings/users/${user.id}`, user);
+      return response.data.data as User;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update user');
     }
   }
 );
 
 export const deleteUserThunk = createAsyncThunk(
   'settings/deleteUser',
-  async (userId: number, { rejectWithValue, getState }) => {
+  async (userId: number, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${state.auth.token}` }
-      });
-      if (!response.ok) throw new Error('Failed to delete user');
+      await api.delete(`/settings/users/${userId}`);
       return userId;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete user');
     }
   }
 );
 
 export const triggerEndOfDayThunk = createAsyncThunk(
   'settings/triggerEndOfDay',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const response = await fetch(`${API_URL}/settings/end-of-day`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${state.auth.token}` }
-      });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.message || 'Failed to trigger end of day');
-      return json.message;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Error');
+      const response = await api.post('/settings/end-of-day');
+      return response.data.message;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to trigger end of day');
     }
   }
 );

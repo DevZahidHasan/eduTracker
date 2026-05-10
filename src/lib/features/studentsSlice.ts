@@ -1,12 +1,15 @@
 import { createSlice, PayloadAction, createSelector, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 import { Student } from '@/types/models';
+import api from '@/lib/api';
 
 export interface StudentsState {
   list: Student[];
   selectedStudent: Student | null;
   loading: boolean;
   error: string | null;
+  // For optimistic rollbacks
+  previousList: Student[] | null;
 }
 
 const initialState: StudentsState = {
@@ -14,110 +17,53 @@ const initialState: StudentsState = {
   selectedStudent: null,
   loading: false,
   error: null,
+  previousList: null,
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const fetchStudents = createAsyncThunk(
   'students/fetchStudents',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/students`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch students');
-      }
-      const json = await response.json();
-      return json.data as Student[];
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch students');
+      const response = await api.get('/students');
+      return response.data.data as Student[];
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch students');
     }
   }
 );
 
 export const addStudentThunk = createAsyncThunk(
   'students/addStudent',
-  async (student: Partial<Student>, { rejectWithValue, getState }) => {
+  async (student: Partial<Student>, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/students`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(student),
-      });
-      
-      const json = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(json.message || 'Failed to add student');
-      }
-
-      return json.data as Student;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add student');
+      const response = await api.post('/students', student);
+      return response.data.data as Student;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add student');
     }
   }
 );
 
 export const updateStudentThunk = createAsyncThunk(
   'students/updateStudent',
-  async (student: Student, { rejectWithValue, getState }) => {
+  async (student: Student, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/students/${student.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(student),
-      });
-      
-      const json = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(json.message || 'Failed to update student');
-      }
-
-      return json.data as Student;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update student');
+      const response = await api.put(`/students/${student.id}`, student);
+      return response.data.data as Student;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update student');
     }
   }
 );
 
 export const deleteStudentThunk = createAsyncThunk(
   'students/deleteStudent',
-  async (id: number, { rejectWithValue, getState }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      
-      const response = await fetch(`${API_URL}/students/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete student');
-      }
+      await api.delete(`/students/${id}`);
       return id;
-    } catch (error: unknown) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete student');
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete student');
     }
   }
 );
@@ -157,30 +103,43 @@ const studentsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      // Update Student
-      .addCase(updateStudentThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      // Update Student (Optimistic)
+      .addCase(updateStudentThunk.pending, (state, action) => {
+        state.previousList = [...state.list];
+        const index = state.list.findIndex((s) => s.id === action.meta.arg.id);
+        if (index !== -1) {
+          state.list[index] = { ...state.list[index], ...action.meta.arg };
+        }
       })
       .addCase(updateStudentThunk.fulfilled, (state, action) => {
         state.loading = false;
+        state.previousList = null;
         const index = state.list.findIndex((s) => s.id === action.payload.id);
         if (index !== -1) {
           state.list[index] = action.payload;
-        }
-        if (state.selectedStudent?.id === action.payload.id) {
-          state.selectedStudent = action.payload;
         }
       })
       .addCase(updateStudentThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        if (state.previousList) {
+          state.list = state.previousList;
+          state.previousList = null;
+        }
       })
-      // Delete Student
-      .addCase(deleteStudentThunk.fulfilled, (state, action) => {
-        state.list = state.list.filter((s) => s.id !== action.payload);
-        if (state.selectedStudent?.id === action.payload) {
-          state.selectedStudent = null;
+      // Delete Student (Optimistic)
+      .addCase(deleteStudentThunk.pending, (state, action) => {
+        state.previousList = [...state.list];
+        state.list = state.list.filter((s) => s.id !== action.meta.arg);
+      })
+      .addCase(deleteStudentThunk.fulfilled, (state) => {
+        state.previousList = null;
+      })
+      .addCase(deleteStudentThunk.rejected, (state, action) => {
+        state.error = action.payload as string;
+        if (state.previousList) {
+          state.list = state.previousList;
+          state.previousList = null;
         }
       });
   },

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
+import api from '@/lib/api';
 
 export interface AiInsightsState {
   result: any;
@@ -13,32 +14,14 @@ const initialState: AiInsightsState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const generateInsights = createAsyncThunk(
   'aiInsights/generateInsights',
-  async (payload: any, { rejectWithValue, getState }) => {
+  async (payload: any, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-
-      const response = await fetch(`${API_URL}/ai-insights`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate insights');
-      }
-
-      const json = await response.json();
-      return json.data.result;
+      const response = await api.post('/ai-insights', payload);
+      return response.data.data.result;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to generate insights');
+      return rejectWithValue(error.response?.data?.message || 'Failed to generate insights');
     }
   }
 );

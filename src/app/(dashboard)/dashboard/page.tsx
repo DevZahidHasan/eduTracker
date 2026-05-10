@@ -32,26 +32,32 @@ import { selectClasses } from '@/lib/features/configSlice';
 import { generateInsights } from '@/lib/features/aiInsightsSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar
-} from 'recharts';
+import { Skeleton } from '@/components/ui/Skeleton';
+import dynamic from 'next/dynamic';
+
+// Lazy load Recharts components
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false });
+const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
+const PieChart = dynamic(() => import('recharts').then(mod => mod.PieChart), { ssr: false });
+const Pie = dynamic(() => import('recharts').then(mod => mod.Pie), { ssr: false });
+const Cell = dynamic(() => import('recharts').then(mod => mod.Cell), { ssr: false });
+const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false });
 
 const PIE_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
+  const loadingStudents = useAppSelector((state) => state.students.loading);
+  const loadingMarks = useAppSelector((state) => state.marks.loading);
+  const loadingAttendance = useAppSelector((state) => state.attendance.loading);
+  const isInitialLoading = loadingStudents || loadingMarks || loadingAttendance;
   
   useEffect(() => {
     dispatch(fetchStudents());
@@ -169,73 +175,90 @@ export default function DashboardPage() {
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <Users size={80} />
-          </div>
-          <CardContent className="p-6">
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Total Enrollment</p>
-            <div className="flex items-end gap-3">
-              <h2 className="text-4xl font-black text-slate-900 leading-none">{totalStudents}</h2>
-              <span className="text-emerald-500 text-xs font-black mb-1 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full">+4%</span>
-            </div>
-            <div className="mt-6 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-primary w-2/3 rounded-full"></div>
-            </div>
-          </CardContent>
-        </Card>
+        {isInitialLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="border-none shadow-xl shadow-slate-200/40 bg-white">
+              <CardContent className="p-6 space-y-4">
+                <Skeleton className="h-3 w-24" />
+                <div className="flex items-end gap-3">
+                  <Skeleton className="h-10 w-16" />
+                  <Skeleton className="h-5 w-10 rounded-full" />
+                </div>
+                <Skeleton className="h-1 w-full rounded-full" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <Users size={80} />
+              </div>
+              <CardContent className="p-6">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Total Enrollment</p>
+                <div className="flex items-end gap-3">
+                  <h2 className="text-4xl font-black text-slate-900 leading-none">{totalStudents}</h2>
+                  <span className="text-emerald-500 text-xs font-black mb-1 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full">+4%</span>
+                </div>
+                <div className="mt-6 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary w-2/3 rounded-full"></div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <LayoutGrid size={80} />
-          </div>
-          <CardContent className="p-6">
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Active Classes</p>
-            <div className="flex items-end gap-3">
-              <h2 className="text-4xl font-black text-slate-900 leading-none">{totalClasses}</h2>
-              <span className="text-slate-500 text-xs font-black mb-1 flex items-center bg-slate-100 px-2 py-0.5 rounded-full">Operational</span>
-            </div>
-            <div className="mt-6 flex -space-x-2">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-200"></div>
-              ))}
-              <div className="h-6 w-6 rounded-full border-2 border-white bg-primary flex items-center justify-center text-[8px] font-black text-white">+2</div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <LayoutGrid size={80} />
+              </div>
+              <CardContent className="p-6">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Active Classes</p>
+                <div className="flex items-end gap-3">
+                  <h2 className="text-4xl font-black text-slate-900 leading-none">{totalClasses}</h2>
+                  <span className="text-slate-500 text-xs font-black mb-1 flex items-center bg-slate-100 px-2 py-0.5 rounded-full">Operational</span>
+                </div>
+                <div className="mt-6 flex -space-x-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-200"></div>
+                  ))}
+                  <div className="h-6 w-6 rounded-full border-2 border-white bg-primary flex items-center justify-center text-[8px] font-black text-white">+2</div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <Calendar size={80} />
-          </div>
-          <CardContent className="p-6">
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Daily Attendance</p>
-            <div className="flex items-end gap-3">
-              <h2 className="text-4xl font-black text-slate-900 leading-none">{attendanceRate}%</h2>
-              <span className="text-amber-500 text-xs font-black mb-1 flex items-center bg-amber-50 px-2 py-0.5 rounded-full">-0.8%</span>
-            </div>
-            <div className="mt-6 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <span>Goal: 95%</span>
-              <span className="text-primary">{attendanceRate}% Current</span>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <Calendar size={80} />
+              </div>
+              <CardContent className="p-6">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Daily Attendance</p>
+                <div className="flex items-end gap-3">
+                  <h2 className="text-4xl font-black text-slate-900 leading-none">{attendanceRate}%</h2>
+                  <span className="text-amber-500 text-xs font-black mb-1 flex items-center bg-amber-50 px-2 py-0.5 rounded-full">-0.8%</span>
+                </div>
+                <div className="mt-6 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Goal: 95%</span>
+                  <span className="text-primary">{attendanceRate}% Current</span>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <TrendingUp size={80} />
-          </div>
-          <CardContent className="p-6">
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Avg Performance</p>
-            <div className="flex items-end gap-3">
-              <h2 className="text-4xl font-black text-slate-900 leading-none">{averageMarks}%</h2>
-              <span className="text-emerald-500 text-xs font-black mb-1 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full">+2.1%</span>
-            </div>
-            <div className="mt-6 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${averageMarks}%` }}></div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-none shadow-xl shadow-slate-200/40 bg-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <TrendingUp size={80} />
+              </div>
+              <CardContent className="p-6">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Avg Performance</p>
+                <div className="flex items-end gap-3">
+                  <h2 className="text-4xl font-black text-slate-900 leading-none">{averageMarks}%</h2>
+                  <span className="text-emerald-500 text-xs font-black mb-1 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full">+2.1%</span>
+                </div>
+                <div className="mt-6 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${averageMarks}%` }}></div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -260,7 +283,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="px-6 pb-6">
               <div className="h-[360px] w-full mt-4">
-                {marksTrendData.length > 0 ? (
+                {isInitialLoading ? (
+                  <Skeleton className="h-full w-full rounded-3xl" />
+                ) : marksTrendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={marksTrendData}>
                       <defs>
@@ -425,20 +450,33 @@ export default function DashboardPage() {
 
           {/* Recent Activities Feed */}
           <Card className="border-none shadow-xl shadow-slate-200/40 bg-white">
-            <CardHeader className="px-6 pt-6 flex flex-row items-center justify-between border-b border-slate-50 pb-4">
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Recent Activity</CardTitle>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Real-time system updates</p>
-              </div>
-              <Button variant="ghost" size="sm" className="p-2 rounded-xl text-primary">
-                <Clock size={18} />
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-slate-50">
-                {recentActivities.length > 0 ? (
-                  recentActivities.map((act) => (
-                    <div key={act.id} className="p-6 hover:bg-slate-50/50 transition-standard group">
+              <CardHeader className="px-6 pt-6 flex flex-row items-center justify-between border-b border-slate-50 pb-4">
+                <div>
+                  <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Recent Activity</CardTitle>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Real-time system updates</p>
+                </div>
+                <Button variant="ghost" size="sm" className="p-2 rounded-xl text-primary">
+                  <Clock size={18} />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-50">
+                  {isInitialLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="p-6 flex gap-4">
+                        <Skeleton className="h-10 w-10 shrink-0 rounded-2xl" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex justify-between">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-3 w-12" />
+                          </div>
+                          <Skeleton className="h-3 w-48" />
+                        </div>
+                      </div>
+                    ))
+                  ) : recentActivities.length > 0 ? (
+                    recentActivities.map((act) => (
+                      <div key={act.id} className="p-6 hover:bg-slate-50/50 transition-standard group">
                       <div className="flex gap-4">
                         <div className={`h-10 w-10 shrink-0 rounded-2xl ${act.bg} ${act.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
                           {act.icon}

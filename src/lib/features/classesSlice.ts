@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 import { Student, Routine } from '@/types/models';
+import api from '@/lib/api';
 
 export interface ClassOverview {
   className: string;
@@ -55,104 +56,62 @@ const initialState: ClassesState = {
   error: null,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
 export const fetchClassesOverview = createAsyncThunk(
   'classes/fetchOverview',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/classes/overview`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch classes overview');
-      const json = await response.json();
-      return json.data as ClassOverview[];
+      const response = await api.get('/classes/overview');
+      return response.data.data as ClassOverview[];
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch classes overview');
     }
   }
 );
 
 export const fetchSectionDetail = createAsyncThunk(
   'classes/fetchSectionDetail',
-  async ({ className, section }: { className: string, section: string }, { rejectWithValue, getState }) => {
+  async ({ className, section }: { className: string, section: string }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/classes/${className}/${section}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch section detail');
-      const json = await response.json();
-      return json.data as SectionDetail;
+      const response = await api.get(`/classes/${className}/${section}`);
+      return response.data.data as SectionDetail;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch section detail');
     }
   }
 );
 
 export const fetchClassAnalytics = createAsyncThunk(
   'classes/fetchAnalytics',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/classes/analytics`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Failed to fetch class analytics');
-      const json = await response.json();
-      return json.data as ClassAnalytics;
+      const response = await api.get('/classes/analytics');
+      return response.data.data as ClassAnalytics;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch class analytics');
     }
   }
 );
 
 export const updateRoutine = createAsyncThunk(
   'classes/updateRoutine',
-  async ({ className, section, routines }: { className: string, section: string, routines: any[] }, { rejectWithValue, getState }) => {
+  async ({ className, section, routines }: { className: string, section: string, routines: any[] }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/classes/${className}/${section}/routine`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ routines }),
-      });
-      if (!response.ok) throw new Error('Failed to update routine');
-      const json = await response.json();
-      return json.data;
+      const response = await api.post(`/classes/${className}/${section}/routine`, { routines });
+      return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to update routine');
     }
   }
 );
 
 export const updateSection = createAsyncThunk(
   'classes/updateSection',
-  async ({ className, section, teacherId }: { className: string, section: string, teacherId: number | null }, { rejectWithValue, getState }) => {
+  async ({ className, section, teacherId }: { className: string, section: string, teacherId: number | null }, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState;
-      const token = state.auth.token;
-      const response = await fetch(`${API_URL}/classes/${className}/${section}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ teacherId }),
-      });
-      if (!response.ok) throw new Error('Failed to update section');
-      const json = await response.json();
-      return json.data;
+      const response = await api.patch(`/classes/${className}/${section}`, { teacherId });
+      return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || 'Failed to update section');
     }
   }
 );

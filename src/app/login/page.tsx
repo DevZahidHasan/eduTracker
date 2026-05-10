@@ -14,8 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { useAppDispatch } from '@/lib/hooks';
 import { login } from '@/lib/features/authSlice';
 import { loginSchema, LoginFormData } from '@/lib/validations';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import api from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,17 +39,14 @@ export default function LoginPage() {
     setServerError('');
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      const response = await api.post('/auth/login', {
+        email: data.email,
+        password: data.password,
       });
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.message || 'Invalid credentials');
       }
 
@@ -70,8 +66,8 @@ export default function LoginPage() {
       );
 
       router.push('/dashboard');
-    } catch (err: unknown) {
-      setServerError((err as Error).message || 'An error occurred during login');
+    } catch (err: any) {
+      setServerError(err.response?.data?.message || err.message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
