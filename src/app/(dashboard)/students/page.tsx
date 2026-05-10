@@ -9,9 +9,9 @@ import {
   addStudentThunk, 
   updateStudentThunk, 
   deleteStudentThunk,
-  fetchStudents,
-  Student
+  fetchStudents
 } from '@/lib/features/studentsSlice';
+import { Student } from '@/types/models';
 import { selectAllMarks, fetchMarks } from '@/lib/features/marksSlice';
 import { selectAttendanceSummary, fetchAttendance } from '@/lib/features/attendanceSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -375,7 +375,7 @@ export default function StudentsPage() {
                 <label className="text-sm font-semibold text-slate-700 ml-0.5">Gender *</label>
                 <select
                   value={currentStudent.gender || 'MALE'}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, gender: e.target.value })}
+                  onChange={(e) => setCurrentStudent({ ...currentStudent, gender: e.target.value as any })}
                   required
                   className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard shadow-sm"
                 >

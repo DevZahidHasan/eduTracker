@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAppDispatch } from '@/lib/hooks';
-import { login, Role } from '@/lib/features/authSlice';
+import { login } from '@/lib/features/authSlice';
+import { Role } from '@/types/models';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -53,11 +54,12 @@ export default function LoginPage() {
       dispatch(
         login({
           user: {
-            id: user.id.toString(),
+            id: Number(user.id),
             name: user.name || user.email.split('@')[0],
             email: user.email,
+            role: user.role.toUpperCase() as Role
           },
-          role: user.role.toLowerCase() as Role,
+          role: user.role.toUpperCase() as Role,
           token: token,
         })
       );

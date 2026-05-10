@@ -22,7 +22,7 @@ import {
   addMarksBulkThunk,
   fetchMarks
 } from '@/lib/features/marksSlice';
-import { Mark, ExamType, Subject } from '@/types/models';
+import { Mark } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -38,8 +38,8 @@ export default function MarksPage() {
   const loadingMarks = useAppSelector((state) => state.marks.loading);
 
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | ''>('');
-  const [selectedExamType, setSelectedExamType] = useState<ExamType | ''>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [maxScore, setMaxScore] = useState<string>('100');
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,8 +131,8 @@ export default function MarksPage() {
       .filter(student => localMarks[student.id] !== '')
       .map(student => ({
         studentId: student.id,
-        subject: selectedSubject as Subject,
-        examType: selectedExamType as ExamType,
+        subject: selectedSubject,
+        examType: selectedExamType,
         score: Number(localMarks[student.id]),
         maxScore: Number(maxScore),
         date: selectedDate
@@ -212,7 +212,7 @@ export default function MarksPage() {
               <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <select
                 value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value as Subject)}
+                onChange={(e) => setSelectedSubject(e.target.value)}
                 disabled={!selectedClass}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none disabled:opacity-50"
               >
@@ -231,7 +231,7 @@ export default function MarksPage() {
               <ClipboardCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <select
                 value={selectedExamType}
-                onChange={(e) => setSelectedExamType(e.target.value as ExamType)}
+                onChange={(e) => setSelectedExamType(e.target.value)}
                 disabled={!selectedSubject}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none disabled:opacity-50"
               >

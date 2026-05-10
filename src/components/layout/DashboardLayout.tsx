@@ -28,18 +28,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
       {/* Sidebar Component */}
-      <Sidebar 
-        collapsed={collapsed} 
-        setCollapsed={setCollapsed} 
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-      />
+      <div className="print:hidden">
+        <Sidebar 
+          collapsed={collapsed} 
+          setCollapsed={setCollapsed} 
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+        />
+      </div>
 
       <div className="flex flex-1 flex-col overflow-hidden relative">
-        <TopNavbar onMenuClick={() => setIsMobileOpen(true)} />
+        <div className="print:hidden">
+          <TopNavbar onMenuClick={() => setIsMobileOpen(true)} />
+        </div>
         
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar print:p-0 print:overflow-visible">
+          <div className="mx-auto max-w-7xl print:max-w-none">
             {children}
           </div>
         </main>

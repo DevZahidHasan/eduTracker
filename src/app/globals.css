@@ -82,3 +82,27 @@
 .transition-standard {
   @apply transition-all duration-200 ease-in-out;
 }
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: white !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  #printable-report {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 15mm;
+    page-break-after: always;
+    background: white;
+  }
+}

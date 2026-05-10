@@ -46,6 +46,7 @@ model Student {
 
   marks          Mark[]
   attendances    Attendance[]
+  reports        AcademicReport[]
   class          SchoolClass  @relation(fields: [className], references: [name])
   classSection   ClassSection? @relation(fields: [className, section], references: [className, section])
 
@@ -138,8 +139,26 @@ model Subject {
 }
 
 model ExamType {
-  name  String @id
-  marks Mark[]
+  name    String           @id
+  marks   Mark[]
+  reports AcademicReport[]
+}
+
+model AcademicReport {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  examType     String
+  gpa          Float?
+  teacherRemarks String?
+  aiInsights   String?
+  attendanceRate Float?
+  generatedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examTypeObj ExamType @relation(fields: [examType], references: [name])
+
+  @@unique([studentId, examType])
 }
 
 model Attendance {
