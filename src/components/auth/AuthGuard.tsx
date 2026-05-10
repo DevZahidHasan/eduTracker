@@ -6,12 +6,14 @@ import { useAppSelector } from '@/lib/hooks';
 import { selectIsAuthenticated, selectRole } from '@/lib/features/authSlice';
 
 // Define route access map. 
-// If a route is not in this map, it defaults to requiring authentication but allowing all roles.
+// Roles are expected to be uppercase ('ADMIN', 'TEACHER', etc.) to match the store.
 const ROUTE_ROLES: Record<string, string[]> = {
-  '/dashboard': ['admin', 'teacher', 'parent', 'student'],
-  '/students': ['admin', 'teacher'],
-  '/attendance': ['admin', 'teacher'], // Perhaps students can view, but let's restrict for demonstration
-  '/marks': ['admin', 'teacher', 'student', 'parent'],
+  '/dashboard': ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
+  '/students': ['ADMIN', 'TEACHER'],
+  '/attendance': ['ADMIN', 'TEACHER'],
+  '/marks': ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT'],
+  '/settings': ['ADMIN'],
+  '/reports': ['ADMIN', 'TEACHER'],
 };
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -37,24 +39,28 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     // Role-based access control
+    const normalizedRole = role?.toUpperCase();
     const allowedRoles = ROUTE_ROLES[pathname as keyof typeof ROUTE_ROLES];
-    if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-      // If user doesn't have the required role, redirect them to dashboard (or an unauthorized page)
-      // If they are already on dashboard and not allowed (unlikely based on ROUTE_ROLES), this could loop, 
-      // but dashboard allows all roles.
+    
+    if (allowedRoles && (!normalizedRole || !allowedRoles.includes(normalizedRole))) {
+      // If user doesn't have the required role, redirect them to dashboard
       if (pathname !== '/dashboard') {
         router.push('/dashboard');
       }
     }
   }, [isAuthenticated, isMounted, pathname, role, router]);
 
-  // Show nothing or a loader while checking authentication status to prevent flashing protected content
+  // Show nothing while checking authentication status
   if (!isMounted || !isAuthenticated) {
     return null;
   }
 
+  const normalizedRole = role?.toUpperCase();
   const allowedRoles = ROUTE_ROLES[pathname as keyof typeof ROUTE_ROLES];
-  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
+  
+  if (allowedRoles && (!normalizedRole || !allowedRoles.includes(normalizedRole))) {
+    // If they are on dashboard but not allowed (fallback), show nothing
+    if (pathname === '/dashboard') return null;
     return null; // Will redirect in useEffect
   }
 

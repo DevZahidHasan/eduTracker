@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getConfig = void 0;
+exports.updateExamType = exports.createExamType = exports.createSubject = exports.createClass = exports.getConfig = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
@@ -26,13 +26,52 @@ exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
     const examTypes = yield prisma_1.default.examType.findMany({
         orderBy: { name: 'asc' }
     });
+    const teachers = yield prisma_1.default.user.findMany({
+        where: { role: 'TEACHER' },
+        select: { id: true, name: true, email: true },
+        orderBy: { name: 'asc' }
+    });
     // Map to the format the frontend expects (value/label)
     const config = {
         classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
         subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
-        examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name) }))
+        examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name), baseMark: e.baseMark })),
+        teachers: teachers.map(t => ({ value: t.id.toString(), label: t.name || t.email }))
     };
     return res.status(200).json(new apiResponse_1.ApiResponse(200, config, 'Configuration fetched successfully'));
+}));
+exports.createClass = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.body;
+    const newClass = yield prisma_1.default.schoolClass.create({
+        data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+    });
+    return res.status(201).json(new apiResponse_1.ApiResponse(201, newClass, 'Class created successfully'));
+}));
+exports.createSubject = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.body;
+    const subject = yield prisma_1.default.subject.create({
+        data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+    });
+    return res.status(201).json(new apiResponse_1.ApiResponse(201, subject, 'Subject created successfully'));
+}));
+exports.createExamType = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name, baseMark } = req.body;
+    const examType = yield prisma_1.default.examType.create({
+        data: {
+            name: name.toUpperCase().replace(/\s+/g, '_'),
+            baseMark: baseMark ? Number(baseMark) : 100
+        }
+    });
+    return res.status(201).json(new apiResponse_1.ApiResponse(201, examType, 'Exam type created successfully'));
+}));
+exports.updateExamType = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.params;
+    const { baseMark } = req.body;
+    const examType = yield prisma_1.default.examType.update({
+        where: { name },
+        data: { baseMark: Number(baseMark) }
+    });
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, examType, 'Exam type updated successfully'));
 }));
 function formatLabel(str) {
     // Convert UPPER_CASE to Title Case (e.g. CLASS_1 -> Class 1)

@@ -28,7 +28,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
       {/* Sidebar Component */}
-      <div className="print:hidden">
+      <div className="print:hidden h-full">
         <Sidebar 
           collapsed={collapsed} 
           setCollapsed={setCollapsed} 

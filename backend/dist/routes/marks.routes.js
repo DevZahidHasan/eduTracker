@@ -2,9 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const marks_controller_1 = require("../controllers/marks.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
 router.get('/', marks_controller_1.getMarks);
 router.post('/bulk', marks_controller_1.bulkCreateMarks);
+router.get('/lock-status', marks_controller_1.checkMarkLock);
+router.post('/finalize', marks_controller_1.finalizeMarks);
+router.post('/unlock', marks_controller_1.unlockMarks);
 router.get('/:id', marks_controller_1.getMarkById);
 router.post('/', marks_controller_1.createMark);
 router.put('/:id', marks_controller_1.updateMark);

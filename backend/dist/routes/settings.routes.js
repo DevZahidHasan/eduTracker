@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const settings_controller_1 = require("../controllers/settings.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
+router.get('/profile', settings_controller_1.getSchoolProfile);
+router.post('/profile', settings_controller_1.updateSchoolProfile);
+router.get('/system', settings_controller_1.getSystemSettings);
+router.post('/system', settings_controller_1.updateSystemSettings);
+router.get('/users', settings_controller_1.getUsers);
+router.put('/users/:id', settings_controller_1.updateUser);
+router.delete('/users/:id', settings_controller_1.deleteUser);
+router.post('/end-of-day', settings_controller_1.triggerEndOfDay);
+exports.default = router;

@@ -5,35 +5,39 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Lock, Mail, UserCheck } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useAppDispatch } from '@/lib/hooks';
 import { login } from '@/lib/features/authSlice';
-import { Role } from '@/types/models';
+import { loginSchema, LoginFormData } from '@/lib/validations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role | ''>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password || !role) {
-      setError('Please fill in all fields');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setError('');
+    setServerError('');
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -41,7 +45,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
       const result = await response.json();
@@ -58,16 +62,16 @@ export default function LoginPage() {
             id: Number(user.id),
             name: user.name || user.email.split('@')[0],
             email: user.email,
-            role: user.role.toUpperCase() as Role
+            role: user.role.toUpperCase() as any
           },
-          role: user.role.toUpperCase() as Role,
+          role: user.role.toUpperCase() as any,
           token: token,
         })
       );
 
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError((err as Error).message || 'An error occurred during login');
+      setServerError((err as Error).message || 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -96,70 +100,63 @@ export default function LoginPage() {
         </CardHeader>
         
         <CardContent className="px-4 sm:px-6 pb-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
-              {error && (
+              {serverError && (
                 <div className="p-4 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
                   <div className="h-5 w-5 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
-                  {error}
+                  {serverError}
                 </div>
               )}
               
               <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <Mail size={18} />
                 </div>
                 <Input
                   label="Email Address"
                   type="email"
                   placeholder="e.g. admin@school.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
+                  error={errors.email?.message}
                   className="pl-11 h-12"
-                  required
                   disabled={isLoading}
                 />
               </div>
 
               <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard">
+                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <Lock size={18} />
                 </div>
                 <Input
                   label="Account Password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register('password')}
+                  error={errors.password?.message}
                   className="pl-11 h-12"
-                  required
                   disabled={isLoading}
                   autoComplete="current-password"
                 />
               </div>
               
-              <div className="flex flex-col gap-1.5 w-full relative group">
+              <div className="relative group">
                 <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10 pointer-events-none">
                   <UserCheck size={18} />
                 </div>
-                <label className="text-sm font-semibold text-slate-700 ml-0.5">
-                  Access Role
-                </label>
-                <select
-                  className="w-full h-12 px-11 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm font-medium focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard shadow-sm outline-none appearance-none cursor-pointer"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                  required
+                <Select
+                  label="Access Role"
+                  placeholder="Select access level"
+                  {...register('role')}
+                  error={errors.role?.message}
+                  className="pl-11 h-12"
                   disabled={isLoading}
-                >
-                  <option value="" disabled>Select access level</option>
-                  <option value="student">Student Portal</option>
-                  <option value="teacher">Staff / Teacher</option>
-                  <option value="admin">System Administrator</option>
-                </select>
-                <div className="absolute right-3.5 top-[38px] pointer-events-none text-slate-400">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3"></path></svg>
-                </div>
+                  options={[
+                    { value: 'STUDENT', label: 'Student Portal' },
+                    { value: 'TEACHER', label: 'Staff / Teacher' },
+                    { value: 'ADMIN', label: 'System Administrator' },
+                  ]}
+                />
               </div>
             </div>
 

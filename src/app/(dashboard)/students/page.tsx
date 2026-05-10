@@ -14,11 +14,15 @@ import {
 import { Student } from '@/types/models';
 import { selectAllMarks, fetchMarks } from '@/lib/features/marksSlice';
 import { selectAttendanceSummary, fetchAttendance } from '@/lib/features/attendanceSlice';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { selectClasses, selectGenders } from '@/lib/features/configSlice';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { studentSchema, StudentFormData } from '@/lib/validations';
 
 export default function StudentsPage() {
   const dispatch = useAppDispatch();
@@ -33,8 +37,31 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState<Partial<Student>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
   
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<StudentFormData>({
+    resolver: zodResolver(studentSchema),
+    defaultValues: {
+      fullName: '',
+      studentId: '',
+      rollNumber: '',
+      className: '',
+      section: '',
+      gender: 'MALE',
+      email: '',
+      phone: '',
+      parentName: '',
+      parentPhone: '',
+      address: '',
+      bloodGroup: '',
+    }
+  });
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -83,13 +110,45 @@ export default function StudentsPage() {
 
   const handleAddClick = () => {
     setIsEditing(false);
-    setCurrentStudent({ fullName: '', rollNumber: '', section: '', gender: 'MALE', email: '', studentId: '', className: '' });
+    setEditingId(null);
+    reset({
+      fullName: '',
+      studentId: '',
+      rollNumber: '',
+      className: '',
+      section: '',
+      gender: 'MALE',
+      email: '',
+      phone: '',
+      parentName: '',
+      parentPhone: '',
+      address: '',
+      bloodGroup: '',
+      dateOfBirth: '',
+      admissionDate: '',
+    });
     setIsModalOpen(true);
   };
 
   const handleEditClick = (student: Student) => {
     setIsEditing(true);
-    setCurrentStudent(student);
+    setEditingId(student.id);
+    reset({
+      fullName: student.fullName,
+      studentId: student.studentId,
+      rollNumber: student.rollNumber,
+      className: student.className,
+      section: student.section,
+      gender: student.gender as any,
+      email: student.email || '',
+      phone: student.phone || '',
+      parentName: student.parentName || '',
+      parentPhone: student.parentPhone || '',
+      address: student.address || '',
+      bloodGroup: student.bloodGroup || '',
+      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split('T')[0] : '',
+      admissionDate: student.admissionDate ? student.admissionDate.split('T')[0] : '',
+    });
     setIsModalOpen(true);
   };
 
@@ -107,21 +166,13 @@ export default function StudentsPage() {
     setIsMarksModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentStudent.fullName || !currentStudent.studentId || !currentStudent.rollNumber || !currentStudent.className || !currentStudent.section || !currentStudent.gender) {
-      toast.error('Please fill in all required fields marked with *');
-      return;
-    }
-
+  const onSubmit = async (data: StudentFormData) => {
     try {
-      if (isEditing && currentStudent.id) {
-        await dispatch(updateStudentThunk(currentStudent as Student)).unwrap();
+      if (isEditing && editingId) {
+        await dispatch(updateStudentThunk({ ...data, id: editingId } as Student)).unwrap();
         toast.success('Student profile updated successfully');
       } else {
-        await dispatch(addStudentThunk({
-          ...currentStudent,
-        } as Partial<Student>)).unwrap();
+        await dispatch(addStudentThunk(data as Partial<Student>)).unwrap();
         toast.success('New student added successfully');
       }
       setIsModalOpen(false);
@@ -351,7 +402,7 @@ export default function StudentsPage() {
         title={isEditing ? 'Update Student Profile' : 'Register New Student'}
         className="max-w-3xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-8 pb-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
           
           {/* Section 1: Student Information */}
           <div className="space-y-5">
@@ -366,42 +417,34 @@ export default function StudentsPage() {
                 <Input 
                   label="Full Name *"
                   placeholder="e.g. Johnathan Doe"
-                  value={currentStudent.fullName || ''}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, fullName: e.target.value })}
-                  required
+                  {...register('fullName')}
+                  error={errors.fullName?.message}
                 />
               </div>
-              <div className="flex flex-col gap-1.5 w-full">
-                <label className="text-sm font-semibold text-slate-700 ml-0.5">Gender *</label>
-                <select
-                  value={currentStudent.gender || 'MALE'}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, gender: e.target.value as any })}
-                  required
-                  className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard shadow-sm"
-                >
-                  <option value="" disabled>Select gender</option>
-                  {GENDERS.map((g) => (
-                    <option key={g.value} value={g.value}>{g.label}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Gender *"
+                placeholder="Select gender"
+                {...register('gender')}
+                error={errors.gender?.message}
+                options={GENDERS}
+              />
               <Input 
                 label="Date of Birth"
                 type="date"
-                value={currentStudent.dateOfBirth ? currentStudent.dateOfBirth.split('T')[0] : ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, dateOfBirth: e.target.value })}
+                {...register('dateOfBirth')}
+                error={errors.dateOfBirth?.message}
               />
               <Input 
                 label="Blood Group"
                 placeholder="e.g. O+"
-                value={currentStudent.bloodGroup || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, bloodGroup: e.target.value })}
+                {...register('bloodGroup')}
+                error={errors.bloodGroup?.message}
               />
               <Input 
                 label="Profile Image URL"
                 placeholder="https://images.unsplash.com/..."
-                value={currentStudent.profileImage || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, profileImage: e.target.value })}
+                {...register('profileImage' as any)}
+                error={(errors as any).profileImage?.message}
               />
             </div>
           </div>
@@ -418,44 +461,34 @@ export default function StudentsPage() {
               <Input 
                 label="Official Student ID *"
                 placeholder="STU-00000"
-                value={currentStudent.studentId || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, studentId: e.target.value })}
-                required
+                {...register('studentId')}
+                error={errors.studentId?.message}
               />
               <Input 
                 label="Class Roll Number *"
                 placeholder="e.g. 10"
-                value={currentStudent.rollNumber || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, rollNumber: e.target.value })}
-                required
+                {...register('rollNumber')}
+                error={errors.rollNumber?.message}
               />
-              <div className="flex flex-col gap-1.5 w-full">
-                <label className="text-sm font-semibold text-slate-700 ml-0.5">Assigned Class *</label>
-                <select
-                  value={currentStudent.className || ''}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, className: e.target.value })}
-                  required
-                  className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard shadow-sm"
-                >
-                  <option value="" disabled>Choose a class</option>
-                  {CLASSES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Assigned Class *"
+                placeholder="Choose a class"
+                {...register('className')}
+                error={errors.className?.message}
+                options={CLASSES}
+              />
               <Input 
                 label="Section/Group *"
                 placeholder="e.g. A"
-                value={currentStudent.section || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, section: e.target.value })}
-                required
+                {...register('section')}
+                error={errors.section?.message}
               />
               <div className="md:col-span-2">
                 <Input 
                   label="Admission Date"
                   type="date"
-                  value={currentStudent.admissionDate ? currentStudent.admissionDate.split('T')[0] : ''}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, admissionDate: e.target.value })}
+                  {...register('admissionDate')}
+                  error={errors.admissionDate?.message}
                 />
               </div>
             </div>
@@ -473,14 +506,14 @@ export default function StudentsPage() {
               <Input 
                 label="Parent/Guardian Name"
                 placeholder="Jane Doe"
-                value={currentStudent.parentName || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, parentName: e.target.value })}
+                {...register('parentName')}
+                error={errors.parentName?.message}
               />
               <Input 
                 label="Guardian Contact Number"
                 placeholder="+1 000-000-000"
-                value={currentStudent.parentPhone || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, parentPhone: e.target.value })}
+                {...register('parentPhone')}
+                error={errors.parentPhone?.message}
               />
             </div>
           </div>
@@ -498,21 +531,21 @@ export default function StudentsPage() {
                 label="Personal Email Address"
                 type="email"
                 placeholder="john@example.com"
-                value={currentStudent.email || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })}
+                {...register('email')}
+                error={errors.email?.message}
               />
               <Input 
                 label="Primary Phone Number"
                 placeholder="+1 000-000-000"
-                value={currentStudent.phone || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
+                {...register('phone')}
+                error={errors.phone?.message}
               />
               <div className="md:col-span-2">
                 <Input 
                   label="Residential Address"
                   placeholder="Complete street address, city, and zip"
-                  value={currentStudent.address || ''}
-                  onChange={(e) => setCurrentStudent({ ...currentStudent, address: e.target.value })}
+                  {...register('address')}
+                  error={errors.address?.message}
                 />
               </div>
             </div>

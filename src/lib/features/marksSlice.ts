@@ -98,7 +98,7 @@ export const addMarksBulkThunk = createAsyncThunk(
 
 export const finalizeMarksThunk = createAsyncThunk(
   'marks/finalizeMarks',
-  async ({ className, subject, examType }: { className: string, subject: string, examType: string }, { rejectWithValue, getState }) => {
+  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
       const response = await fetch(`${API_URL}/marks/finalize`, {
@@ -107,7 +107,7 @@ export const finalizeMarksThunk = createAsyncThunk(
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${state.auth.token}`
         },
-        body: JSON.stringify({ className, subject, examType }),
+        body: JSON.stringify({ className, subject, examType, date }),
       });
 
       if (!response.ok) {
@@ -118,6 +118,32 @@ export const finalizeMarksThunk = createAsyncThunk(
       return await response.json();
     } catch (error: unknown) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to finalize marks');
+    }
+  }
+);
+
+export const unlockMarksThunk = createAsyncThunk(
+  'marks/unlockMarks',
+  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/marks/unlock`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}`
+        },
+        body: JSON.stringify({ className, subject, examType, date }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to unlock marks');
+      }
+
+      return await response.json();
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to unlock marks');
     }
   }
 );

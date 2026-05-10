@@ -17,6 +17,7 @@ const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
+const email_service_1 = require("../services/email.service");
 exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, date, className } = req.query;
     const whereClause = {};
@@ -44,7 +45,7 @@ exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     return res.status(200).json(new apiResponse_1.ApiResponse(200, attendances, 'Attendance records fetched successfully'));
 }));
 exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { records } = req.body; // Array of { studentId, date, status }
+    const { records } = req.body;
     if (!records || !Array.isArray(records)) {
         throw new apiError_1.ApiError(400, 'Attendance records array is required');
     }
@@ -71,6 +72,10 @@ exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __
             },
         });
     }));
+    // Trigger parent notifications in background
+    results.forEach(record => {
+        (0, email_service_1.sendParentAttendanceNotification)(record.id).catch(err => console.error(`Failed to send notification for attendance ${record.id}:`, err));
+    });
     return res.status(200).json(new apiResponse_1.ApiResponse(200, results, 'Bulk attendance processed successfully'));
 }));
 exports.getAttendanceById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -88,11 +93,12 @@ exports.createAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
     }
     const attendance = yield prisma_1.default.attendance.create({
         data: {
-            studentId,
+            studentId: Number(studentId),
             date: date ? new Date(date) : undefined,
             status,
         },
     });
+    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
     return res.status(201).json(new apiResponse_1.ApiResponse(201, attendance, 'Attendance record created successfully'));
 }));
 exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -105,6 +111,7 @@ exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
             date: date ? new Date(date) : undefined,
         },
     });
+    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
     return res.status(200).json(new apiResponse_1.ApiResponse(200, attendance, 'Attendance record updated successfully'));
 }));
 exports.deleteAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -34,7 +34,8 @@ import {
   fetchConfig,
   addClassThunk,
   addSubjectThunk,
-  addExamTypeThunk
+  addExamTypeThunk,
+  updateExamTypeThunk
 } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -42,6 +43,9 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { User } from '@/types/models';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
 
 type TabId = 'profile' | 'academic' | 'users' | 'theme' | 'notifications' | 'security';
 
@@ -57,20 +61,33 @@ export default function SettingsPage() {
   const subjects = useAppSelector(selectSubjects);
   const examTypes = useAppSelector(selectExamTypes);
 
-  // Local State for Forms
-  const [profileData, setProfileData] = useState({
-    name: '', address: '', phone: '', email: '', academicYear: ''
+  // Forms
+  const {
+    register: registerProfile,
+    handleSubmit: handleSubmitProfile,
+    reset: resetProfile,
+    formState: { errors: profileErrors },
+  } = useForm<SchoolProfileFormData>({
+    resolver: zodResolver(schoolProfileSchema),
   });
+
   const [settingsData, setSettingsData] = useState<Record<string, string>>({});
   const [isTriggering, setIsTriggering] = useState(false);
 
   // Modal States
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<User> | null>(null);
-  const [academicModal, setAcademicModal] = useState<{ isOpen: boolean; type: 'class' | 'subject' | 'examType'; value: string }>({
+  const [academicModal, setAcademicModal] = useState<{ 
+    isOpen: boolean; 
+    type: 'class' | 'subject' | 'examType'; 
+    value: string;
+    baseMark?: number;
+    isEditing?: boolean;
+  }>({
     isOpen: false,
     type: 'class',
-    value: ''
+    value: '',
+    baseMark: 100
   });
 
   useEffect(() => {
@@ -83,7 +100,7 @@ export default function SettingsPage() {
   // Sync profile data
   useEffect(() => {
     if (schoolProfile) {
-      setProfileData({
+      resetProfile({
         name: schoolProfile.name || '',
         address: schoolProfile.address || '',
         phone: schoolProfile.phone || '',
@@ -91,7 +108,7 @@ export default function SettingsPage() {
         academicYear: schoolProfile.academicYear || ''
       });
     }
-  }, [schoolProfile]);
+  }, [schoolProfile, resetProfile]);
 
   // Sync settings data
   useEffect(() => {
@@ -100,9 +117,8 @@ export default function SettingsPage() {
     }
   }, [systemSettings]);
 
-  const handleProfileSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch(updateSchoolProfileThunk(profileData))
+  const onProfileSave = (data: SchoolProfileFormData) => {
+    dispatch(updateSchoolProfileThunk(data))
       .unwrap()
       .then(() => toast.success('School profile updated successfully'))
       .catch((err) => toast.error(err || 'Failed to update profile'));
@@ -162,27 +178,47 @@ export default function SettingsPage() {
 
   // Academic Handlers
   const handleAddAcademic = (type: 'class' | 'subject' | 'examType') => {
-    setAcademicModal({ isOpen: true, type, value: '' });
+    setAcademicModal({ isOpen: true, type, value: '', baseMark: 100, isEditing: false });
+  };
+
+  const handleEditExamType = (exam: { value: string, label: string, baseMark: number }) => {
+    setAcademicModal({ 
+      isOpen: true, 
+      type: 'examType', 
+      value: exam.label, 
+      baseMark: exam.baseMark,
+      isEditing: true 
+    });
   };
 
   const submitAcademic = (e: React.FormEvent) => {
     e.preventDefault();
-    const { type, value } = academicModal;
+    const { type, value, baseMark, isEditing } = academicModal;
     if (!value.trim()) return;
 
-    let thunk;
+    let thunk: any;
+    let payload: any = value;
+
     if (type === 'class') thunk = addClassThunk;
     else if (type === 'subject') thunk = addSubjectThunk;
-    else thunk = addExamTypeThunk;
+    else {
+      if (isEditing) {
+        thunk = updateExamTypeThunk;
+        payload = { name: value.toUpperCase().replace(/\s+/g, '_'), baseMark: baseMark || 100 };
+      } else {
+        thunk = addExamTypeThunk;
+        payload = { name: value, baseMark: baseMark || 100 };
+      }
+    }
 
-    dispatch(thunk(value))
+    dispatch(thunk(payload))
       .unwrap()
       .then(() => {
-        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added successfully`);
+        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} ${isEditing ? 'updated' : 'added'} successfully`);
         setAcademicModal({ ...academicModal, isOpen: false, value: '' });
         dispatch(fetchConfig());
       })
-      .catch((err) => toast.error(err || `Failed to add ${type}`));
+      .catch((err) => toast.error(err || `Failed to ${isEditing ? 'update' : 'add'} ${type}`));
   };
 
   const TABS: { id: TabId; label: string; icon: any }[] = [
@@ -231,47 +267,39 @@ export default function SettingsPage() {
                 <CardDescription>Manage the primary identity and contact details of your institution.</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <form onSubmit={handleProfileSave} className="space-y-6">
+                <form onSubmit={handleSubmitProfile(onProfileSave)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Institution Name</label>
+                    <Input 
+                      label="Institution Name"
+                      placeholder="e.g. EduTrack Academy"
+                      {...registerProfile('name')}
+                      error={profileErrors.name?.message}
+                    />
+                    <Input 
+                      label="Academic Year"
+                      placeholder="e.g. 2026-2027"
+                      {...registerProfile('academicYear')}
+                      error={profileErrors.academicYear?.message}
+                    />
+                    <Input 
+                      label="Contact Email"
+                      type="email"
+                      placeholder="admin@school.com"
+                      {...registerProfile('email')}
+                      error={profileErrors.email?.message}
+                    />
+                    <Input 
+                      label="Contact Phone"
+                      placeholder="+1 (555) 000-0000"
+                      {...registerProfile('phone')}
+                      error={profileErrors.phone?.message}
+                    />
+                    <div className="md:col-span-2">
                       <Input 
-                        value={profileData.name} 
-                        onChange={(e) => setProfileData({...profileData, name: e.target.value})} 
-                        placeholder="e.g. EduTrack Academy" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Academic Year</label>
-                      <Input 
-                        value={profileData.academicYear} 
-                        onChange={(e) => setProfileData({...profileData, academicYear: e.target.value})} 
-                        placeholder="e.g. 2026-2027" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Contact Email</label>
-                      <Input 
-                        type="email"
-                        value={profileData.email} 
-                        onChange={(e) => setProfileData({...profileData, email: e.target.value})} 
-                        placeholder="admin@school.com" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Contact Phone</label>
-                      <Input 
-                        value={profileData.phone} 
-                        onChange={(e) => setProfileData({...profileData, phone: e.target.value})} 
-                        placeholder="+1 (555) 000-0000" 
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-bold text-slate-700">Physical Address</label>
-                      <Input 
-                        value={profileData.address} 
-                        onChange={(e) => setProfileData({...profileData, address: e.target.value})} 
-                        placeholder="123 Education Blvd, Knowledge City" 
+                        label="Physical Address"
+                        placeholder="123 Education Blvd, Knowledge City"
+                        {...registerProfile('address')}
+                        error={profileErrors.address?.message}
                       />
                     </div>
                   </div>
@@ -341,11 +369,20 @@ export default function SettingsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-4">
                     {examTypes.map(e => (
-                      <span key={e.value} className="px-4 py-2 rounded-lg bg-purple-50 text-purple-700 font-bold border border-purple-100">
-                        {e.label}
-                      </span>
+                      <div key={e.value} className="flex items-center gap-2 group">
+                        <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 text-purple-700 font-bold border border-purple-100">
+                          <span className="text-sm">{e.label}</span>
+                          <span className="text-[10px] opacity-60 uppercase tracking-tighter font-black">Base: {e.baseMark}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleEditExamType(e)}
+                          className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </CardContent>
@@ -407,7 +444,7 @@ export default function SettingsPage() {
                     ))}
                     {users.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">No users found.</td>
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">No users found.</td>
                       </tr>
                     )}
                   </tbody>
@@ -637,7 +674,7 @@ export default function SettingsPage() {
       <Modal
         isOpen={academicModal.isOpen}
         onClose={() => setAcademicModal({ ...academicModal, isOpen: false })}
-        title={`Add New ${academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}`}
+        title={academicModal.isEditing ? `Edit ${academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}` : `Add New ${academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}`}
       >
         <form onSubmit={submitAcademic} className="space-y-4">
           <Input 
@@ -645,11 +682,21 @@ export default function SettingsPage() {
             placeholder={`e.g. ${academicModal.type === 'class' ? 'Class 11' : academicModal.type === 'subject' ? 'Physics' : 'Mid Term'}`}
             value={academicModal.value}
             onChange={(e) => setAcademicModal({ ...academicModal, value: e.target.value })}
+            disabled={academicModal.isEditing}
             autoFocus
           />
+          {academicModal.type === 'examType' && (
+            <Input 
+              label="Base Mark (Maximum Score)"
+              type="number"
+              placeholder="e.g. 100"
+              value={academicModal.baseMark ?? ''}
+              onChange={(e) => setAcademicModal({ ...academicModal, baseMark: Number(e.target.value) })}
+            />
+          )}
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setAcademicModal({ ...academicModal, isOpen: false })}>Cancel</Button>
-            <Button type="submit">Add {academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}</Button>
+            <Button type="submit">{academicModal.isEditing ? 'Update' : 'Add'} {academicModal.type.charAt(0).toUpperCase() + academicModal.type.slice(1)}</Button>
           </div>
         </form>
       </Modal>

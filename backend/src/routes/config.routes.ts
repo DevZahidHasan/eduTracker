@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getConfig, createClass, createSubject, createExamType } from '../controllers/config.controller';
+import { getConfig, createClass, createSubject, createExamType, updateExamType } from '../controllers/config.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -11,5 +11,6 @@ router.use(authMiddleware);
 router.post('/classes', createClass);
 router.post('/subjects', createSubject);
 router.post('/exam-types', createExamType);
+router.patch('/exam-types/:name', updateExamType);
 
 export default router;

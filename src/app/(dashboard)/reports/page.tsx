@@ -22,6 +22,7 @@ import {
   updateRemarks,
   clearAllReports
 } from '@/lib/features/reportsSlice';
+import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
 import { selectClasses, selectExamTypes, fetchConfig } from '@/lib/features/configSlice';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -33,6 +34,7 @@ export default function ReportsPage() {
   const CLASSES = useAppSelector(selectClasses);
   const EXAM_TYPES = useAppSelector(selectExamTypes);
   const students = useAppSelector(selectAllStudents);
+  const schoolProfile = useAppSelector(selectSchoolProfile);
   const studentReport = useAppSelector(selectStudentReport);
   const classPerformance = useAppSelector(selectClassPerformance);
   const attendanceSummary = useAppSelector(selectAttendanceSummary);
@@ -49,6 +51,7 @@ export default function ReportsPage() {
     dispatch(clearAllReports()); // Clear on mount
     dispatch(fetchConfig());
     dispatch(fetchStudents());
+    dispatch(fetchSchoolProfile());
 
     return () => {
       dispatch(clearAllReports()); // Clear on unmount
@@ -235,8 +238,12 @@ export default function ReportsPage() {
               
               {/* Document Header */}
               <div className="text-center border-b-2 border-slate-800 pb-6 mb-8">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">EduTrack Academy</h1>
-                <p className="text-slate-600 font-medium mt-1">123 Education Boulevard, Knowledge City, AC 12345</p>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
+                  {schoolProfile?.name || 'EduTrack Academy'}
+                </h1>
+                <p className="text-slate-600 font-medium mt-1">
+                  {schoolProfile?.address || '123 Education Boulevard, Knowledge City, AC 12345'}
+                </p>
                 <h2 className="text-xl font-bold text-primary mt-4 uppercase tracking-widest">Official Academic Report</h2>
                 <p className="text-sm font-semibold text-slate-500 mt-1 uppercase">Assessment: {selectedExamType.replace('_', ' ')}</p>
               </div>

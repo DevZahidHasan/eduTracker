@@ -27,6 +27,7 @@ import {
   selectAllAttendanceRecords,
   fetchAttendance
 } from '@/lib/features/attendanceSlice';
+import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
 import { selectClasses } from '@/lib/features/configSlice';
 import { generateInsights } from '@/lib/features/aiInsightsSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -56,12 +57,14 @@ export default function DashboardPage() {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
     dispatch(fetchAttendance());
+    dispatch(fetchSchoolProfile());
   }, [dispatch]);
 
   const allStudents = useAppSelector(selectAllStudents);
   const totalStudents = allStudents.length;
   const classes = useAppSelector(selectClasses);
   const totalClasses = classes.length;
+  const schoolProfile = useAppSelector(selectSchoolProfile);
   
   const averageMarks = useAppSelector(selectAverageMarks);
   const attendanceRate = useAppSelector(selectOverallAttendanceRate);
@@ -143,7 +146,9 @@ export default function DashboardPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
             Institutional Live Console
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Executive Dashboard</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+            {schoolProfile?.name || 'Executive Dashboard'}
+          </h1>
           <p className="text-slate-500 font-medium">Holistic overview of academic health and operational efficiency.</p>
         </div>
         

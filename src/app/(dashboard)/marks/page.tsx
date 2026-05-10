@@ -6,9 +6,7 @@ import {
   Save, 
   Search, 
   BookOpen, 
-  GraduationCap, 
   Trophy,
-  Filter,
   ArrowRight,
   TrendingUp,
   AlertCircle,
@@ -21,13 +19,17 @@ import {
   selectAllMarks, 
   addMarksBulkThunk,
   fetchMarks,
-  finalizeMarksThunk
+  finalizeMarksThunk,
+  unlockMarksThunk
 } from '@/lib/features/marksSlice';
 import { Mark } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { RootState } from '@/lib/store';
+import { Select } from '@/components/ui/Select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { marksSchema } from '@/lib/validations';
 
 export default function MarksPage() {
   const dispatch = useAppDispatch();
@@ -44,17 +46,37 @@ export default function MarksPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [maxScore, setMaxScore] = useState<string>('100');
+  const [maxScore, setMaxScore] = useState<number>(100);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLocked, setIsLocked] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { isDirty, errors },
+    reset,
+  } = useForm<{ scores: Record<number, number | string> }>({
+    defaultValues: { scores: {} },
+    // We validate manually in onSave for dynamic keys, 
+    // but the schema is available for single field refs if needed.
+  });
+
+  const scoresWatch = watch('scores');
+
+  // Update maxScore when exam type changes
+  useEffect(() => {
+    if (selectedExamType) {
+      const exam = EXAM_TYPES.find(e => e.value === selectedExamType);
+      if (exam && (exam as any).baseMark) {
+        setMaxScore(Number((exam as any).baseMark));
+      }
+    }
+  }, [selectedExamType, EXAM_TYPES]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  // Local marks state for bulk entry
-  const [localMarks, setLocalMarks] = useState<Record<number, string>>({});
-  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     dispatch(fetchStudents());
@@ -63,9 +85,9 @@ export default function MarksPage() {
 
   // Check lock status
   useEffect(() => {
-    if (selectedClass && selectedSubject && selectedExamType) {
+    if (selectedClass && selectedSubject && selectedExamType && selectedDate) {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      fetch(`${API_URL}/marks/lock-status?className=${selectedClass}&subject=${selectedSubject}&examType=${selectedExamType}`, {
+      fetch(`${API_URL}/marks/lock-status?className=${selectedClass}&subject=${selectedSubject}&examType=${selectedExamType}&date=${selectedDate}`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       })
       .then(res => res.json())
@@ -74,7 +96,7 @@ export default function MarksPage() {
       })
       .catch(err => console.error('Failed to fetch lock status:', err));
     }
-  }, [selectedClass, selectedSubject, selectedExamType, auth.token]);
+  }, [selectedClass, selectedSubject, selectedExamType, selectedDate, auth.token]);
 
   // Filter students based on selected class
   const classStudents = useMemo(() => {
@@ -105,78 +127,74 @@ export default function MarksPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedClass, selectedSubject, selectedExamType, searchQuery]);
+  }, [selectedClass, selectedSubject, selectedExamType, selectedDate, searchQuery]);
 
   // Sync local marks when filters change
   useEffect(() => {
-    if (selectedClass && selectedSubject && selectedExamType) {
-      const marksMap: Record<number, string> = {};
+    if (selectedClass && selectedSubject && selectedExamType && selectedDate) {
+      const marksMap: Record<number, number | string> = {};
       classStudents.forEach(student => {
         const existingMark = allMarks.find(m => 
           m.studentId === student.id && 
           m.subject === selectedSubject && 
-          m.examType === selectedExamType
+          m.examType === selectedExamType &&
+          m.date === selectedDate
         );
-        if (existingMark) {
-          marksMap[student.id] = existingMark.score.toString();
-        } else {
-          marksMap[student.id] = '';
-        }
+        marksMap[student.id] = existingMark ? existingMark.score : '';
       });
-      setLocalMarks(marksMap);
-      setIsDirty(false);
+      reset({ scores: marksMap });
     }
-  }, [allMarks, selectedClass, selectedSubject, selectedExamType, classStudents]);
+  }, [allMarks, selectedClass, selectedSubject, selectedExamType, selectedDate, classStudents, reset]);
 
-  const handleMarkChange = (studentId: number, score: string) => {
-    // Validate number input
-    if (score !== '' && isNaN(Number(score))) return;
-    if (Number(score) > Number(maxScore)) {
-      toast.error(`Score cannot exceed max score (${maxScore})`, { id: 'max-score-error' });
-      return;
-    }
-
-    setLocalMarks(prev => ({
-      ...prev,
-      [studentId]: score
-    }));
-    setIsDirty(true);
-  };
-
-  const handleSave = () => {
+  const onSave = (data: { scores: Record<number, number | string> }) => {
     if (!selectedClass || !selectedSubject || !selectedExamType) return;
 
-    const recordsToSave: Partial<Mark>[] = classStudents
-      .filter(student => localMarks[student.id] !== '')
-      .map(student => ({
-        studentId: student.id,
-        subject: selectedSubject,
-        examType: selectedExamType,
-        score: Number(localMarks[student.id]),
-        maxScore: Number(maxScore),
-        date: selectedDate
-      }));
+    const recordsToSave: Partial<Mark>[] = [];
+    
+    Object.entries(data.scores).forEach(([id, score]) => {
+      if (score !== '' && score !== null && score !== undefined) {
+        const studentId = Number(id);
+        const scoreNum = Number(score);
+        
+        if (scoreNum > maxScore) {
+          // Handled visually, but as a safety:
+          return;
+        }
+
+        recordsToSave.push({
+          studentId,
+          subject: selectedSubject,
+          examType: selectedExamType,
+          score: scoreNum,
+          maxScore: maxScore,
+          date: selectedDate
+        });
+      }
+    });
 
     if (recordsToSave.length === 0) {
-      toast.error('No marks entered to save');
+      toast.error('No valid marks entered to save');
       return;
     }
 
     dispatch(addMarksBulkThunk(recordsToSave))
       .unwrap()
-      .then(() => toast.success('Academic results updated successfully'))
+      .then(() => {
+        toast.success('Academic results updated successfully');
+        reset(data); // Mark as not dirty
+      })
       .catch((err) => toast.error(typeof err === 'string' ? err : 'Failed to save marks'));
-    setIsDirty(false);
   };
 
   const handleFinalize = () => {
-    if (!selectedClass || !selectedSubject || !selectedExamType) return;
+    if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
     
     if (confirm('Finalizing marks will lock them for regular editing and notify all administrators. Are you sure?')) {
       dispatch(finalizeMarksThunk({
         className: selectedClass,
         subject: selectedSubject,
-        examType: selectedExamType
+        examType: selectedExamType,
+        date: selectedDate
       }))
       .unwrap()
       .then(() => {
@@ -184,6 +202,25 @@ export default function MarksPage() {
         setIsLocked(true);
       })
       .catch((err) => toast.error(err || 'Failed to finalize marks'));
+    }
+  };
+
+  const handleUnlock = () => {
+    if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
+
+    if (confirm('Are you sure you want to unlock these marks? This will allow editing by teachers.')) {
+      dispatch(unlockMarksThunk({
+        className: selectedClass,
+        subject: selectedSubject,
+        examType: selectedExamType,
+        date: selectedDate
+      }))
+      .unwrap()
+      .then(() => {
+        toast.success('Marks unlocked successfully');
+        setIsLocked(false);
+      })
+      .catch((err) => toast.error(err || 'Failed to unlock marks'));
     }
   };
 
@@ -199,27 +236,15 @@ export default function MarksPage() {
         </div>
         
         <div className="flex items-center gap-3 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
-          {isLocked && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100 font-bold text-xs">
-              <AlertCircle size={16} />
-              LOCKED
-            </div>
-          )}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-primary rounded-lg border border-blue-100">
             <Trophy size={16} className="text-amber-500" />
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-slate-400 leading-none">Max Score</span>
-              <input 
-                type="number" 
-                value={maxScore} 
-                onChange={(e) => setMaxScore(e.target.value)}
-                disabled={isLocked}
-                className="bg-transparent text-slate-900 border-none focus:outline-none w-12 font-bold text-sm h-4 mt-0.5 disabled:opacity-50"
-              />
+              <span className="text-slate-900 font-bold text-sm h-4 mt-0.5">{maxScore}</span>
             </div>
           </div>
           <Button 
-            onClick={handleSave} 
+            onClick={handleSubmit(onSave)} 
             disabled={!isDirty || !isFormValid || isLocked}
             className="shadow-md shadow-blue-100 px-6 py-2 h-10"
           >
@@ -236,79 +261,58 @@ export default function MarksPage() {
               Finalize
             </Button>
           )}
+          {isLocked && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100 font-bold text-xs">
+              <AlertCircle size={16} />
+              LOCKED
+            </div>
+          )}
+          {isLocked && (auth.role === 'ADMIN' || auth.user?.role === 'ADMIN') && (
+            <Button 
+              onClick={handleUnlock} 
+              variant="outline"
+              className="border-red-200 text-red-700 hover:bg-red-50 h-10 animate-in fade-in zoom-in duration-300"
+            >
+              <ArrowRight size={18} className="mr-2 rotate-180" />
+              Unlock Marks
+            </Button>
+          )}
         </div>
       </div>
 
       <Card className="border-slate-200/60 shadow-sm p-6 bg-white">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Class Selector */}
+          <Select 
+            label="Grade / Class"
+            placeholder="Choose class"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            options={CLASSES}
+          />
+          <Select 
+            label="Academic Subject"
+            placeholder="Choose subject"
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            disabled={!selectedClass}
+            options={SUBJECTS}
+          />
+          <Select 
+            label="Assessment Type"
+            placeholder="Choose assessment"
+            value={selectedExamType}
+            onChange={(e) => setSelectedExamType(e.target.value)}
+            disabled={!selectedSubject}
+            options={EXAM_TYPES}
+          />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Grade / Class</label>
-            <div className="relative">
-              <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none"
-              >
-                <option value="" disabled>Choose class</option>
-                {CLASSES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Subject Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Academic Subject</label>
-            <div className="relative">
-              <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                disabled={!selectedClass}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none disabled:opacity-50"
-              >
-                <option value="" disabled>Choose subject</option>
-                {SUBJECTS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Exam Type Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Assessment Type</label>
-            <div className="relative">
-              <ClipboardCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <select
-                value={selectedExamType}
-                onChange={(e) => setSelectedExamType(e.target.value)}
-                disabled={!selectedSubject}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none disabled:opacity-50"
-              >
-                <option value="" disabled>Choose assessment</option>
-                {EXAM_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Date Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Examination Date</label>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 font-semibold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-standard cursor-pointer outline-none"
-              />
-            </div>
+            <label className="text-sm font-medium text-slate-700 ml-0.5">Examination Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full h-10 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-standard shadow-sm"
+            />
           </div>
         </div>
       </Card>
@@ -362,7 +366,7 @@ export default function MarksPage() {
               <p className="text-slate-500 text-sm mt-1">There are no students found in this class to assign marks to.</p>
             </div>
           ) : (
-            <div className="flex flex-col h-full">
+            <form onSubmit={handleSubmit(onSave)} className="flex flex-col h-full">
               <div className="overflow-x-auto max-h-[calc(100vh-340px)] custom-scrollbar">
                 <table className="w-full text-left text-sm border-collapse min-w-[700px]">
                   <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
@@ -376,8 +380,9 @@ export default function MarksPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {paginatedStudents.map((student) => {
-                      const score = localMarks[student.id] || '';
-                      const percentage = score !== '' ? Math.round((Number(score) / Number(maxScore)) * 100) : null;
+                      const score = scoresWatch?.[student.id] ?? '';
+                      const percentage = score !== '' ? Math.round((Number(score) / maxScore) * 100) : null;
+                      const hasError = Number(score) > maxScore;
                       
                       return (
                         <tr key={student.id} className="hover:bg-slate-50/50 transition-standard group">
@@ -396,18 +401,22 @@ export default function MarksPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-3">
-                              <div className="relative group/input">
-                                <input 
-                                  type="text"
-                                  value={score}
-                                  placeholder="0"
-                                  onChange={(e) => handleMarkChange(student.id, e.target.value)}
-                                  disabled={isLocked}
-                                  className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50"
-                                />
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center justify-center gap-3">
+                                <div className="relative group/input">
+                                  <input 
+                                    type="number"
+                                    placeholder="0"
+                                    {...register(`scores.${student.id}` as any)}
+                                    disabled={isLocked}
+                                    className={`w-20 bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 ${
+                                      hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                                    }`}
+                                  />
+                                </div>
+                                <span className="text-slate-400 font-bold text-xs tracking-widest">/ {maxScore}</span>
                               </div>
-                              <span className="text-slate-400 font-bold text-xs tracking-widest">/ {maxScore}</span>
+                              {hasError && <span className="text-[10px] text-red-500 font-bold mt-1">Exceeds Max</span>}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -491,7 +500,7 @@ export default function MarksPage() {
                     ))}
                   </div>
                   <span>
-                    <span className="text-primary font-black">{Object.values(localMarks).filter(v => v !== '').length}</span> 
+                    <span className="text-primary font-black">{Object.values(scoresWatch || {}).filter(v => v !== '' && v !== null).length}</span> 
                     / {filteredStudents.length} entries completed
                   </span>
                 </div>
@@ -501,8 +510,8 @@ export default function MarksPage() {
                     Autosave Disabled
                   </div>
                   <Button 
-                    onClick={handleSave} 
-                    disabled={!isDirty || !isFormValid}
+                    type="submit"
+                    disabled={!isDirty || !isFormValid || isLocked}
                     className={`px-10 py-3 font-black text-sm uppercase tracking-widest shadow-xl transition-all ${isDirty ? 'shadow-blue-200 scale-100' : 'shadow-none scale-95'}`}
                   >
                     Publish Results
@@ -510,7 +519,7 @@ export default function MarksPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </form>
           )}
         </CardContent>
       </Card>

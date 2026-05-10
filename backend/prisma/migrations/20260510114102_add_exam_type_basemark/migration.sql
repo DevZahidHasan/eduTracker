@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ExamType" ADD COLUMN     "baseMark" DOUBLE PRECISION NOT NULL DEFAULT 100;

@@ -85,6 +85,7 @@ export interface Subject {
 
 export interface ExamType {
   name: string;
+  baseMark: number;
 }
 
 export interface Attendance {

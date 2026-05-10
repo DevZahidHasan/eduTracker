@@ -6,10 +6,14 @@ export interface ConfigOption {
   label: string;
 }
 
+export interface ExamTypeOption extends ConfigOption {
+  baseMark: number;
+}
+
 export interface AppConfig {
   classes: ConfigOption[];
   subjects: ConfigOption[];
-  examTypes: ConfigOption[];
+  examTypes: ExamTypeOption[];
   teachers: ConfigOption[];
 }
 
@@ -107,7 +111,7 @@ export const addSubjectThunk = createAsyncThunk(
 
 export const addExamTypeThunk = createAsyncThunk(
   'config/addExamType',
-  async (name: string, { rejectWithValue, getState }) => {
+  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
       const response = await fetch(`${API_URL}/config/exam-types`, {
@@ -116,9 +120,30 @@ export const addExamTypeThunk = createAsyncThunk(
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${state.auth.token}` 
         },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, baseMark })
       });
       if (!response.ok) throw new Error('Failed to add exam type');
+      return await response.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateExamTypeThunk = createAsyncThunk(
+  'config/updateExamType',
+  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const response = await fetch(`${API_URL}/config/exam-types/${name}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}` 
+        },
+        body: JSON.stringify({ baseMark })
+      });
+      if (!response.ok) throw new Error('Failed to update exam type');
       return await response.json();
     } catch (error: any) {
       return rejectWithValue(error.message);

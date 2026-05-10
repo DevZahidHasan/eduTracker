@@ -16,15 +16,17 @@ import {
   Settings,
   X
 } from 'lucide-react';
+import { useAppSelector } from '@/lib/hooks';
+import { selectRole } from '@/lib/features/authSlice';
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Students', href: '/students', icon: Users },
-  { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
-  { name: 'Marks', href: '/marks', icon: FileSpreadsheet },
-  { name: 'Classes', href: '/classes', icon: LayoutGrid },
-  { name: 'Reports', href: '/reports', icon: PieChart },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
 ];
 
 interface SidebarProps {
@@ -41,6 +43,11 @@ export function Sidebar({
   setIsMobileOpen,
 }: SidebarProps) {
   const pathname = usePathname();
+  const role = useAppSelector(selectRole);
+
+  const filteredNavItems = navItems.filter(item => 
+    !item.roles || (role && item.roles.includes(role.toUpperCase()))
+  );
 
   return (
     <>
@@ -54,7 +61,7 @@ export function Sidebar({
 
       <aside
         className={`
-          fixed lg:relative inset-y-0 left-0 z-40
+          fixed lg:relative inset-y-0 left-0 z-40 h-full
           flex flex-col border-r border-slate-200 bg-white 
           transition-all duration-300 ease-in-out
           ${collapsed ? 'w-20' : 'w-64'}
@@ -90,7 +97,7 @@ export function Sidebar({
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const Icon = item.icon;
 

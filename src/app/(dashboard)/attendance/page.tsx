@@ -11,20 +11,24 @@ import {
   fetchAttendance,
   AttendanceSummary
 } from '@/lib/features/attendanceSlice';
+import { fetchClassesOverview, selectClassesOverview } from '@/lib/features/classesSlice';
 import { Attendance, AttendanceStatus } from '@/types/models';
 import { selectClasses } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 
 export default function AttendancePage() {
   const dispatch = useAppDispatch();
   const allStudents = useAppSelector(selectAllStudents);
   const CLASSES = useAppSelector(selectClasses);
+  const classesOverview = useAppSelector(selectClassesOverview);
   
   const loadingAttendance = useAppSelector((state) => state.attendance.loading);
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,15 +37,21 @@ export default function AttendancePage() {
   useEffect(() => {
     dispatch(fetchStudents());
     dispatch(fetchAttendance());
+    dispatch(fetchClassesOverview());
   }, [dispatch]);
 
-  // Filter students based on selected class
+  const availableSections = useMemo(() => {
+    const classData = classesOverview.find(c => c.className === selectedClass);
+    return classData ? classData.sections.map(s => ({ value: s.section, label: `Sec ${s.section}` })).sort((a, b) => a.value.localeCompare(b.value)) : [];
+  }, [classesOverview, selectedClass]);
+
+  // Filter students based on selected class and section
   const classStudents = useMemo(() => {
-    if (!selectedClass) return [];
+    if (!selectedClass || !selectedSection) return [];
     return allStudents
-      .filter(student => student.className === selectedClass)
+      .filter(student => student.className === selectedClass && student.section === selectedSection)
       .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
-  }, [allStudents, selectedClass]);
+  }, [allStudents, selectedClass, selectedSection]);
 
   // Paginated students
   const paginatedStudents = useMemo(() => {
@@ -52,8 +62,13 @@ export default function AttendancePage() {
   const totalPages = Math.ceil(classStudents.length / itemsPerPage);
 
   useEffect(() => {
+    setSelectedSection('');
     setCurrentPage(1);
   }, [selectedClass]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSection]);
 
   // Get records from Redux for the currently selected date
   const allRecords = useAppSelector(selectAllAttendanceRecords);
@@ -127,31 +142,34 @@ export default function AttendancePage() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-          {/* Class Selector */}
-          <div className="relative w-full sm:w-48">
-            <LayoutList className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-primary/20 transition-standard cursor-pointer"
-            >
-              <option value="" disabled>Select Class</option>
-              {CLASSES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
-          </div>
+          <Select 
+            placeholder="Select Class"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            options={CLASSES}
+            className="!w-full sm:!w-40 h-10"
+          />
 
           <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
 
-          {/* Date Selector */}
-          <div className="relative w-full sm:w-48">
+          <Select 
+            placeholder="Section"
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            disabled={!selectedClass || availableSections.length === 0}
+            options={availableSections}
+            className="!w-full sm:!w-32 h-10"
+          />
+
+          <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+
+          <div className="relative w-full sm:w-44">
             <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" size={16} />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-primary/20 transition-standard cursor-pointer"
+              className="w-full bg-slate-50 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-primary/20 transition-standard cursor-pointer h-10"
             />
           </div>
         </div>
@@ -162,10 +180,10 @@ export default function AttendancePage() {
         <CardHeader className="flex flex-col sm:flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
           <CardTitle className="text-slate-900 flex items-center gap-2">
             <Users size={20} className="text-primary" />
-            {selectedClass ? `${CLASSES.find(c => c.value === selectedClass)?.label} Students` : 'Class Roster'}
+            {selectedClass && selectedSection ? `${CLASSES.find(c => c.value === selectedClass)?.label} - Sec ${selectedSection} Students` : 'Class Roster'}
           </CardTitle>
           
-          {selectedClass && classStudents.length > 0 && (
+          {selectedClass && selectedSection && classStudents.length > 0 && (
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -188,13 +206,13 @@ export default function AttendancePage() {
         </CardHeader>
         
         <CardContent className="p-0 flex-1 flex flex-col">
-          {!selectedClass ? (
+          {!selectedClass || !selectedSection ? (
             <div className="flex-1 flex flex-col items-center justify-center py-24 text-center">
               <div className="p-6 bg-slate-50 rounded-full text-slate-300 border border-slate-100 mb-4">
                 <LayoutList size={48} />
               </div>
-              <h3 className="text-slate-900 font-bold">Select a Class</h3>
-              <p className="text-slate-500 text-sm mt-1 max-w-[280px]">Choose a class from the header to start marking daily attendance records.</p>
+              <h3 className="text-slate-900 font-bold">Select a Class and Section</h3>
+              <p className="text-slate-500 text-sm mt-1 max-w-[280px]">Choose a class and section from the header to start marking daily attendance records.</p>
             </div>
           ) : loadingAttendance ? (
             <div className="flex-1 flex flex-col items-center justify-center py-24">

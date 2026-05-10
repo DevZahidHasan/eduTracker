@@ -129,7 +129,7 @@ model Mark {
   subjectObj  Subject  @relation(fields: [subject], references: [name])
   examTypeObj ExamType @relation(fields: [examType], references: [name])
 
-  @@unique([studentId, subject, examType])
+  @@unique([studentId, subject, examType, date])
 }
 
 model Subject {
@@ -139,9 +139,10 @@ model Subject {
 }
 
 model ExamType {
-  name    String           @id
-  marks   Mark[]
-  reports AcademicReport[]
+  name     String           @id
+  baseMark Float            @default(100)
+  marks    Mark[]
+  reports  AcademicReport[]
 }
 
 model MarkLock {
@@ -149,10 +150,11 @@ model MarkLock {
   className String
   subject   String
   examType  String
+  date      DateTime @default(now())
   lockedAt  DateTime @default(now())
-  lockedBy  Int      // User ID who locked it
+  lockedBy  Int
 
-  @@unique([className, subject, examType])
+  @@unique([className, subject, examType, date])
 }
 
 model AcademicReport {

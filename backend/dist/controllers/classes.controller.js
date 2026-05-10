@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getClassAnalytics = exports.updateRoutine = exports.getSectionDetail = exports.getClassesOverview = void 0;
+exports.getClassAnalytics = exports.updateSection = exports.updateRoutine = exports.getSectionDetail = exports.getClassesOverview = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
@@ -98,7 +98,10 @@ exports.getSectionDetail = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
 }));
 exports.updateRoutine = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { className, section } = req.params;
-    const { routines } = req.body; // Array of { dayOfWeek: string, periods: Array<{ subjectId, teacherId, startTime, endTime, periodNumber }> }
+    const { routines } = req.body;
+    if (!routines || !Array.isArray(routines)) {
+        throw new apiError_1.ApiError(400, 'Routines must be an array');
+    }
     const classSection = yield prisma_1.default.classSection.findUnique({
         where: { className_section: { className, section } }
     });
@@ -126,15 +129,27 @@ exports.updateRoutine = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
                 data: r.periods.map((p) => ({
                     routineId: routine.id,
                     subjectId: p.subjectId,
-                    teacherId: p.teacherId,
+                    teacherId: Number(p.teacherId),
                     startTime: p.startTime,
                     endTime: p.endTime,
-                    periodNumber: p.periodNumber
+                    periodNumber: p.periodNumber ? Number(p.periodNumber) : null
                 }))
             });
         }
     }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Routine updated successfully'));
+}));
+exports.updateSection = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, section } = req.params;
+    const { teacherId } = req.body;
+    const updatedSection = yield prisma_1.default.classSection.update({
+        where: { className_section: { className, section } },
+        data: { teacherId: teacherId ? Number(teacherId) : null },
+        include: {
+            teacher: { select: { id: true, name: true, email: true } }
+        }
+    });
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, updatedSection, 'Section updated successfully'));
 }));
 exports.getClassAnalytics = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

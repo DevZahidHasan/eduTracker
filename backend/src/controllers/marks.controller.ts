@@ -57,19 +57,21 @@ export const bulkCreateMarks = asyncHandler(async (req: Request, res: Response) 
   const results = await prisma.$transaction(
     records.map((record) => {
       const { studentId, subject, examType, score, maxScore, date } = record;
+      const markDate = new Date(date || new Date());
+      markDate.setHours(0, 0, 0, 0);
       
       return prisma.mark.upsert({
         where: {
-          studentId_subject_examType: {
+          studentId_subject_examType_date: {
             studentId: Number(studentId),
             subject,
             examType,
+            date: markDate,
           },
         },
         update: {
           score: Number(score),
           maxScore: Number(maxScore) || 100,
-          date: date ? new Date(date) : undefined,
         },
         create: {
           studentId: Number(studentId),
@@ -77,7 +79,7 @@ export const bulkCreateMarks = asyncHandler(async (req: Request, res: Response) 
           examType,
           score: Number(score),
           maxScore: Number(maxScore) || 100,
-          date: date ? new Date(date) : undefined,
+          date: markDate,
         },
       });
     })
@@ -108,6 +110,9 @@ export const createMark = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, 'Student ID, subject, exam type and score are required');
   }
 
+  const markDate = new Date(date || new Date());
+  markDate.setHours(0, 0, 0, 0);
+
   const mark = await prisma.mark.create({
     data: {
       studentId: Number(studentId),
@@ -115,7 +120,7 @@ export const createMark = asyncHandler(async (req: Request, res: Response) => {
       examType,
       score: Number(score),
       maxScore: Number(maxScore) || 100,
-      date: date ? new Date(date) : undefined,
+      date: markDate,
     },
   });
 
@@ -128,6 +133,9 @@ export const updateMark = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { subject, examType, score, maxScore, date } = req.body;
 
+  const markDate = date ? new Date(date) : undefined;
+  if (markDate) markDate.setHours(0, 0, 0, 0);
+
   const mark = await prisma.mark.update({
     where: { id: Number(id) },
     data: {
@@ -135,7 +143,7 @@ export const updateMark = asyncHandler(async (req: Request, res: Response) => {
       examType,
       score: score !== undefined ? Number(score) : undefined,
       maxScore: maxScore !== undefined ? Number(maxScore) : undefined,
-      date: date ? new Date(date) : undefined,
+      date: markDate,
     },
   });
 
@@ -157,16 +165,19 @@ export const deleteMark = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const finalizeMarks = asyncHandler(async (req: Request, res: Response) => {
-  const { className, subject, examType } = req.body;
+  const { className, subject, examType, date } = req.body;
   const user = (req as any).user;
 
-  if (!className || !subject || !examType) {
-    throw new ApiError(400, 'Class, Subject and Exam Type are required');
+  if (!className || !subject || !examType || !date) {
+    throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
   }
+
+  const lockDate = new Date(date);
+  lockDate.setHours(0, 0, 0, 0);
 
   const markLock = await prisma.markLock.upsert({
     where: {
-      className_subject_examType: { className, subject, examType }
+      className_subject_examType_date: { className, subject, examType, date: lockDate }
     },
     update: {
       lockedAt: new Date(),
@@ -176,6 +187,7 @@ export const finalizeMarks = asyncHandler(async (req: Request, res: Response) =>
       className,
       subject,
       examType,
+      date: lockDate,
       lockedBy: user.id
     }
   });
@@ -188,19 +200,49 @@ export const finalizeMarks = asyncHandler(async (req: Request, res: Response) =>
   );
 });
 
-export const checkMarkLock = asyncHandler(async (req: Request, res: Response) => {
-  const { className, subject, examType } = req.query;
+export const unlockMarks = asyncHandler(async (req: Request, res: Response) => {
+  const { className, subject, examType, date } = req.body;
+  const user = (req as any).user;
 
-  if (!className || !subject || !examType) {
-    throw new ApiError(400, 'Class, Subject and Exam Type are required');
+  if (user.role !== 'ADMIN') {
+    throw new ApiError(403, 'Only administrators can unlock marks');
   }
+
+  if (!className || !subject || !examType || !date) {
+    throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
+  }
+
+  const lockDate = new Date(date);
+  lockDate.setHours(0, 0, 0, 0);
+
+  await prisma.markLock.delete({
+    where: {
+      className_subject_examType_date: { className, subject, examType, date: lockDate }
+    }
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, 'Marks unlocked successfully')
+  );
+});
+
+export const checkMarkLock = asyncHandler(async (req: Request, res: Response) => {
+  const { className, subject, examType, date } = req.query;
+
+  if (!className || !subject || !examType || !date) {
+    throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
+  }
+
+  const lockDate = new Date(date as string);
+  lockDate.setHours(0, 0, 0, 0);
 
   const markLock = await prisma.markLock.findUnique({
     where: {
-      className_subject_examType: { 
+      className_subject_examType_date: { 
         className: className as string, 
         subject: subject as string, 
-        examType: examType as string 
+        examType: examType as string,
+        date: lockDate
       }
     }
   });

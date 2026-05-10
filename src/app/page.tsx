@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAppSelector } from '@/lib/hooks';
 import { selectIsAuthenticated } from '@/lib/features/authSlice';
-import { ArrowRight, ShieldCheck, Zap, BarChart3, Users } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, BarChart3, Users, Server, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function Home() {
@@ -107,22 +107,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Dashboard Preview Placeholder */}
-          <div className="mt-20 relative px-4 max-w-6xl mx-auto animate-in zoom-in-95 duration-1000">
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-50 to-transparent z-10 h-64 -bottom-1"></div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/50">
-              <div className="rounded-2xl bg-slate-50 aspect-video flex items-center justify-center border border-slate-100 border-dashed relative overflow-hidden">
-                <div className="relative h-32 w-32 opacity-20">
-                  <Image 
-                    src="/edutrackerLogo.png" 
-                    alt="EduTracker Preview Logo" 
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
         </section>
 
         {/* Features Section */}
@@ -153,6 +137,97 @@ export default function Home() {
               <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Secure Infrastructure</h3>
               <p className="text-slate-500 font-medium leading-relaxed">
                 Enterprise-grade security ensuring student data privacy and system-wide role-based access control.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Infrastructure Section */}
+        <section id="about" className="px-8 py-24 bg-white border-b border-slate-100">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
+            <div className="flex-1 space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-primary text-[11px] font-black uppercase tracking-[0.15em]">
+                <Server size={14} />
+                Global Scale
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">
+                Robust Infrastructure for Modern Education
+              </h2>
+              <p className="text-lg text-slate-500 font-medium leading-relaxed">
+                EduTracker is built on a resilient, high-performance cloud architecture designed to scale seamlessly with your institution. From seamless API integrations to real-time data sync, our infrastructure handles the heavy lifting so you can focus on education.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3 text-slate-700 font-semibold">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><Zap size={16} /></div>
+                  99.99% Uptime Guarantee
+                </li>
+                <li className="flex items-center gap-3 text-slate-700 font-semibold">
+                  <div className="h-8 w-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center"><Globe size={16} /></div>
+                  Global Edge Network
+                </li>
+              </ul>
+            </div>
+            <div className="flex-1 w-full relative">
+              <div className="aspect-square md:aspect-[4/3] bg-slate-50 rounded-3xl border border-slate-200 p-8 shadow-2xl shadow-slate-200/50 flex flex-col justify-center items-center relative overflow-hidden">
+                <Server size={80} className="text-slate-300 mb-6 relative z-10" />
+                <div className="text-center relative z-10">
+                  <div className="text-2xl font-black text-slate-700 mb-2">Cloud Native</div>
+                  <div className="text-slate-500 font-medium">Auto-scaling microservices</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Infrastructure Security Section */}
+        <section id="security" className="px-8 py-24 bg-slate-50 border-b border-slate-100">
+          <div className="max-w-7xl mx-auto text-center mb-16">
+             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-primary text-[11px] font-black uppercase tracking-[0.15em] mb-4">
+              <ShieldCheck size={14} />
+              Enterprise Security
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-6">
+              Infrastructure Security
+            </h2>
+            <p className="max-w-2xl mx-auto text-lg text-slate-500 font-medium leading-relaxed">
+              We employ industry-leading security measures to ensure your institutional data remains protected, compliant, and always available.
+            </p>
+          </div>
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center mb-6">
+                <ShieldCheck size={20} className="text-slate-700" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 mb-3">Data Encryption</h4>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                All data is encrypted at rest and in transit using AES-256 and TLS 1.3 protocols.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+               <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center mb-6">
+                <ShieldCheck size={20} className="text-slate-700" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 mb-3">Role-Based Access</h4>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                Granular permission controls ensure users only access the data they are authorized to see.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+               <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center mb-6">
+                <ShieldCheck size={20} className="text-slate-700" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 mb-3">Automated Backups</h4>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                Continuous point-in-time recovery and daily geographic backups protect against data loss.
+              </p>
+            </div>
+             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+               <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center mb-6">
+                <ShieldCheck size={20} className="text-slate-700" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 mb-3">Compliance Ready</h4>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                Built to support institutional compliance with GDPR, FERPA, and other regulatory frameworks.
               </p>
             </div>
           </div>
