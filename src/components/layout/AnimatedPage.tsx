@@ -21,7 +21,7 @@ const pageTransition = {
   type: 'tween',
   ease: 'anticipate',
   duration: 0.4,
-};
+} as const;
 
 export const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
   return (

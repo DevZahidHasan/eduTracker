@@ -4,7 +4,7 @@ import { ApiError } from '../utils/apiError';
 import { asyncHandler } from '../utils/asyncHandler';
 import prisma from '../prisma';
 
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'access_secret_key';
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
 import { Role } from '@prisma/client';
 

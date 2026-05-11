@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['ADMIN', 'TEACHER', 'STUDENT', 'PARENT'], {
-    errorMap: () => ({ message: 'Please select a valid role' }),
+  role: z.enum(['ADMIN', 'TEACHER', 'STUDENT', 'PARENT', 'STAFF'], {
+    message: 'Please select a valid role',
   }),
 });
 
@@ -17,7 +17,7 @@ export const studentSchema = z.object({
   className: z.string().min(1, 'Class is required'),
   section: z.string().min(1, 'Section is required'),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    errorMap: () => ({ message: 'Please select a gender' }),
+    message: 'Please select a gender',
   }),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().regex(/^\+?[\d\s-]{10,}$/, 'Invalid phone number format').optional().or(z.literal('')),

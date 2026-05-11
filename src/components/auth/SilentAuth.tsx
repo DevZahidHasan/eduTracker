@@ -25,11 +25,16 @@ export default function SilentAuth({ children }: { children: React.ReactNode }) 
 
         dispatch(login({
           user: {
+            ...user,
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
-            profileImage: user.profileImage
+            profileImage: user.profileImage,
+            nid: user.nid || null,
+            phone: user.phone || null,
+            address: user.address || null,
+            canLogin: user.canLogin ?? true
           },
           role: user.role,
           token: token

@@ -228,7 +228,7 @@ export default function SettingsPage() {
         setAcademicModal({ ...academicModal, isOpen: false, value: '' });
         dispatch(fetchConfig());
       })
-      .catch((err) => toast.error(err || `Failed to ${isEditing ? 'update' : 'add'} ${type}`));
+      .catch((err: any) => toast.error(err || `Failed to ${isEditing ? 'update' : 'add'} ${type}`));
   };
 
   const TABS: { id: TabId; label: string; icon: any }[] = [

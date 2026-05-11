@@ -19,6 +19,7 @@ const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
 const email_service_1 = require("../services/email.service");
 const audit_service_1 = require("../services/audit.service");
+const notifications_controller_1 = require("./notifications.controller");
 exports.getMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, subject, examType, className } = req.query;
     const whereClause = {};
@@ -185,6 +186,17 @@ exports.finalizeMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
         }
     });
     yield audit_service_1.AuditService.logChange('UPDATE', 'MarkLock', `${className}-${subject}-${examType}`, user.id, null, markLock);
+    // Notify Admins
+    const admins = yield prisma_1.default.user.findMany({ where: { role: 'ADMIN' } });
+    for (const admin of admins) {
+        yield (0, notifications_controller_1.createNotification)({
+            userId: admin.id,
+            title: 'Marks Finalized',
+            message: `Exam marks for ${subject} (${examType}) in Class ${className} have been locked by ${user.name || user.email}.`,
+            type: 'SUCCESS',
+            link: '/marks'
+        });
+    }
     // Trigger email notification
     (0, email_service_1.sendMarkFinalizationAlert)(className, subject, examType, user.name || user.email);
     return res.status(200).json(new apiResponse_1.ApiResponse(200, markLock, 'Marks finalized and locked successfully'));

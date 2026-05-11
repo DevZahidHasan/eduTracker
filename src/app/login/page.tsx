@@ -55,11 +55,16 @@ export default function LoginPage() {
       dispatch(
         login({
           user: {
+            ...user,
             id: Number(user.id),
             name: user.name || user.email.split('@')[0],
             email: user.email,
             role: user.role.toUpperCase() as any,
-            profileImage: user.profileImage
+            profileImage: user.profileImage,
+            nid: user.nid || null,
+            phone: user.phone || null,
+            address: user.address || null,
+            canLogin: user.canLogin ?? true
           },
           role: user.role.toUpperCase() as any,
           token: token,

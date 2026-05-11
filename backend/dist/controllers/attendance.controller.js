@@ -19,6 +19,7 @@ const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
 const email_service_1 = require("../services/email.service");
 const audit_service_1 = require("../services/audit.service");
+const notifications_controller_1 = require("./notifications.controller");
 exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, date, className } = req.query;
     const whereClause = {};
@@ -46,6 +47,7 @@ exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     return res.status(200).json(new apiResponse_1.ApiResponse(200, attendances, 'Attendance records fetched successfully'));
 }));
 exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { records } = req.body;
     if (!records || !Array.isArray(records)) {
         throw new apiError_1.ApiError(400, 'Attendance records array is required');
@@ -80,6 +82,17 @@ exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __
     results.forEach(record => {
         (0, email_service_1.sendParentAttendanceNotification)(record.id).catch(err => console.error(`Failed to send notification for attendance ${record.id}:`, err));
     });
+    // Notify Admins about bulk update
+    const admins = yield prisma_1.default.user.findMany({ where: { role: 'ADMIN' } });
+    for (const admin of admins) {
+        yield (0, notifications_controller_1.createNotification)({
+            userId: admin.id,
+            title: 'Bulk Attendance Update',
+            message: `${results.length} attendance records were processed by ${((_a = req.user) === null || _a === void 0 ? void 0 : _a.name) || 'a staff member'}.`,
+            type: 'INFO',
+            link: '/attendance'
+        });
+    }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, results, 'Bulk attendance processed successfully'));
 }));
 exports.getAttendanceById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

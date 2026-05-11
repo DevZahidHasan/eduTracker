@@ -4,11 +4,11 @@ import prisma from '../prisma';
 // Use a test account or environment variables for real credentials
 const getTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: Number(process.env.SMTP_PORT) || 587,
+    host: process.env.SMTP_HOST as string,
+    port: Number(process.env.SMTP_PORT),
     auth: {
-      user: process.env.SMTP_USER || 'test@ethereal.email',
-      pass: process.env.SMTP_PASS || 'testpassword',
+      user: process.env.SMTP_USER as string,
+      pass: process.env.SMTP_PASS as string,
     },
   });
 };
