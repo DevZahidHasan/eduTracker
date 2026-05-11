@@ -76,6 +76,16 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(401, 'Invalid credentials');
   }
 
+  // Check if the user is allowed to login
+  if (!user.canLogin) {
+    throw new ApiError(403, 'Your account does not have login access');
+  }
+
+  // Ensure password exists (it should if canLogin is true, but for TS safety)
+  if (!user.password) {
+    throw new ApiError(401, 'Invalid credentials');
+  }
+
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new ApiError(401, 'Invalid credentials');
@@ -93,7 +103,13 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   const responseData = { 
     token: accessToken, 
-    user: { id: user.id, email: user.email, name: user.name, role: user.role } 
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      role: user.role,
+      profileImage: user.profileImage 
+    } 
   };
 
   return res.status(200).json(

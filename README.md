@@ -112,6 +112,15 @@ npm run dev
 ```
 The frontend will be running at `http://localhost:3000`.
 
+## Deployment Models
+
+### 1. Local Institutional Server (Recommended)
+This application is designed to run as a dedicated instance for a single school. To deploy for a client:
+1. **Prepare the Host PC:** Install Node.js, PostgreSQL, and Git.
+2. **Clone & Configure:** Deploy the source code and set the `.env` variables to point to the local database.
+3. **Local Network Access:** Configure the firewall to allow traffic on ports 3000 (Frontend) and 5000 (Backend) so other computers in the school can access the portal via the server's IP address.
+4. **Initial Setup:** Use the "Deploy Institution" button on the first run to create the primary Administrative account.
+
 ## Project Structure
 
 ```text

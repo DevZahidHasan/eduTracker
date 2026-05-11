@@ -58,7 +58,8 @@ export default function LoginPage() {
             id: Number(user.id),
             name: user.name || user.email.split('@')[0],
             email: user.email,
-            role: user.role.toUpperCase() as any
+            role: user.role.toUpperCase() as any,
+            profileImage: user.profileImage
           },
           role: user.role.toUpperCase() as any,
           token: token,
@@ -84,6 +85,7 @@ export default function LoginPage() {
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
+              sizes="80px"
               className="object-contain p-2"
             />
           </div>

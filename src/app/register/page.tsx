@@ -77,6 +77,7 @@ export default function RegisterPage() {
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
+              sizes="80px"
               className="object-contain p-2"
             />
           </div>

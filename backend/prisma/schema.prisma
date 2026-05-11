@@ -7,18 +7,37 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(TEACHER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String?
+  name         String?
+  role         Role     @default(TEACHER)
+  nid          String?  @unique
+  profileImage String?
+  phone        String?
+  address      String?
+  canLogin     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   classSections ClassSection[]
   periods       Period[]
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
+  notifications Notification[]
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING, ERROR
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {
@@ -46,6 +65,12 @@ model AuditLog {
 enum Role {
   ADMIN
   TEACHER
+  STAFF
+  LIBRARIAN
+  ACCOUNTANT
+  CLERK
+  SECURITY
+  CLEANER
 }
 
 model Student {

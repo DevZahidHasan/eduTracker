@@ -30,6 +30,7 @@ export default function Home() {
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
+              sizes="(max-width: 768px) 192px, 192px"
               className="object-contain object-left"
               priority
             />
@@ -241,9 +242,10 @@ export default function Home() {
             <div className="relative h-10 w-32 overflow-hidden opacity-40 grayscale hover:grayscale-0 transition-all cursor-default">
               <Image 
                 src="/edutrackerLogo.png" 
-                alt="EduTracker Footer Logo" 
+                alt="EduTracker Logo" 
                 fill
-                className="object-contain object-left"
+                sizes="80px"
+                className="object-contain p-2"
               />
             </div>
           </div>

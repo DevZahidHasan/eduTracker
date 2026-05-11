@@ -9,6 +9,8 @@ import classesReducer from './features/classesSlice';
 import reportsReducer from './features/reportsSlice';
 import settingsReducer from './features/settingsSlice';
 import auditReducer from './features/auditSlice';
+import usersReducer from './features/usersSlice';
+import notificationsReducer from './features/notificationsSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -23,6 +25,8 @@ export const makeStore = () => {
       reports: reportsReducer,
       settings: settingsReducer,
       audit: auditReducer,
+      users: usersReducer,
+      notifications: notificationsReducer,
     },
   });
 };

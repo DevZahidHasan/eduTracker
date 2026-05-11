@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'TEACHER';
+export type Role = 'ADMIN' | 'TEACHER' | 'STAFF' | 'LIBRARIAN' | 'ACCOUNTANT' | 'CLERK' | 'SECURITY' | 'CLEANER';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -8,6 +8,11 @@ export interface User {
   email: string;
   name: string | null;
   role: Role;
+  nid: string | null;
+  phone: string | null;
+  address: string | null;
+  canLogin: boolean;
+  profileImage: string | null;
   createdAt?: string;
 }
 

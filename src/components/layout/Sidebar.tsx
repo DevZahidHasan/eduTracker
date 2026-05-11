@@ -26,6 +26,7 @@ const navItems = [
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
   { name: 'Audit Logs', href: '/audit', icon: LayoutDashboard, roles: ['ADMIN'] },
 ];
@@ -75,7 +76,7 @@ export function Sidebar({
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 256px"
               className="object-contain"
               priority
             />

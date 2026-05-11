@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { sendMarkFinalizationAlert } from '../services/email.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AuditService } from '../services/audit.service';
+import { createNotification } from './notifications.controller';
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, subject, examType, className } = req.query;
@@ -230,6 +231,18 @@ export const finalizeMarks = asyncHandler(async (req: AuthRequest, res: Response
   });
 
   await AuditService.logChange('UPDATE', 'MarkLock', `${className}-${subject}-${examType}`, user.id, null, markLock);
+
+  // Notify Admins
+  const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+  for (const admin of admins) {
+    await createNotification({
+      userId: admin.id,
+      title: 'Marks Finalized',
+      message: `Exam marks for ${subject} (${examType}) in Class ${className} have been locked by ${user.name || user.email}.`,
+      type: 'SUCCESS',
+      link: '/marks'
+    });
+  }
 
   // Trigger email notification
   sendMarkFinalizationAlert(className, subject, examType, user.name || user.email);

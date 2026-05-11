@@ -1,14 +1,27 @@
 'use client';
 
 import { Bell, Search, UserCircle, Settings, Menu } from 'lucide-react';
-import { useAppSelector } from '@/lib/hooks';
+import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { NotificationCenter } from './NotificationCenter';
+import { selectUnreadCount, fetchNotifications } from '@/lib/features/notificationsSlice';
 
 export function TopNavbar({ onMenuClick }: { onMenuClick?: () => void }) {
+  const dispatch = useAppDispatch();
   const { user, role } = useAppSelector((state) => state.auth);
+  const unreadCount = useAppSelector(selectUnreadCount);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchNotifications());
+    }
+  }, [user, dispatch]);
 
   return (
-    <header className="flex h-20 items-center justify-between border-b border-border bg-card px-4 lg:px-8 z-20 shrink-0">
+    <header className="flex h-20 items-center justify-between border-b border-border bg-card px-4 lg:px-8 z-20 shrink-0 relative">
       <div className="flex items-center gap-4 flex-1">
         <button
           onClick={onMenuClick}
@@ -27,10 +40,24 @@ export function TopNavbar({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       <div className="flex items-center gap-5">
-        <button className="relative text-muted-foreground hover:text-foreground transition-standard p-2 hover:bg-muted rounded-lg">
+        <button 
+          onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+          className={`relative transition-standard p-2 rounded-lg ${
+            isNotificationOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
           <Bell size={20} />
-          <span className="absolute right-2.5 top-2.5 flex h-2 w-2 items-center justify-center rounded-full bg-primary border-2 border-card"></span>
+          {unreadCount > 0 && (
+            <span className="absolute right-2 top-2 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-primary text-[10px] font-black text-white border-2 border-card">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
+        
+        <NotificationCenter 
+          isOpen={isNotificationOpen} 
+          onClose={() => setIsNotificationOpen(false)} 
+        />
         
         {role === 'ADMIN' && (
           <Link href="/settings">
@@ -47,8 +74,22 @@ export function TopNavbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <span className="text-sm font-bold text-foreground leading-tight">{user?.name || 'User'}</span>
             <span className="text-[11px] font-medium text-muted-foreground leading-tight">{role || 'User'}</span>
           </div>
-          <div className="h-10 w-10 rounded-full bg-muted border border-border flex items-center justify-center text-primary transition-standard group-hover:border-primary/50 group-hover:bg-primary/5">
-            <UserCircle size={28} />
+          <div className="h-10 w-10 rounded-full bg-muted border border-border flex items-center justify-center text-primary transition-standard group-hover:border-primary/50 group-hover:bg-primary/5 overflow-hidden relative">
+            {user?.profileImage ? (
+              <Image 
+                src={user.profileImage} 
+                alt={user.name || 'User'} 
+                fill 
+                sizes="40px"
+                className="object-cover"
+              />
+            ) : (
+              user?.name ? (
+                <span className="text-sm font-black uppercase">{user.name.charAt(0)}</span>
+              ) : (
+                <UserCircle size={28} />
+              )
+            )}
           </div>
         </button>
       </div>

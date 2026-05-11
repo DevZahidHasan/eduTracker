@@ -81,10 +81,19 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       saveState(state);
     },
+    updateCurrentUser: (state, action: PayloadAction<Partial<User>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+        if (action.payload.role) {
+          state.role = action.payload.role;
+        }
+        saveState(state);
+      }
+    },
   },
 });
 
-export const { login, logout } = authSlice.actions;
+export const { login, logout, updateCurrentUser } = authSlice.actions;
 
 // Selectors
 export const selectUser = (state: RootState) => state.auth.user;

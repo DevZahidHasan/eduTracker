@@ -9,6 +9,8 @@ import classesRoutes from './classes.routes';
 import reportsRoutes from './reports.routes';
 import settingsRoutes from './settings.routes';
 import auditRoutes from './audit.routes';
+import usersRoutes from './users.routes';
+import notificationRoutes from './notifications.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -23,8 +25,10 @@ router.use('/marks', authMiddleware, marksRoutes);
 router.use('/attendance', authMiddleware, attendanceRoutes);
 router.use('/ai-insights', authMiddleware, aiInsightsRoutes);
 router.use('/classes', authMiddleware, classesRoutes);
-router.use('/reports', reportsRoutes);
-router.use('/settings', settingsRoutes);
-router.use('/audit', auditRoutes);
+router.use('/reports', authMiddleware, reportsRoutes);
+router.use('/settings', authMiddleware, settingsRoutes);
+router.use('/audit', authMiddleware, auditRoutes);
+router.use('/users', authMiddleware, usersRoutes);
+router.use('/notifications', authMiddleware, notificationRoutes);
 
 export default router;

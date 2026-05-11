@@ -7,6 +7,7 @@ import { Prisma, AttendanceStatus } from '@prisma/client';
 import { sendParentAttendanceNotification } from '../services/email.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AuditService } from '../services/audit.service';
+import { createNotification } from './notifications.controller';
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, date, className } = req.query;
@@ -84,6 +85,18 @@ export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: R
       console.error(`Failed to send notification for attendance ${record.id}:`, err)
     );
   });
+
+  // Notify Admins about bulk update
+  const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+  for (const admin of admins) {
+    await createNotification({
+      userId: admin.id,
+      title: 'Bulk Attendance Update',
+      message: `${results.length} attendance records were processed by ${req.user?.name || 'a staff member'}.`,
+      type: 'INFO',
+      link: '/attendance'
+    });
+  }
 
   return res.status(200).json(
     new ApiResponse(200, results, 'Bulk attendance processed successfully')

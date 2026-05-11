@@ -28,7 +28,8 @@ export default function SilentAuth({ children }: { children: React.ReactNode }) 
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
+            profileImage: user.profileImage
           },
           role: user.role,
           token: token

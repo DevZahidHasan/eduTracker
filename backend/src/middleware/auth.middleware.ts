@@ -13,6 +13,7 @@ export interface AuthUser {
   email: string;
   name: string | null;
   role: Role;
+  profileImage: string | null;
 }
 
 export interface AuthRequest extends Request {
@@ -36,6 +37,7 @@ export const authMiddleware = asyncHandler(
           email: true,
           name: true,
           role: true,
+          profileImage: true,
         },
       });
 
