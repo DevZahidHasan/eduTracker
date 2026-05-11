@@ -286,7 +286,7 @@ export default function DashboardPage() {
                 {isInitialLoading ? (
                   <Skeleton className="h-full w-full rounded-3xl" />
                 ) : marksTrendData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart data={marksTrendData}>
                       <defs>
                         <linearGradient id="colorPerf" x1="0" y1="0" x2="0" y2="1">
@@ -355,7 +355,7 @@ export default function DashboardPage() {
               <CardContent className="px-6 pb-6">
                 <div className="h-[240px] w-full">
                   {attendanceTrendData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <BarChart data={attendanceTrendData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} fontWeight={900} tickLine={false} axisLine={false} dy={10} />
@@ -382,7 +382,7 @@ export default function DashboardPage() {
               <CardContent className="px-6 pb-6">
                  <div className="h-[240px] w-full">
                   {attendanceBreakdownData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
                           data={attendanceBreakdownData}
