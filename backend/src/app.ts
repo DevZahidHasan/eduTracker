@@ -5,9 +5,10 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes';
 import { errorMiddleware } from './middleware/error.middleware';
-import { apiLimiter } from './middleware/rateLimit.middleware';
+// import { apiLimiter } from './middleware/rateLimit.middleware';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security Middleware
 app.use(helmet({
@@ -66,7 +67,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Apply global rate limiter to all API routes
-app.use('/api', apiLimiter);
+// app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api', apiRoutes);
