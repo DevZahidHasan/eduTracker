@@ -5,6 +5,7 @@ import ToasterProvider from '../components/ToasterProvider';
 import StoreProvider from '../components/StoreProvider';
 import { GlobalErrorListener } from '@/components/layout/GlobalErrorListener';
 import SilentAuth from '@/components/auth/SilentAuth';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import NextTopLoader from 'nextjs-toploader';
 
 const geistSans = Geist({
@@ -44,9 +45,11 @@ export default function RootLayout({
         />
         <StoreProvider>
           <SilentAuth>
-            <GlobalErrorListener />
-            <ToasterProvider />
-            {children}
+            <ThemeProvider>
+              <GlobalErrorListener />
+              <ToasterProvider />
+              {children}
+            </ThemeProvider>
           </SilentAuth>
         </StoreProvider>
       </body>

@@ -63,18 +63,19 @@ export function Sidebar({
       <aside
         className={`
           fixed lg:relative inset-y-0 left-0 z-40 h-full
-          flex flex-col border-r border-slate-200 bg-white 
+          flex flex-col border-r border-border bg-card 
           transition-all duration-300 ease-in-out
           ${collapsed ? 'w-20' : 'w-64'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="flex h-28 items-center px-4 border-b border-slate-50 shrink-0 overflow-hidden">
+        <div className="flex h-28 items-center px-4 border-b border-border shrink-0 overflow-hidden">
           <div className={`relative h-28 transition-all duration-300 ease-in-out ${collapsed && !isMobileOpen ? 'w-12 mx-auto' : 'w-full px-2'}`}>
             <Image 
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain"
               priority
             />
@@ -83,7 +84,7 @@ export function Sidebar({
           {isMobileOpen && (
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="lg:hidden p-2 text-slate-400 hover:text-primary transition-standard absolute right-4"
+              className="lg:hidden p-2 text-muted-foreground hover:text-primary transition-standard absolute right-4"
             >
               <X size={20} />
             </button>
@@ -91,7 +92,7 @@ export function Sidebar({
 
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`hidden lg:flex absolute -right-3 top-14 h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm hover:text-primary transition-standard z-50`}
+            className={`hidden lg:flex absolute -right-3 top-14 h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-primary transition-standard z-50`}
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
@@ -109,10 +110,10 @@ export function Sidebar({
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-standard group ${
                   isActive
                     ? 'bg-primary/5 text-primary'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Icon size={20} className={isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-600'} />
+                <Icon size={20} className={isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} />
                 {(!collapsed || isMobileOpen) && (
                   <span className="text-sm font-semibold whitespace-nowrap overflow-hidden">{item.name}</span>
                 )}
@@ -121,12 +122,12 @@ export function Sidebar({
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-50 shrink-0">
+        <div className="p-4 border-t border-border shrink-0">
           <Link
             href="/login"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-standard group"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-standard group"
           >
-            <LogOut size={20} className="text-slate-400 group-hover:text-red-500" />
+            <LogOut size={20} className="text-muted-foreground group-hover:text-red-500" />
             {(!collapsed || isMobileOpen) && <span className="text-sm font-semibold whitespace-nowrap">Logout</span>}
           </Link>
         </div>

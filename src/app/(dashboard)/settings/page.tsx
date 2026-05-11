@@ -136,6 +136,16 @@ export default function SettingsPage() {
     setSettingsData(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleResetTheme = () => {
+    setSettingsData(prev => ({
+      ...prev,
+      theme: 'light',
+      compactMode: 'false',
+      accentColor: '#2563eb'
+    }));
+    toast.success('Theme preferences reset to defaults. Click Save to apply.');
+  };
+
   const handleTriggerEndOfDay = () => {
     setIsTriggering(true);
     dispatch(triggerEndOfDayThunk())
@@ -233,8 +243,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System Settings</h1>
-        <p className="text-slate-500 font-medium mt-1">Configure global platform preferences and organization profiles.</p>
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">System Settings</h1>
+        <p className="text-muted-foreground font-medium mt-1">Configure global platform preferences and organization profiles.</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -247,7 +257,7 @@ export default function SettingsPage() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === tab.id 
                   ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               <tab.icon size={18} className={activeTab === tab.id ? 'opacity-100' : 'opacity-70'} />
@@ -261,8 +271,8 @@ export default function SettingsPage() {
           
           {/* PROFILE TAB */}
           {activeTab === 'profile' && (
-            <Card className="border-slate-200/60 shadow-sm">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-6">
+            <Card className="border-border shadow-sm">
+              <CardHeader className="border-b border-border bg-muted/50 pb-6">
                 <CardTitle className="text-xl">School Profile</CardTitle>
                 <CardDescription>Manage the primary identity and contact details of your institution.</CardDescription>
               </CardHeader>
@@ -303,7 +313,7 @@ export default function SettingsPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex justify-end pt-4 border-t border-slate-100">
+                  <div className="flex justify-end pt-4 border-t border-border">
                     <Button type="submit" className="px-8 shadow-lg shadow-blue-200">
                       <Save size={18} className="mr-2" /> Save Profile
                     </Button>
@@ -316,8 +326,8 @@ export default function SettingsPage() {
           {/* ACADEMIC TAB */}
           {activeTab === 'academic' && (
             <div className="space-y-6">
-              <Card className="border-slate-200/60 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+              <Card className="border-border shadow-sm">
+                <CardHeader className="border-b border-border bg-muted/50 pb-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg">Configured Classes</CardTitle>
@@ -329,7 +339,7 @@ export default function SettingsPage() {
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {classes.map(c => (
-                      <span key={c.value} className="px-4 py-2 rounded-lg bg-blue-50 text-blue-700 font-bold border border-blue-100">
+                      <span key={c.value} className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold border border-blue-100 dark:border-blue-800">
                         {c.label}
                       </span>
                     ))}
@@ -337,8 +347,8 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200/60 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+              <Card className="border-border shadow-sm">
+                <CardHeader className="border-b border-border bg-muted/50 pb-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg">Academic Subjects</CardTitle>
@@ -350,7 +360,7 @@ export default function SettingsPage() {
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {subjects.map(s => (
-                      <span key={s.value} className="px-4 py-2 rounded-lg bg-emerald-50 text-emerald-700 font-bold border border-emerald-100">
+                      <span key={s.value} className="px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-100 dark:border-emerald-800">
                         {s.label}
                       </span>
                     ))}
@@ -358,8 +368,8 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200/60 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+              <Card className="border-border shadow-sm">
+                <CardHeader className="border-b border-border bg-muted/50 pb-4">
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg">Assessment Types</CardTitle>
@@ -372,13 +382,13 @@ export default function SettingsPage() {
                   <div className="flex flex-wrap gap-4">
                     {examTypes.map(e => (
                       <div key={e.value} className="flex items-center gap-2 group">
-                        <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 text-purple-700 font-bold border border-purple-100">
+                        <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold border border-purple-100 dark:border-purple-800">
                           <span className="text-sm">{e.label}</span>
                           <span className="text-[10px] opacity-60 uppercase tracking-tighter font-black">Base: {e.baseMark}</span>
                         </div>
                         <button 
                           onClick={() => handleEditExamType(e)}
-                          className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Edit2 size={14} />
                         </button>
@@ -392,8 +402,8 @@ export default function SettingsPage() {
 
           {/* USERS TAB */}
           {activeTab === 'users' && (
-            <Card className="border-slate-200/60 shadow-sm overflow-hidden">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-6 flex flex-row justify-between items-center">
+            <Card className="border-border shadow-sm overflow-hidden p-0">
+              <CardHeader className="border-b border-border bg-muted/50 p-6 flex flex-row justify-between items-center mb-0">
                 <div>
                   <CardTitle className="text-xl">Platform Users</CardTitle>
                   <CardDescription>Manage administrators and teachers.</CardDescription>
@@ -402,39 +412,39 @@ export default function SettingsPage() {
               </CardHeader>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-100">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Name</th>
-                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Email</th>
-                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Role</th>
-                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs">Joined</th>
-                      <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider text-xs text-right">Actions</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Name</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Email</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Role</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Joined</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                  <tbody className="divide-y divide-border bg-card">
                     {users.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50 transition-colors group">
-                        <td className="px-6 py-4 font-bold text-slate-900">{u.name || 'Unknown'}</td>
-                        <td className="px-6 py-4 text-slate-600 font-medium">{u.email}</td>
+                      <tr key={u.id} className="hover:bg-muted/30 transition-colors group">
+                        <td className="px-6 py-4 font-bold text-foreground">{u.name || 'Unknown'}</td>
+                        <td className="px-6 py-4 text-muted-foreground font-medium">{u.email}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2.5 py-1 rounded text-[10px] font-black tracking-widest ${
-                            u.role === 'ADMIN' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                            u.role === 'ADMIN' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                           }`}>
                             {u.role}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-500">{new Date(u.createdAt || '').toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-muted-foreground">{new Date(u.createdAt || '').toLocaleDateString()}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => handleEditUser(u)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                             >
                               <Edit2 size={16} />
                             </button>
                             <button 
                               onClick={() => handleDeleteUser(u.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -444,7 +454,7 @@ export default function SettingsPage() {
                     ))}
                     {users.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">No users found.</td>
+                        <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground italic">No users found.</td>
                       </tr>
                     )}
                   </tbody>
@@ -465,24 +475,24 @@ export default function SettingsPage() {
                   <div className="space-y-6 max-w-xl">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Theme Mode</h4>
-                        <p className="text-slate-500 text-xs mt-1">Select the primary color scheme.</p>
+                        <h4 className="font-bold text-foreground text-sm">Theme Mode</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Select the primary color scheme.</p>
                       </div>
                       <select 
                         value={settingsData.theme || 'light'} 
                         onChange={(e) => handleSettingChange('theme', e.target.value)}
-                        className="h-10 px-4 rounded-lg border border-slate-200 bg-slate-50 font-semibold text-sm outline-none"
+                        className="h-10 px-4 rounded-lg border border-border bg-card text-foreground font-semibold text-sm outline-none transition-standard focus:ring-4 focus:ring-primary/10"
                       >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark (Coming Soon)</option>
-                        <option value="system">System Default</option>
+                        <option value="light" className="bg-card text-foreground">Light</option>
+                        <option value="dark" className="bg-card text-foreground">Dark</option>
+                        <option value="system" className="bg-card text-foreground">System Default</option>
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+                    <div className="flex items-center justify-between border-t border-border pt-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Compact Mode</h4>
-                        <p className="text-slate-500 text-xs mt-1">Reduce spacing in tables and lists for denser data viewing.</p>
+                        <h4 className="font-bold text-foreground text-sm">Compact Mode</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Reduce spacing in tables and lists for denser data viewing.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -491,26 +501,29 @@ export default function SettingsPage() {
                           onChange={(e) => handleSettingChange('compactMode', e.target.checked ? 'true' : 'false')}
                           className="sr-only peer" 
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+                    <div className="flex items-center justify-between border-t border-border pt-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Brand Accent Color</h4>
-                        <p className="text-slate-500 text-xs mt-1">Used for primary buttons and highlights.</p>
+                        <h4 className="font-bold text-foreground text-sm">Brand Accent Color</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Used for primary buttons and highlights.</p>
                       </div>
                       <input 
                         type="color" 
                         value={settingsData.accentColor || '#2563eb'}
                         onChange={(e) => handleSettingChange('accentColor', e.target.value)}
-                        className="h-10 w-14 rounded cursor-pointer border border-slate-200" 
+                        className="h-10 w-14 rounded cursor-pointer border border-border bg-card" 
                       />
                     </div>
                   </div>
-                  <div className="flex justify-start pt-6 border-t border-slate-100">
+                  <div className="flex justify-start gap-4 pt-6 border-t border-slate-100">
                     <Button type="submit" className="px-8 shadow-lg shadow-blue-200">
                       <Save size={18} className="mr-2" /> Save Preferences
+                    </Button>
+                    <Button type="button" variant="outline" onClick={handleResetTheme}>
+                      Reset to Defaults
                     </Button>
                   </div>
                 </form>
@@ -520,8 +533,8 @@ export default function SettingsPage() {
 
           {/* NOTIFICATIONS TAB */}
           {activeTab === 'notifications' && (
-            <Card className="border-slate-200/60 shadow-sm">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-6">
+            <Card className="border-border shadow-sm">
+              <CardHeader className="border-b border-border bg-muted/50 pb-6">
                 <CardTitle className="text-xl">Notification Rules</CardTitle>
                 <CardDescription>Manage automated alerts and system emails.</CardDescription>
               </CardHeader>
@@ -531,8 +544,8 @@ export default function SettingsPage() {
                     
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Daily Attendance Alerts</h4>
-                        <p className="text-slate-500 text-xs mt-1">Send summary emails to class teachers daily.</p>
+                        <h4 className="font-bold text-foreground text-sm">Daily Attendance Alerts</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Send summary emails to class teachers daily.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -541,14 +554,14 @@ export default function SettingsPage() {
                           onChange={(e) => handleSettingChange('attendanceAlerts', e.target.checked ? 'true' : 'false')}
                           className="sr-only peer" 
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+                    <div className="flex items-center justify-between border-t border-border pt-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Exam Mark Finalization</h4>
-                        <p className="text-slate-500 text-xs mt-1">Alert admins when subject marks are locked.</p>
+                        <h4 className="font-bold text-foreground text-sm">Exam Mark Finalization</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Alert admins when subject marks are locked.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -557,14 +570,14 @@ export default function SettingsPage() {
                           onChange={(e) => handleSettingChange('marksAlerts', e.target.checked ? 'true' : 'false')}
                           className="sr-only peer" 
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+                    <div className="flex items-center justify-between border-t border-border pt-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Parent Notifications</h4>
-                        <p className="text-slate-500 text-xs mt-1">Enable automated SMS/Email for parents (Requires API Gateway).</p>
+                        <h4 className="font-bold text-foreground text-sm">Parent Notifications</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Enable automated SMS/Email for parents (Requires API Gateway).</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -573,12 +586,12 @@ export default function SettingsPage() {
                           onChange={(e) => handleSettingChange('parentNotifications', e.target.checked ? 'true' : 'false')}
                           className="sr-only peer" 
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
                     </div>
 
                   </div>
-                  <div className="flex justify-start gap-4 pt-6 border-t border-slate-100">
+                  <div className="flex justify-start gap-4 pt-6 border-t border-border">
                     <Button type="submit" className="px-8 shadow-lg shadow-blue-200">
                       <Save size={18} className="mr-2" /> Save Notification Rules
                     </Button>
@@ -593,8 +606,8 @@ export default function SettingsPage() {
 
           {/* SECURITY TAB */}
           {activeTab === 'security' && (
-            <Card className="border-slate-200/60 shadow-sm border-t-red-500 border-t-4">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-6">
+            <Card className="border-border shadow-sm border-t-red-500 border-t-4">
+              <CardHeader className="border-b border-border bg-muted/50 pb-6">
                 <CardTitle className="text-xl">Security & Authentication</CardTitle>
                 <CardDescription>Manage sessions and account security protocols.</CardDescription>
               </CardHeader>
@@ -602,26 +615,26 @@ export default function SettingsPage() {
                 <form onSubmit={handleSettingsSave} className="space-y-8">
                   <div className="max-w-xl space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">JWT Session Timeout (Minutes)</label>
+                      <label className="text-sm font-bold text-foreground/80">JWT Session Timeout (Minutes)</label>
                       <Input 
                         type="number"
                         value={settingsData.sessionTimeout || '60'} 
                         onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)} 
                         placeholder="e.g. 60" 
                       />
-                      <p className="text-xs text-slate-500 font-medium">Users will be forcibly logged out after this period of inactivity.</p>
+                      <p className="text-xs text-muted-foreground font-medium">Users will be forcibly logged out after this period of inactivity.</p>
                     </div>
                   </div>
                   
-                  <div className="pt-6 border-t border-slate-100 max-w-xl">
-                    <h3 className="text-sm font-bold text-slate-900 mb-4">Account Security</h3>
-                    <Button type="button" variant="outline" className="text-slate-700 font-bold w-full md:w-auto">
+                  <div className="pt-6 border-t border-border max-w-xl">
+                    <h3 className="text-sm font-bold text-foreground mb-4">Account Security</h3>
+                    <Button type="button" variant="outline" className="text-foreground font-bold w-full md:w-auto">
                       Initiate Password Reset
                     </Button>
-                    <p className="text-xs text-slate-500 font-medium mt-3">A secure link will be emailed to your registered admin address.</p>
+                    <p className="text-xs text-muted-foreground font-medium mt-3">A secure link will be emailed to your registered admin address.</p>
                   </div>
 
-                  <div className="flex justify-start pt-6 border-t border-slate-100">
+                  <div className="flex justify-start pt-6 border-t border-border">
                     <Button type="submit" className="px-8 shadow-lg shadow-blue-200">
                       <Save size={18} className="mr-2" /> Update Security Policies
                     </Button>

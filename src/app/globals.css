@@ -19,9 +19,41 @@
   --radius: 0.75rem;
 }
 
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --secondary: #334155;
+  --secondary-foreground: #94a3b8;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --border: #334155;
+  --input: #334155;
+}
+
+.compact-mode {
+  --radius: 0.375rem;
+}
+
+.compact-mode .p-6 { @apply p-3; }
+.compact-mode .p-8 { @apply p-4; }
+.compact-mode .py-6 { @apply py-3; }
+.compact-mode .py-4 { @apply py-2; }
+.compact-mode .px-6 { @apply px-3; }
+.compact-mode .gap-6 { @apply gap-3; }
+.compact-mode .gap-8 { @apply gap-4; }
+.compact-mode .space-y-6 > :not([hidden]) ~ :not([hidden]) { @apply mt-3; }
+.compact-mode .space-y-10 > :not([hidden]) ~ :not([hidden]) { @apply mt-5; }
+
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);

@@ -6,9 +6,9 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Card({ children, className = '', variant = 'default', ...props }: CardProps) {
   const variants = {
-    default: 'bg-white shadow-sm border border-border',
+    default: 'bg-card text-card-foreground shadow-sm border border-border',
     outline: 'bg-transparent border border-border',
-    glass: 'bg-white/70 backdrop-blur-md border border-white/20 shadow-sm',
+    glass: 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 shadow-sm',
   };
 
   return (
@@ -26,7 +26,7 @@ export function Card({ children, className = '', variant = 'default', ...props }
 }
 
 export function CardHeader({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={`mb-6 flex flex-col gap-1 ${className}`}>{children}</div>;
+  return <div className={`mb-6 flex flex-col gap-1 bg-inherit ${className}`}>{children}</div>;
 }
 
 export function CardTitle({ children, className = '' }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -34,8 +34,9 @@ export function CardTitle({ children, className = '' }: React.HTMLAttributes<HTM
 }
 
 export function CardDescription({ children, className = '' }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={`text-sm text-slate-500 ${className}`}>{children}</p>;
+  return <p className={`text-sm text-muted-foreground ${className}`}>{children}</p>;
 }
+
 
 export function CardContent({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={`${className}`}>{children}</div>;
