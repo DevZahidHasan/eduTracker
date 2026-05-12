@@ -15,15 +15,9 @@ import {
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
-import { 
-  selectAllMarks, 
-  addMarksBulkThunk,
-  fetchMarks,
-  finalizeMarksThunk,
-  unlockMarksThunk
-} from '@/lib/features/marksSlice';
+import { selectAllMarks, addMarksBulkThunk, fetchMarks, finalizeMarksThunk, unlockMarksThunk } from '@/lib/features/marksSlice';
 import { Mark } from '@/types/models';
-import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
+import { selectClasses, selectSubjects, selectExamTypes, fetchConfig } from '@/lib/features/configSlice';
 import { selectClassesOverview, fetchClassesOverview } from '@/lib/features/classesSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -57,9 +51,10 @@ export default function MarksPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { isDirty, errors },
     reset,
-  } = useForm<{ scores: Record<number, number | string> }>({
+  } = useForm<{ scores: Record<string, number | string> }>({
     defaultValues: { scores: {} },
     // We validate manually in onSave for dynamic keys, 
     // but the schema is available for single field refs if needed.
@@ -85,6 +80,8 @@ export default function MarksPage() {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
     dispatch(fetchClassesOverview());
+    // Ensure config is loaded for EXAM_TYPES, SUBJECTS, etc.
+    dispatch(fetchConfig());
   }, [dispatch]);
 
   // Get available sections for the selected class
@@ -108,9 +105,19 @@ export default function MarksPage() {
       })
       .then(res => res.json())
       .then(json => {
-        setIsLocked(json.data.isLocked);
+        if (json.success) {
+          setIsLocked(!!json.data.isLocked);
+        } else {
+          setIsLocked(false);
+        }
       })
-      .catch(err => console.error('Failed to fetch lock status:', err));
+      .catch(err => {
+        console.error('Failed to fetch lock status:', err);
+        setIsLocked(false);
+      });
+    } else {
+      // Reset lock status if filters are incomplete
+      setIsLocked(false);
     }
   }, [selectedClass, selectedSubject, selectedExamType, selectedDate, auth.token]);
 
@@ -126,9 +133,9 @@ export default function MarksPage() {
 
   // Filter students by search query
   const filteredStudents = useMemo(() => {
-    let result = classStudents;
+    let result = [...classStudents]; // Create a copy to avoid in-place sorting
     if (searchQuery) {
-      result = classStudents.filter(student => 
+      result = result.filter(student => 
         student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.rollNumber.includes(searchQuery) ||
         student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
@@ -152,7 +159,7 @@ export default function MarksPage() {
   // Sync local marks when filters change
   useEffect(() => {
     if (selectedClass && selectedSubject && selectedExamType && selectedDate) {
-      const marksMap: Record<number, number | string> = {};
+      const marksMap: Record<string, number | string> = {};
       classStudents.forEach(student => {
         const existingMark = allMarks.find(m => 
           m.studentId === student.id && 
@@ -160,20 +167,20 @@ export default function MarksPage() {
           m.examType === selectedExamType &&
           m.date === selectedDate
         );
-        marksMap[student.id] = existingMark ? existingMark.score : '';
+        marksMap[`student_${student.id}`] = existingMark ? existingMark.score : '';
       });
       reset({ scores: marksMap });
     }
   }, [allMarks, selectedClass, selectedSubject, selectedExamType, selectedDate, classStudents, reset]);
 
-  const onSave = (data: { scores: Record<number, number | string> }) => {
+  const onSave = (data: { scores: Record<string, number | string> }) => {
     if (!selectedClass || !selectedSubject || !selectedExamType) return;
 
     const recordsToSave: Partial<Mark>[] = [];
     
-    Object.entries(data.scores).forEach(([id, score]) => {
+    Object.entries(data.scores).forEach(([idStr, score]) => {
       if (score !== '' && score !== null && score !== undefined) {
-        const studentId = Number(id);
+        const studentId = Number(idStr.replace('student_', ''));
         const scoreNum = Number(score);
         
         if (scoreNum > maxScore) {
@@ -282,9 +289,9 @@ export default function MarksPage() {
             </Button>
           )}
           {isLocked && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100 font-bold text-xs">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg border border-amber-200 font-bold text-xs animate-pulse">
               <AlertCircle size={16} />
-              LOCKED
+              ENTRY LOCKED
             </div>
           )}
           {isLocked && (auth.role === 'ADMIN' || auth.user?.role === 'ADMIN') && (
@@ -299,6 +306,16 @@ export default function MarksPage() {
           )}
         </div>
       </div>
+
+      {isLocked && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top duration-500">
+          <AlertCircle className="text-amber-500" size={24} />
+          <div>
+            <h4 className="text-amber-800 font-bold text-sm">Marks for this assessment are currently locked.</h4>
+            <p className="text-amber-700/80 text-xs mt-0.5">This result set has been finalized and is currently in read-only mode. { (auth.role === 'ADMIN' || auth.user?.role === 'ADMIN') ? 'Use the "Unlock Marks" button above to enable editing.' : 'Contact an administrator if changes are required.' }</p>
+          </div>
+        </div>
+      )}
 
       <Card className="border-slate-200/60 shadow-sm p-6 bg-white">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
@@ -398,7 +415,7 @@ export default function MarksPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSave)} className="flex flex-col h-full">
-              <div className="overflow-x-auto max-h-[calc(100vh-340px)] custom-scrollbar">
+              <div className="hidden md:block overflow-x-auto max-h-[calc(100vh-340px)] custom-scrollbar">
                 <table className="w-full text-left text-sm border-collapse min-w-[700px]">
                   <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
                     <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -411,7 +428,7 @@ export default function MarksPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {paginatedStudents.map((student) => {
-                      const score = scoresWatch?.[student.id] ?? '';
+                      const score = scoresWatch?.[`student_${student.id}`] ?? '';
                       const percentage = score !== '' ? Math.round((Number(score) / maxScore) * 100) : null;
                       const hasError = Number(score) > maxScore;
                       
@@ -438,9 +455,10 @@ export default function MarksPage() {
                                   <input 
                                     type="number"
                                     placeholder="0"
-                                    {...register(`scores.${student.id}` as any)}
+                                    value={score}
+                                    onChange={(e) => setValue(`scores.student_${student.id}`, e.target.value, { shouldDirty: true })}
                                     disabled={isLocked}
-                                    className={`w-20 bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 ${
+                                    className={`w-24 bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed ${
                                       hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200'
                                     }`}
                                   />
@@ -479,7 +497,7 @@ export default function MarksPage() {
               {/* Mobile Card View */}
               <div className="grid grid-cols-1 gap-4 p-4 md:hidden bg-slate-50/30">
                 {paginatedStudents.map((student) => {
-                  const score = scoresWatch?.[student.id] ?? '';
+                  const score = scoresWatch?.[`student_${student.id}`] ?? '';
                   const percentage = score !== '' ? Math.round((Number(score) / maxScore) * 100) : null;
                   const hasError = Number(score) > maxScore;
                   
@@ -504,9 +522,10 @@ export default function MarksPage() {
                             <input 
                               type="number"
                               placeholder="0"
-                              {...register(`scores.${student.id}` as any)}
+                              value={score}
+                              onChange={(e) => setValue(`scores.student_${student.id}`, e.target.value, { shouldDirty: true })}
                               disabled={isLocked}
-                              className={`w-20 min-h-[44px] bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 ${
+                              className={`w-24 min-h-[44px] bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed ${
                                 hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200'
                               }`}
                             />
