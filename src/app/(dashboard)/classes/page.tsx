@@ -102,7 +102,7 @@ export default function ClassesPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -167,7 +167,7 @@ export default function ClassesPage() {
                           </div>
                         </div>
                         <Link href={`/classes/${c.className}/${s.section}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary hover:text-white transition-all">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] rounded-full hover:bg-primary hover:text-white transition-all">
                             <ArrowRight className="h-4 w-4" />
                           </Button>
                         </Link>

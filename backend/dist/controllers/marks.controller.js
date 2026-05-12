@@ -21,7 +21,7 @@ const email_service_1 = require("../services/email.service");
 const audit_service_1 = require("../services/audit.service");
 const notifications_controller_1 = require("./notifications.controller");
 exports.getMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { studentId, subject, examType, className } = req.query;
+    const { studentId, subject, examType, className, section } = req.query;
     const whereClause = {};
     if (studentId)
         whereClause.studentId = Number(studentId);
@@ -29,10 +29,12 @@ exports.getMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void
         whereClause.subject = subject;
     if (examType)
         whereClause.examType = examType;
-    if (className) {
-        whereClause.student = {
-            className: className
-        };
+    if (className || section) {
+        whereClause.student = {};
+        if (className)
+            whereClause.student.className = className;
+        if (section)
+            whereClause.student.section = section;
     }
     const marks = yield prisma_1.default.mark.findMany({
         where: whereClause,

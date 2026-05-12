@@ -34,22 +34,23 @@ export const updateTeacherRemarks = asyncHandler(async (req: Request, res: Respo
 });
 
 export const getClassPerformance = asyncHandler(async (req: Request, res: Response) => {
-  const { className, examType } = req.query;
+  const { className, examType, section } = req.query;
 
   if (!className || !examType) {
     throw new ApiError(400, 'Class Name and Exam Type are required');
   }
 
-  const performance = await reportsService.getClassPerformance(className as string, examType as string);
+  const performance = await reportsService.getClassPerformance(className as string, examType as string, section as string | undefined);
 
   return res.status(200).json(new ApiResponse(200, performance, 'Class performance report fetched successfully'));
 });
 
 export const getAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
-  const { className, startDate, endDate } = req.query;
+  const { className, section, startDate, endDate } = req.query;
 
   const where: any = {};
   if (className) where.className = className as string;
+  if (section) where.section = section as string;
 
   const students = await prisma.student.findMany({
     where,

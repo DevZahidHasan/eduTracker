@@ -277,9 +277,9 @@ export default function ReportsPage() {
               </div>
 
               {/* Academic Performance Table */}
-              <div className="mb-8">
+              <div className="mb-8 overflow-x-auto custom-scrollbar">
                 <h3 className="font-black text-slate-900 uppercase tracking-widest text-sm mb-3">Academic Performance</h3>
-                <table className="w-full text-sm border-collapse border border-slate-800">
+                <table className="w-full text-sm border-collapse border border-slate-800 whitespace-nowrap">
                   <thead>
                     <tr className="bg-slate-100">
                       <th className="border border-slate-800 p-2 text-left font-bold text-slate-900">Subject</th>

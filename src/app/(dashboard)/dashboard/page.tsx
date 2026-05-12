@@ -62,7 +62,12 @@ const Pie = dynamic(() => import('recharts').then((mod) => mod.Pie), { ssr: fals
 const Cell = dynamic(() => import('recharts').then((mod) => mod.Cell), { ssr: false });
 const Legend = dynamic(() => import('recharts').then((mod) => mod.Legend), { ssr: false });
 
-const PIE_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
+const STATUS_COLORS: Record<string, string> = {
+  Present: '#10b981',
+  Absent: '#ef4444',
+  Late: '#f59e0b',
+  Excused: '#3b82f6',
+};
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -484,7 +489,7 @@ export default function DashboardPage() {
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
-                          data={attendanceBreakdownData}
+                          data={attendanceBreakdownData.map(entry => ({ ...entry, fill: STATUS_COLORS[entry.name] || '#94a3b8' }))}
                           cx="50%"
                           cy="50%"
                           innerRadius={60}
@@ -496,7 +501,7 @@ export default function DashboardPage() {
                           {attendanceBreakdownData.map((entry, index) => (
                             <Cell
                               key={`cell-${index}`}
-                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                              fill={STATUS_COLORS[entry.name] || '#94a3b8'}
                             />
                           ))}
                         </Pie>
@@ -535,7 +540,7 @@ export default function DashboardPage() {
         {/* Sidebar: Insights & Recent Activity */}
         <div className="lg:col-span-4 space-y-8">
           {/* AI Insights - Premium Variant */}
-          <Card className="border-none shadow-2xl shadow-indigo-100 bg-gradient-to-br from-indigo-600 to-blue-700 text-white overflow-hidden relative">
+          <Card className="border-none shadow-2xl shadow-indigo-100 bg-indigo-700  text-white overflow-hidden relative">
             <div className="absolute top-[-10%] right-[-10%] h-48 w-48 bg-white/10 rounded-full blur-3xl"></div>
             <CardHeader className="relative z-10 px-6 pt-6">
               <CardTitle className="text-white flex items-center gap-3">
@@ -551,7 +556,7 @@ export default function DashboardPage() {
                   {aiResult}
                 </div>
               ) : (
-                <p className="text-indigo-100 text-sm font-medium">
+                <p className="text-white text-sm font-medium">
                   Deploy our advanced AI models to analyze student performance and identify
                   predictive academic patterns.
                 </p>

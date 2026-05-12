@@ -115,9 +115,12 @@ const generateOrUpdateReport = (studentId, examType, teacherRemarks) => __awaite
     });
 });
 exports.generateOrUpdateReport = generateOrUpdateReport;
-const getClassPerformance = (className, examType) => __awaiter(void 0, void 0, void 0, function* () {
+const getClassPerformance = (className, examType, section) => __awaiter(void 0, void 0, void 0, function* () {
+    const whereClause = { className };
+    if (section)
+        whereClause.section = section;
     const students = yield prisma_1.default.student.findMany({
-        where: { className },
+        where: whereClause,
         include: {
             marks: { where: { examType } }
         }

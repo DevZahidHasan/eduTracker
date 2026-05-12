@@ -28,7 +28,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
     >
       {/* Backdrop */}
       <div 
@@ -40,7 +40,8 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
       <div
         className={`
           relative bg-white border border-slate-200 shadow-2xl 
-          rounded-2xl w-full max-w-lg overflow-hidden transition-standard
+          rounded-t-2xl sm:rounded-2xl w-full max-w-lg overflow-hidden transition-standard
+          animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300
           ${className}
         `}
       >
@@ -54,7 +55,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
             <X size={20} />
           </button>
         </div>
-        <div className="p-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
+        <div className="p-4 sm:p-6 max-h-[85vh] sm:max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
           {children}
         </div>
       </div>

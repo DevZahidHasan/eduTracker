@@ -169,7 +169,7 @@ export default function StaffManagementPage() {
         </div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Access Restricted</h2>
         <p className="text-slate-500 max-w-md">Only administrators can access the staff management console.</p>
-        <Button onClick={() => window.history.back()}>Go Back</Button>
+        <Button onClick={() => window.history.back()} className="min-h-[44px] w-full sm:w-auto">Go Back</Button>
       </div>
     );
   }
@@ -186,7 +186,7 @@ export default function StaffManagementPage() {
           <p className="text-slate-500 font-medium">Comprehensive database of all academic and support personnel.</p>
         </div>
         
-        <Button onClick={() => handleOpenModal()} size="lg" className="rounded-2xl shadow-xl shadow-primary/20 font-black text-xs uppercase tracking-widest px-8">
+        <Button onClick={() => handleOpenModal()} size="lg" className="min-h-[44px] rounded-2xl shadow-xl shadow-primary/20 font-black text-xs uppercase tracking-widest px-8 w-full sm:w-auto">
           <UserPlus size={18} className="mr-2" />
           Onboard New Staff
         </Button>
@@ -373,7 +373,7 @@ export default function StaffManagementPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="e.g. Michael Chen"
-                  className="h-11 rounded-xl border-slate-100 bg-slate-50/50 font-bold"
+                  className="h-11 min-h-[44px] rounded-xl border-slate-100 bg-slate-50/50 font-bold"
                 />
               </div>
 
@@ -392,7 +392,7 @@ export default function StaffManagementPage() {
                     { value: 'CLEANER', label: 'Cleaning Staff' },
                     { value: 'STAFF', label: 'General Staff' }
                   ]}
-                  className="h-11 rounded-xl border-slate-100 bg-slate-50/50 font-black text-[10px] uppercase tracking-widest"
+                  className="h-11 min-h-[44px] rounded-xl border-slate-100 bg-slate-50/50 font-black text-[10px] uppercase tracking-widest"
                 />
               </div>
 
@@ -402,7 +402,7 @@ export default function StaffManagementPage() {
                   value={formData.nid}
                   onChange={(e) => setFormData({...formData, nid: e.target.value})}
                   placeholder="13-digit NID"
-                  className="h-11 rounded-xl border-slate-100 bg-slate-50/50 font-bold"
+                  className="h-11 min-h-[44px] rounded-xl border-slate-100 bg-slate-50/50 font-bold"
                 />
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function StaffManagementPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="Institutional Email"
-                    className="h-10 rounded-xl border-slate-200 bg-white font-bold text-sm"
+                    className="h-10 min-h-[44px] rounded-xl border-slate-200 bg-white font-bold text-sm"
                   />
                   <Input 
                     required={formData.canLogin && !editingUser}
@@ -440,7 +440,7 @@ export default function StaffManagementPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     placeholder={editingUser ? "New Password (optional)" : "Secure Password"}
-                    className="h-10 rounded-xl border-slate-200 bg-white font-bold text-sm"
+                    className="h-10 min-h-[44px] rounded-xl border-slate-200 bg-white font-bold text-sm"
                   />
                 </div>
               </div>
@@ -456,7 +456,7 @@ export default function StaffManagementPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   placeholder="Primary Phone Number"
-                  className="h-10 rounded-xl border-slate-200 bg-white font-bold text-sm"
+                  className="h-10 min-h-[44px] rounded-xl border-slate-200 bg-white font-bold text-sm"
                 />
                 <textarea 
                   value={formData.address}

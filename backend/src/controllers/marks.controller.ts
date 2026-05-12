@@ -10,17 +10,17 @@ import { AuditService } from '../services/audit.service';
 import { createNotification } from './notifications.controller';
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
-  const { studentId, subject, examType, className } = req.query;
+  const { studentId, subject, examType, className, section } = req.query;
   const whereClause: Prisma.MarkWhereInput = {};
   
   if (studentId) whereClause.studentId = Number(studentId);
   if (subject) whereClause.subject = subject as string;
   if (examType) whereClause.examType = examType as string;
   
-  if (className) {
-    whereClause.student = {
-      className: className as string
-    };
+  if (className || section) {
+    whereClause.student = {};
+    if (className) whereClause.student.className = className as string;
+    if (section) whereClause.student.section = section as string;
   }
   
   const marks = await prisma.mark.findMany({ 

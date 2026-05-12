@@ -232,12 +232,12 @@ export default function AuditPage() {
       </div>
 
       {total > limit && (
-        <div className="flex items-center justify-center gap-4 pt-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
           <Button
             variant="outline"
             disabled={offset === 0}
             onClick={() => setOffset(Math.max(0, offset - limit))}
-            className="w-32 border-slate-200"
+            className="w-full sm:w-32 border-slate-200 min-h-[44px]"
           >
             Previous
           </Button>
@@ -248,7 +248,7 @@ export default function AuditPage() {
             variant="outline"
             disabled={offset + limit >= total}
             onClick={() => setOffset(offset + limit)}
-            className="w-32 border-slate-200"
+            className="w-full sm:w-32 border-slate-200 min-h-[44px]"
           >
             Next
           </Button>

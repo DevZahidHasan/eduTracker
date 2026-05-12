@@ -333,13 +333,13 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Configured Classes</CardTitle>
                       <CardDescription>Active grades and class levels</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('class')}><Plus size={16} className="mr-1"/> Add Class</Button>
+                    <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => handleAddAcademic('class')}><Plus size={16} className="mr-1"/> Add Class</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {classes.map(c => (
-                      <span key={c.value} className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold border border-blue-100 dark:border-blue-800">
+                      <span key={c.value} className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 font-bold border border-blue-100 dark:border-blue-800">
                         {c.label}
                       </span>
                     ))}
@@ -354,13 +354,13 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Academic Subjects</CardTitle>
                       <CardDescription>Curriculum subjects taught across classes</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('subject')}><Plus size={16} className="mr-1"/> Add Subject</Button>
+                    <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => handleAddAcademic('subject')}><Plus size={16} className="mr-1"/> Add Subject</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {subjects.map(s => (
-                      <span key={s.value} className="px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-100 dark:border-emerald-800">
+                      <span key={s.value} className="px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 font-bold border border-emerald-100 dark:border-emerald-800">
                         {s.label}
                       </span>
                     ))}
@@ -375,14 +375,14 @@ export default function SettingsPage() {
                       <CardTitle className="text-lg">Assessment Types</CardTitle>
                       <CardDescription>Standardized exam definitions</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleAddAcademic('examType')}><Plus size={16} className="mr-1"/> Add Exam Type</Button>
+                    <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => handleAddAcademic('examType')}><Plus size={16} className="mr-1"/> Add Exam Type</Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-4">
                     {examTypes.map(e => (
                       <div key={e.value} className="flex items-center gap-2 group">
-                        <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold border border-purple-100 dark:border-purple-800">
+                        <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 font-bold border border-purple-100 dark:border-purple-800">
                           <span className="text-sm">{e.label}</span>
                           <span className="text-[10px] opacity-60 uppercase tracking-tighter font-black">Base: {e.baseMark}</span>
                         </div>
@@ -428,7 +428,7 @@ export default function SettingsPage() {
                         <td className="px-6 py-4 text-muted-foreground font-medium">{u.email}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2.5 py-1 rounded text-[10px] font-black tracking-widest ${
-                            u.role === 'ADMIN' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                            u.role === 'ADMIN' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
                           }`}>
                             {u.role}
                           </span>
@@ -438,13 +438,13 @@ export default function SettingsPage() {
                           <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => handleEditUser(u)}
-                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                             >
                               <Edit2 size={16} />
                             </button>
                             <button 
                               onClick={() => handleDeleteUser(u.id)}
-                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                             >
                               <Trash2 size={16} />
                             </button>

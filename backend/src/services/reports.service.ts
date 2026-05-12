@@ -99,9 +99,12 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
   });
 };
 
-export const getClassPerformance = async (className: string, examType: string) => {
+export const getClassPerformance = async (className: string, examType: string, section?: string) => {
+  const whereClause: any = { className };
+  if (section) whereClause.section = section;
+
   const students = await prisma.student.findMany({
-    where: { className },
+    where: whereClause,
     include: {
       marks: { where: { examType } }
     }

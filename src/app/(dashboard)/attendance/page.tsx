@@ -337,15 +337,15 @@ export default function AttendancePage() {
               )}
 
               {/* Sticky Footer for Save Button */}
-              <div className="mt-auto p-6 bg-white border-t border-slate-100 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
+              <div className="mt-auto p-4 sm:p-6 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center gap-2 text-slate-500 text-sm font-medium w-full sm:w-auto justify-center sm:justify-start">
                   <CheckSquare size={18} className="text-primary" />
                   <span>{Object.values(localAttendance).filter(v => v === 'PRESENT').length} students present today</span>
                 </div>
                 <Button 
                   onClick={handleSave} 
                   disabled={!isDirty}
-                  className={`px-8 py-2.5 shadow-lg transition-all ${isDirty ? 'shadow-blue-200 scale-100' : 'shadow-none scale-95'}`}
+                  className={`w-full sm:w-auto px-8 py-2.5 min-h-[44px] shadow-lg transition-all ${isDirty ? 'shadow-blue-200 scale-100' : 'shadow-none scale-95'}`}
                 >
                   <Save size={18} className="mr-2" />
                   Save Class Records

@@ -71,18 +71,20 @@ exports.updateTeacherRemarks = (0, asyncHandler_1.asyncHandler)((req, res) => __
     return res.status(200).json(new apiResponse_1.ApiResponse(200, updatedReport, 'Teacher remarks updated successfully'));
 }));
 exports.getClassPerformance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { className, examType } = req.query;
+    const { className, examType, section } = req.query;
     if (!className || !examType) {
         throw new apiError_1.ApiError(400, 'Class Name and Exam Type are required');
     }
-    const performance = yield reportsService.getClassPerformance(className, examType);
+    const performance = yield reportsService.getClassPerformance(className, examType, section);
     return res.status(200).json(new apiResponse_1.ApiResponse(200, performance, 'Class performance report fetched successfully'));
 }));
 exports.getAttendanceSummary = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { className, startDate, endDate } = req.query;
+    const { className, section, startDate, endDate } = req.query;
     const where = {};
     if (className)
         where.className = className;
+    if (section)
+        where.section = section;
     const students = yield prisma_1.default.student.findMany({
         where,
         select: {

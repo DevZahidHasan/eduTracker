@@ -10,8 +10,9 @@ const morgan_1 = __importDefault(require("morgan"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const routes_1 = __importDefault(require("./routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
-const rateLimit_middleware_1 = require("./middleware/rateLimit.middleware");
+// import { apiLimiter } from './middleware/rateLimit.middleware';
 const app = (0, express_1.default)();
+app.set('trust proxy', 1);
 // Security Middleware
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: {
@@ -66,7 +67,7 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json({ limit: '5mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '5mb' }));
 // Apply global rate limiter to all API routes
-app.use('/api', rateLimit_middleware_1.apiLimiter);
+// app.use('/api', apiLimiter);
 // Routes
 app.use('/api', routes_1.default);
 // Health check

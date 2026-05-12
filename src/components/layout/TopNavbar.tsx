@@ -70,11 +70,11 @@ export function TopNavbar({ onMenuClick }: { onMenuClick?: () => void }) {
         <div className="h-8 w-[1px] bg-border mx-1"></div>
 
         <button className="flex items-center gap-3 pl-1 group">
-          <div className="flex flex-col items-end text-right">
+          <div className="hidden sm:flex flex-col items-end text-right">
             <span className="text-sm font-bold text-foreground leading-tight">{user?.name || 'User'}</span>
             <span className="text-[11px] font-medium text-muted-foreground leading-tight">{role || 'User'}</span>
           </div>
-          <div className="h-10 w-10 rounded-full bg-muted border border-border flex items-center justify-center text-primary transition-standard group-hover:border-primary/50 group-hover:bg-primary/5 overflow-hidden relative">
+          <div className="h-10 w-10 rounded-full bg-muted border border-border flex items-center justify-center text-primary transition-standard group-hover:border-primary/50 group-hover:bg-primary/5 overflow-hidden relative shrink-0">
             {user?.profileImage ? (
               <Image 
                 src={user.profileImage} 

@@ -24,6 +24,7 @@ import {
 } from '@/lib/features/marksSlice';
 import { Mark } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
+import { selectClassesOverview, fetchClassesOverview } from '@/lib/features/classesSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -39,10 +40,12 @@ export default function MarksPage() {
   const SUBJECTS = useAppSelector(selectSubjects);
   const EXAM_TYPES = useAppSelector(selectExamTypes);
   const auth = useAppSelector((state) => state.auth);
+  const classesOverview = useAppSelector(selectClassesOverview);
   
   const loadingMarks = useAppSelector((state) => state.marks.loading);
 
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -81,7 +84,20 @@ export default function MarksPage() {
   useEffect(() => {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
+    dispatch(fetchClassesOverview());
   }, [dispatch]);
+
+  // Get available sections for the selected class
+  const availableSections = useMemo(() => {
+    const allSectionsOption = { value: '', label: 'All Sections' };
+    if (!selectedClass) return [allSectionsOption];
+    const classInfo = classesOverview.find(c => c.className === selectedClass);
+    if (!classInfo) return [allSectionsOption];
+    return [
+      allSectionsOption,
+      ...classInfo.sections.map(s => ({ value: s.section, label: `Section ${s.section}` }))
+    ];
+  }, [selectedClass, classesOverview]);
 
   // Check lock status
   useEffect(() => {
@@ -101,8 +117,12 @@ export default function MarksPage() {
   // Filter students based on selected class
   const classStudents = useMemo(() => {
     if (!selectedClass) return [];
-    return allStudents.filter(student => student.className === selectedClass);
-  }, [allStudents, selectedClass]);
+    let result = allStudents.filter(student => student.className === selectedClass);
+    if (selectedSection) {
+      result = result.filter(student => student.section === selectedSection);
+    }
+    return result;
+  }, [allStudents, selectedClass, selectedSection]);
 
   // Filter students by search query
   const filteredStudents = useMemo(() => {
@@ -127,7 +147,7 @@ export default function MarksPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedClass, selectedSubject, selectedExamType, selectedDate, searchQuery]);
+  }, [selectedClass, selectedSection, selectedSubject, selectedExamType, selectedDate, searchQuery]);
 
   // Sync local marks when filters change
   useEffect(() => {
@@ -281,13 +301,24 @@ export default function MarksPage() {
       </div>
 
       <Card className="border-slate-200/60 shadow-sm p-6 bg-white">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           <Select 
             label="Grade / Class"
             placeholder="Choose class"
             value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
+            onChange={(e) => {
+              setSelectedClass(e.target.value);
+              setSelectedSection('');
+            }}
             options={CLASSES}
+          />
+          <Select 
+            label="Section"
+            placeholder="Choose section"
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            disabled={!selectedClass}
+            options={availableSections}
           />
           <Select 
             label="Academic Subject"
@@ -323,7 +354,7 @@ export default function MarksPage() {
           <CardTitle className="text-slate-900 flex items-center gap-2">
             <TrendingUp size={20} className="text-primary" />
             {selectedClass && selectedSubject && selectedExamType 
-              ? `${CLASSES.find(c => c.value === selectedClass)?.label} • ${SUBJECTS.find(s => s.value === selectedSubject)?.label} • ${EXAM_TYPES.find(t => t.value === selectedExamType)?.label}` 
+              ? `${CLASSES.find(c => c.value === selectedClass)?.label}${selectedSection ? ` (Sec ${selectedSection})` : ''} • ${SUBJECTS.find(s => s.value === selectedSubject)?.label} • ${EXAM_TYPES.find(t => t.value === selectedExamType)?.label}` 
               : 'Result Entry Portal'}
           </CardTitle>
           
@@ -443,6 +474,71 @@ export default function MarksPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="grid grid-cols-1 gap-4 p-4 md:hidden bg-slate-50/30">
+                {paginatedStudents.map((student) => {
+                  const score = scoresWatch?.[student.id] ?? '';
+                  const percentage = score !== '' ? Math.round((Number(score) / maxScore) * 100) : null;
+                  const hasError = Number(score) > maxScore;
+                  
+                  return (
+                    <div key={student.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 shrink-0">
+                          {student.fullName.charAt(0)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 leading-tight">{student.fullName}</span>
+                          <span className="text-xs text-slate-500 font-medium mt-0.5">
+                            ID: {student.studentId} • Roll: {student.rollNumber}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Earned Score</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              placeholder="0"
+                              {...register(`scores.${student.id}` as any)}
+                              disabled={isLocked}
+                              className={`w-20 min-h-[44px] bg-slate-50 border rounded-lg px-3 py-2 text-center text-slate-900 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-standard font-extrabold text-lg disabled:opacity-50 ${
+                                hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200'
+                              }`}
+                            />
+                            <span className="text-slate-400 font-bold text-sm">/ {maxScore}</span>
+                          </div>
+                          {hasError && <span className="text-[10px] text-red-500 font-bold">Exceeds Max</span>}
+                        </div>
+                        
+                        <div className="flex flex-col items-end gap-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</label>
+                          {percentage !== null ? (
+                            <div className="flex flex-col items-end gap-1">
+                              <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${
+                                percentage >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                percentage >= 60 ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                percentage >= 33 ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                'bg-red-50 text-red-700 border-red-100'
+                              }`}>
+                                {percentage >= 80 ? 'EXCELLENT' : 
+                                 percentage >= 60 ? 'GOOD' : 
+                                 percentage >= 33 ? 'AVERAGE' : 'FAILED'}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">{percentage}% Achieved</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic min-h-[24px] flex items-center">Pending</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Pagination Footer */}
