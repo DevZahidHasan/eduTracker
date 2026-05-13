@@ -50,6 +50,51 @@ export const idParamSchema = {
   }),
 };
 
+export const uuidParamSchema = {
+  params: z.object({
+    id: z.string().uuid('ID must be a valid UUID'),
+  }),
+};
+
+// Question Paper Schemas
+export const createQuestionPaperSchema = {
+  body: z.object({
+    title: z.string().min(1, 'Title is required'),
+    className: z.string().min(1, 'Class is required'),
+    section: z.string().optional(),
+    subject: z.string().min(1, 'Subject is required'),
+    examType: z.string().min(1, 'Exam type is required'),
+    totalMarks: z.number().positive('Total marks must be positive'),
+    duration: z.number().positive('Duration must be positive'),
+    examDate: z.string().datetime({ message: "Invalid datetime string" }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').transform(val => new Date(val).toISOString())),
+    questions: z.array(z.object({
+      questionType: z.string().min(1),
+      questionText: z.string().min(1),
+      marks: z.number().positive(),
+      order: z.number().nonnegative(),
+    })).optional(),
+  }),
+};
+
+export const updateQuestionPaperSchema = {
+  body: z.object({
+    title: z.string().min(1).optional(),
+    className: z.string().min(1).optional(),
+    section: z.string().optional(),
+    subject: z.string().min(1).optional(),
+    examType: z.string().min(1).optional(),
+    totalMarks: z.number().positive().optional(),
+    duration: z.number().positive().optional(),
+    examDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).transform(val => new Date(val).toISOString())).optional(),
+    questions: z.array(z.object({
+      questionType: z.string().min(1),
+      questionText: z.string().min(1),
+      marks: z.number().positive(),
+      order: z.number().nonnegative(),
+    })).optional(),
+  }),
+};
+
 // Marks Schemas
 export const bulkMarksSchema = {
   body: z.object({

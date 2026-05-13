@@ -20,11 +20,12 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  classSections ClassSection[]
-  periods       Period[]
-  auditLogs     AuditLog[]
-  refreshTokens RefreshToken[]
-  notifications Notification[]
+  classSections  ClassSection[]
+  periods        Period[]
+  auditLogs      AuditLog[]
+  refreshTokens  RefreshToken[]
+  notifications  Notification[]
+  questionPapers QuestionPaper[]
 }
 
 model Notification {
@@ -32,12 +33,12 @@ model Notification {
   userId    Int
   title     String
   message   String
-  type      String   // INFO, SUCCESS, WARNING, ERROR
+  type      String // INFO, SUCCESS, WARNING, ERROR
   isRead    Boolean  @default(false)
   link      String?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {
@@ -51,15 +52,15 @@ model RefreshToken {
 
 model AuditLog {
   id          Int      @id @default(autoincrement())
-  action      String   // CREATE, UPDATE, DELETE
-  entityType  String   // Student, Mark, Attendance, etc.
-  entityId    String   // ID of the entity
-  oldValue    Json?    // Previous state
-  newValue    Json?    // New state
-  performedBy Int      // User ID who performed the action
+  action      String // CREATE, UPDATE, DELETE
+  entityType  String // Student, Mark, Attendance, etc.
+  entityId    String // ID of the entity
+  oldValue    Json? // Previous state
+  newValue    Json? // New state
+  performedBy Int // User ID who performed the action
   timestamp   DateTime @default(now())
 
-  user        User     @relation(fields: [performedBy], references: [id])
+  user User @relation(fields: [performedBy], references: [id])
 }
 
 enum Role {
@@ -74,30 +75,30 @@ enum Role {
 }
 
 model Student {
-  id             Int       @id @default(autoincrement())
-  studentId      String    @unique
-  fullName       String
-  rollNumber     String
-  className      String
-  section        String
-  gender         Gender
-  email          String?   @unique
-  dateOfBirth    DateTime?
-  bloodGroup     String?
-  phone          String?
-  parentName     String?
-  parentPhone    String?
-  address        String?
-  admissionDate  DateTime  @default(now())
-  profileImage   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  studentId     String    @unique
+  fullName      String
+  rollNumber    String
+  className     String
+  section       String
+  gender        Gender
+  email         String?   @unique
+  dateOfBirth   DateTime?
+  bloodGroup    String?
+  phone         String?
+  parentName    String?
+  parentPhone   String?
+  address       String?
+  admissionDate DateTime  @default(now())
+  profileImage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  marks          Mark[]
-  attendances    Attendance[]
-  reports        AcademicReport[]
-  class          SchoolClass  @relation(fields: [className], references: [name])
-  classSection   ClassSection? @relation(fields: [className, section], references: [className, section])
+  marks        Mark[]
+  attendances  Attendance[]
+  reports      AcademicReport[]
+  class        SchoolClass      @relation(fields: [className], references: [name])
+  classSection ClassSection?    @relation(fields: [className, section], references: [className, section])
 
   @@unique([className, section, rollNumber])
 }
@@ -109,32 +110,32 @@ enum Gender {
 }
 
 model SchoolClass {
-  name     String    @id
+  name     String         @id
   students Student[]
   sections ClassSection[]
 }
 
 model ClassSection {
-  id        Int      @id @default(autoincrement())
+  id        Int    @id @default(autoincrement())
   className String
-  section   String   // A, B, C
-  teacherId Int?     // Assigned class teacher for this section
-  
-  class     SchoolClass @relation(fields: [className], references: [name])
-  teacher   User?       @relation(fields: [teacherId], references: [id])
-  students  Student[]
-  routines  Routine[]
+  section   String // A, B, C
+  teacherId Int? // Assigned class teacher for this section
+
+  class    SchoolClass @relation(fields: [className], references: [name])
+  teacher  User?       @relation(fields: [teacherId], references: [id])
+  students Student[]
+  routines Routine[]
 
   @@unique([className, section])
 }
 
 model Routine {
-  id             Int          @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   classSectionId Int
   dayOfWeek      DayOfWeek
   periods        Period[]
-  
-  classSection   ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+
+  classSection ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
 
   @@unique([classSectionId, dayOfWeek])
 }
@@ -150,17 +151,17 @@ enum DayOfWeek {
 }
 
 model Period {
-  id        Int      @id @default(autoincrement())
-  routineId Int
-  subjectId String
-  teacherId Int
-  startTime String   // e.g. "08:00"
-  endTime   String   // e.g. "09:00"
-  periodNumber Int?  // e.g. 1, 2, 3
-  
-  routine   Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
-  subject   Subject  @relation(fields: [subjectId], references: [name])
-  teacher   User     @relation(fields: [teacherId], references: [id])
+  id           Int    @id @default(autoincrement())
+  routineId    Int
+  subjectId    String
+  teacherId    Int
+  startTime    String // e.g. "08:00"
+  endTime      String // e.g. "09:00"
+  periodNumber Int? // e.g. 1, 2, 3
+
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [name])
+  teacher User    @relation(fields: [teacherId], references: [id])
 }
 
 model Mark {
@@ -207,15 +208,15 @@ model MarkLock {
 }
 
 model AcademicReport {
-  id           Int      @id @default(autoincrement())
-  studentId    Int
-  examType     String
-  gpa          Float?
+  id             Int      @id @default(autoincrement())
+  studentId      Int
+  examType       String
+  gpa            Float?
   teacherRemarks String?
-  aiInsights   String?
+  aiInsights     String?
   attendanceRate Float?
-  generatedAt  DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  generatedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   examTypeObj ExamType @relation(fields: [examType], references: [name])
@@ -257,4 +258,38 @@ model SchoolProfile {
 model SystemSetting {
   key   String @id
   value String
+}
+
+model QuestionPaper {
+  id         String   @id @default(uuid())
+  title      String
+  className  String
+  section    String?
+  subject    String
+  examType   String
+  totalMarks Int
+  duration   Int
+  examDate   DateTime
+  createdBy  Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user      User       @relation(fields: [createdBy], references: [id])
+  questions Question[]
+
+  @@index([className, subject])
+  @@index([examDate])
+}
+
+model Question {
+  id              String @id @default(uuid())
+  questionPaperId String
+  questionType    String
+  questionText    String
+  marks           Int
+  order           Int
+
+  questionPaper QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
+
+  @@index([questionPaperId])
 }

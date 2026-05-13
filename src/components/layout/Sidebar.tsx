@@ -1,8 +1,9 @@
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -14,16 +15,19 @@ import {
   LayoutGrid,
   PieChart,
   Settings,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { useAppSelector } from '@/lib/hooks';
 import { selectRole } from '@/lib/features/authSlice';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },
@@ -45,11 +49,17 @@ export function Sidebar({
   setIsMobileOpen,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const role = useAppSelector(selectRole);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const filteredNavItems = navItems.filter(item => 
     !item.roles || (role && item.roles.includes(role.toUpperCase()))
   );
+
+  const handleLogoutConfirm = () => {
+    router.push('/login');
+  };
 
   return (
     <>
@@ -124,15 +134,26 @@ export function Sidebar({
         </nav>
 
         <div className="p-4 border-t border-border shrink-0">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-standard group"
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-standard group focus:outline-none"
           >
             <LogOut size={20} className="text-muted-foreground group-hover:text-red-500" />
             {(!collapsed || isMobileOpen) && <span className="text-sm font-semibold whitespace-nowrap">Logout</span>}
-          </Link>
+          </button>
         </div>
       </aside>
+
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Logout"
+        message="Are you sure you want to logout from EduTrack AI?"
+        confirmText="Logout"
+        cancelText="Stay Logged In"
+        destructive={true}
+      />
     </>
   );
 }

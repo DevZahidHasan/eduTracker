@@ -11,10 +11,24 @@ export default function ToasterProvider() {
       }}
       toastOptions={{
         style: {
-          background: '#0a192f',
-          color: '#fff',
-          border: '1px solid #00e5ff',
+          background: '#ffffff',
+          color: '#0f172a',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          borderRadius: '0.5rem',
           zIndex: 1000000,
+        },
+        success: {
+          iconTheme: {
+            primary: '#10b981',
+            secondary: '#ffffff',
+          },
+        },
+        error: {
+          iconTheme: {
+            primary: '#ef4444',
+            secondary: '#ffffff',
+          },
         },
       }}
     />

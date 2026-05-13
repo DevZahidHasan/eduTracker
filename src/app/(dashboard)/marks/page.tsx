@@ -22,6 +22,7 @@ import { selectClassesOverview, fetchClassesOverview } from '@/lib/features/clas
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { marksSchema } from '@/lib/validations';
@@ -71,6 +72,15 @@ export default function MarksPage() {
       }
     }
   }, [selectedExamType, EXAM_TYPES]);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    destructive: false,
+    onConfirm: () => {}
+  });
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,39 +226,53 @@ export default function MarksPage() {
   const handleFinalize = () => {
     if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
     
-    if (confirm('Finalizing marks will lock them for regular editing and notify all administrators. Are you sure?')) {
-      dispatch(finalizeMarksThunk({
-        className: selectedClass,
-        subject: selectedSubject,
-        examType: selectedExamType,
-        date: selectedDate
-      }))
-      .unwrap()
-      .then(() => {
-        toast.success('Marks finalized and locked successfully');
-        setIsLocked(true);
-      })
-      .catch((err) => toast.error(err || 'Failed to finalize marks'));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Finalize Marks',
+      message: 'Finalizing marks will lock them for regular editing and notify all administrators. Are you sure?',
+      confirmText: 'Finalize',
+      destructive: false,
+      onConfirm: () => {
+        dispatch(finalizeMarksThunk({
+          className: selectedClass,
+          subject: selectedSubject,
+          examType: selectedExamType,
+          date: selectedDate
+        }))
+        .unwrap()
+        .then(() => {
+          toast.success('Marks finalized and locked successfully');
+          setIsLocked(true);
+        })
+        .catch((err) => toast.error(err || 'Failed to finalize marks'));
+      }
+    });
   };
 
   const handleUnlock = () => {
     if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
 
-    if (confirm('Are you sure you want to unlock these marks? This will allow editing by teachers.')) {
-      dispatch(unlockMarksThunk({
-        className: selectedClass,
-        subject: selectedSubject,
-        examType: selectedExamType,
-        date: selectedDate
-      }))
-      .unwrap()
-      .then(() => {
-        toast.success('Marks unlocked successfully');
-        setIsLocked(false);
-      })
-      .catch((err) => toast.error(err || 'Failed to unlock marks'));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Unlock Marks',
+      message: 'Are you sure you want to unlock these marks? This will allow editing by teachers.',
+      confirmText: 'Unlock',
+      destructive: false,
+      onConfirm: () => {
+        dispatch(unlockMarksThunk({
+          className: selectedClass,
+          subject: selectedSubject,
+          examType: selectedExamType,
+          date: selectedDate
+        }))
+        .unwrap()
+        .then(() => {
+          toast.success('Marks unlocked successfully');
+          setIsLocked(false);
+        })
+        .catch((err) => toast.error(err || 'Failed to unlock marks'));
+      }
+    });
   };
 
   const isFormValid = selectedClass && selectedSubject && selectedExamType && maxScore;
@@ -638,6 +662,11 @@ export default function MarksPage() {
           )}
         </CardContent>
       </Card>
+      
+      <ConfirmationModal 
+        {...confirmModal} 
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
+      />
     </div>
   );
 }

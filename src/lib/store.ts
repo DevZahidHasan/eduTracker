@@ -11,6 +11,7 @@ import settingsReducer from './features/settingsSlice';
 import auditReducer from './features/auditSlice';
 import usersReducer from './features/usersSlice';
 import notificationsReducer from './features/notificationsSlice';
+import questionPaperReducer from './features/questionPaperSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -27,6 +28,7 @@ export const makeStore = () => {
       audit: auditReducer,
       users: usersReducer,
       notifications: notificationsReducer,
+      questionPaper: questionPaperReducer,
     },
   });
 };

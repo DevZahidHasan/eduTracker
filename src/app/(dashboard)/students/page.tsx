@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses, selectGenders } from '@/lib/features/configSlice';
@@ -64,6 +65,15 @@ export default function StudentsPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    destructive: false,
+    onConfirm: () => {}
+  });
 
   // Marks modal state
   const [isMarksModalOpen, setIsMarksModalOpen] = useState(false);
@@ -188,12 +198,19 @@ export default function StudentsPage() {
   };
 
   const handleDeleteClick = (id: number) => {
-    if (confirm('Are you sure you want to delete this student?')) {
-      dispatch(deleteStudentThunk(id))
-        .unwrap()
-        .then(() => toast.success('Student deleted successfully'))
-        .catch((err) => toast.error(typeof err === 'string' ? err : 'Failed to delete student'));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Student',
+      message: 'Are you sure you want to delete this student? This action cannot be undone.',
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => {
+        dispatch(deleteStudentThunk(id))
+          .unwrap()
+          .then(() => toast.success('Student deleted successfully'))
+          .catch((err) => toast.error(typeof err === 'string' ? err : 'Failed to delete student'));
+      }
+    });
   };
 
   const handleViewMarksClick = (student: Student) => {
@@ -392,30 +409,29 @@ export default function StudentsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-standard">
-                          <button 
+                        <div className="flex justify-end gap-1 transition-standard">
+                          <button
                             onClick={() => handleViewMarksClick(student)}
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-standard min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 hover:scale-110 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Academic Records"
                           >
                             <FileText size={18} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleEditClick(student)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-standard min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="p-2 text-blue-600 hover:bg-blue-50 hover:scale-110 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Edit Profile"
                           >
                             <Edit2 size={18} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteClick(student.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-standard min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="p-2 text-red-600 hover:bg-red-50 hover:scale-110 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Remove"
                           >
                             <Trash2 size={18} />
                           </button>
-                        </div>
-                      </td>
+                        </div>                      </td>
                     </tr>
                   );
                 })
@@ -842,6 +858,11 @@ export default function StudentsPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationModal 
+        {...confirmModal} 
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
+      />
     </div>
   );
 }

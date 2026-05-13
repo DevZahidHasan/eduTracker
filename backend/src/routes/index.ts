@@ -11,6 +11,7 @@ import settingsRoutes from './settings.routes';
 import auditRoutes from './audit.routes';
 import usersRoutes from './users.routes';
 import notificationRoutes from './notifications.routes';
+import questionPapersRoutes from './questionPapers.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -30,5 +31,6 @@ router.use('/settings', authMiddleware, settingsRoutes);
 router.use('/audit', authMiddleware, auditRoutes);
 router.use('/users', authMiddleware, usersRoutes);
 router.use('/notifications', authMiddleware, notificationRoutes);
+router.use('/question-papers', authMiddleware, questionPapersRoutes);
 
 export default router;

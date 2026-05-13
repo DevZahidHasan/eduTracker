@@ -41,6 +41,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { User } from '@/types/models';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -75,6 +76,14 @@ export default function SettingsPage() {
   const [isTriggering, setIsTriggering] = useState(false);
 
   // Modal States
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    destructive: false,
+    onConfirm: () => {}
+  });
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<User> | null>(null);
   const [academicModal, setAcademicModal] = useState<{ 
@@ -162,15 +171,22 @@ export default function SettingsPage() {
   };
 
   const handleDeleteUser = (userId: number) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      dispatch(deleteUserThunk(userId))
-        .unwrap()
-        .then(() => {
-          toast.success('User deleted successfully');
-          dispatch(fetchUsers());
-        })
-        .catch((err) => toast.error(err || 'Failed to delete user'));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => {
+        dispatch(deleteUserThunk(userId))
+          .unwrap()
+          .then(() => {
+            toast.success('User deleted successfully');
+            dispatch(fetchUsers());
+          })
+          .catch((err) => toast.error(err || 'Failed to delete user'));
+      }
+    });
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -713,6 +729,11 @@ export default function SettingsPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmationModal 
+        {...confirmModal} 
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
+      />
     </div>
   );
 }

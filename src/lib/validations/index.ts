@@ -52,3 +52,28 @@ export const schoolProfileSchema = z.object({
 });
 
 export type SchoolProfileFormData = z.infer<typeof schoolProfileSchema>;
+
+export const questionSchema = z.object({
+  id: z.string().optional(),
+  text: z.string().min(1, 'Question text is required'),
+  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'LONG_ANSWER', 'TRUE_FALSE']),
+  marks: z.coerce.number().min(1, 'Marks must be positive'),
+  options: z.array(z.string()).optional(),
+  correctAnswer: z.string().optional(),
+  instructions: z.string().optional(),
+});
+
+export const questionPaperSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  className: z.string().min(1, 'Class is required'),
+  section: z.string().optional(),
+  subject: z.string().min(1, 'Subject is required'),
+  examType: z.string().min(1, 'Exam type is required'),
+  durationMinutes: z.coerce.number().min(10, 'Duration must be at least 10 minutes'),
+  totalMarks: z.coerce.number().min(1, 'Total marks must be positive'),
+  date: z.string().min(1, 'Exam date is required'),
+  instructions: z.string().optional(),
+  questions: z.array(questionSchema).optional(),
+});
+
+export type QuestionPaperForm = z.infer<typeof questionPaperSchema>;
