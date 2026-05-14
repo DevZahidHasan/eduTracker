@@ -67,11 +67,16 @@ export const createQuestionPaperSchema = {
     totalMarks: z.number().positive('Total marks must be positive'),
     duration: z.number().positive('Duration must be positive'),
     examDate: z.string().datetime({ message: "Invalid datetime string" }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').transform(val => new Date(val).toISOString())),
+    instructions: z.string().optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
     questions: z.array(z.object({
       questionType: z.string().min(1),
       questionText: z.string().min(1),
       marks: z.number().positive(),
       order: z.number().nonnegative(),
+      options: z.array(z.string()).optional(),
+      correctAnswer: z.string().optional(),
+      instructions: z.string().optional(),
     })).optional(),
   }),
 };
@@ -86,11 +91,16 @@ export const updateQuestionPaperSchema = {
     totalMarks: z.number().positive().optional(),
     duration: z.number().positive().optional(),
     examDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).transform(val => new Date(val).toISOString())).optional(),
+    instructions: z.string().optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
     questions: z.array(z.object({
       questionType: z.string().min(1),
       questionText: z.string().min(1),
       marks: z.number().positive(),
       order: z.number().nonnegative(),
+      options: z.array(z.string()).optional(),
+      correctAnswer: z.string().optional(),
+      instructions: z.string().optional(),
     })).optional(),
   }),
 };

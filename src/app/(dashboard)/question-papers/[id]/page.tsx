@@ -69,7 +69,7 @@ export default function ViewQuestionPaperPage({ params }: { params: Promise<{ id
             <h2 className="text-2xl font-bold uppercase tracking-widest text-slate-900">{paper.examType.replace('_', ' ')} EXAMINATION</h2>
             <h3 className="text-xl font-semibold text-slate-800">{paper.subject} - Class {paper.className}</h3>
             <div className="flex justify-between items-center pt-6 font-bold text-sm text-slate-700 border-t border-slate-100 mt-4">
-              <span>Time: {paper.durationMinutes} Minutes</span>
+              <span>Time: {paper.duration} Minutes</span>
               <span>Max Marks: {paper.totalMarks}</span>
             </div>
           </div>
@@ -87,10 +87,10 @@ export default function ViewQuestionPaperPage({ params }: { params: Promise<{ id
                   <span className="font-bold">{index + 1}.</span>
                   <div className="flex-1 space-y-3">
                     <div className="flex justify-between gap-4">
-                      <p className="font-medium">{q.text}</p>
+                      <p className="font-medium">{q.questionText}</p>
                       <span className="font-bold whitespace-nowrap">[{q.marks}]</span>
                     </div>
-                    {q.type === 'MULTIPLE_CHOICE' && q.options && (
+                    {q.questionType === 'MULTIPLE_CHOICE' && q.options && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                         {q.options.map((opt, i) => (
                           <div key={i} className="flex gap-3 items-center">
@@ -100,7 +100,7 @@ export default function ViewQuestionPaperPage({ params }: { params: Promise<{ id
                         ))}
                       </div>
                     )}
-                    {(q.type === 'LONG_ANSWER' || q.type === 'SHORT_ANSWER') && (
+                    {(q.questionType === 'LONG_ANSWER' || q.questionType === 'SHORT_ANSWER') && (
                       <div className="h-24 border-b border-dashed border-slate-300 mt-6"></div>
                     )}
                   </div>

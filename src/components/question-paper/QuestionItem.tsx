@@ -21,7 +21,7 @@ export function QuestionItem({ id, index, register, control, errors, onRemove }:
   const qErrors = errors.questions?.[index];
   const type = useWatch({
     control,
-    name: `questions.${index}.type`,
+    name: `questions.${index}.questionType`,
     defaultValue: 'SHORT_ANSWER'
   });
 
@@ -64,8 +64,8 @@ export function QuestionItem({ id, index, register, control, errors, onRemove }:
               <Input
                 label={`Question ${index + 1}`}
                 placeholder="Enter question text..."
-                {...register(`questions.${index}.text` as const)}
-                error={qErrors?.text?.message}
+                {...register(`questions.${index}.questionText` as const)}
+                error={qErrors?.questionText?.message}
               />
             </div>
             
@@ -78,8 +78,8 @@ export function QuestionItem({ id, index, register, control, errors, onRemove }:
                   { value: 'MULTIPLE_CHOICE', label: 'MCQ' },
                   { value: 'TRUE_FALSE', label: 'True/False' },
                 ]}
-                {...register(`questions.${index}.type` as const)}
-                error={qErrors?.type?.message}
+                {...register(`questions.${index}.questionType` as const)}
+                error={qErrors?.questionType?.message}
               />
             </div>
             

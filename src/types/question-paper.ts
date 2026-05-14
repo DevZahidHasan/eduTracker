@@ -1,20 +1,23 @@
 export interface Question {
   id: string;
-  text: string;
-  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'TRUE_FALSE';
+  questionText: string;
+  questionType: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'TRUE_FALSE';
   marks: number;
   options?: string[];
   correctAnswer?: string;
+  instructions?: string;
+  order: number;
 }
 
 export interface QuestionPaper {
   id: string;
   title: string;
   className: string;
+  section?: string;
   subject: string;
   examType: string;
-  date: string;
-  durationMinutes: number;
+  examDate: string;
+  duration: number;
   totalMarks: number;
   instructions: string;
   questions: Question[];

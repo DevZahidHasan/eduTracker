@@ -44,8 +44,8 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
 
   const handleAddQuestion = () => {
     append({
-      text: '',
-      type: 'SHORT_ANSWER',
+      questionText: '',
+      questionType: 'SHORT_ANSWER',
       marks: 1,
       options: ['', '', '', ''],
       correctAnswer: '',

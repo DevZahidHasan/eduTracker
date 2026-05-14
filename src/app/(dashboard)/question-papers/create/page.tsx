@@ -49,9 +49,9 @@ export default function CreateQuestionPaperPage() {
       section: '',
       subject: '',
       examType: '',
-      durationMinutes: 120,
+      duration: 120,
       totalMarks: 100,
-      date: new Date().toISOString().split('T')[0],
+      examDate: new Date().toISOString().split('T')[0],
       instructions: 'Attempt all questions. Follow the marking scheme strictly.',
       questions: [],
     }
@@ -95,7 +95,10 @@ export default function CreateQuestionPaperPage() {
     try {
       const payload: QuestionPaperFormData = {
         ...data,
-        questions: (data.questions as any) || [],
+        questions: (data.questions as any)?.map((q: any, index: number) => ({
+          ...q,
+          order: index
+        })) || [],
         instructions: data.instructions || '',
         status: 'DRAFT'
       };
@@ -208,8 +211,8 @@ export default function CreateQuestionPaperPage() {
                 label="Duration (minutes)" 
                 type="number"
                 placeholder="e.g. 120"
-                {...register('durationMinutes')}
-                error={errors.durationMinutes?.message}
+                {...register('duration')}
+                error={errors.duration?.message}
               />
 
               <Input 
@@ -224,8 +227,8 @@ export default function CreateQuestionPaperPage() {
                 <Input 
                   label="Date of Examination" 
                   type="date"
-                  {...register('date')}
-                  error={errors.date?.message}
+                  {...register('examDate')}
+                  error={errors.examDate?.message}
                 />
               </div>
 
