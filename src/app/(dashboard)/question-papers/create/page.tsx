@@ -10,29 +10,35 @@ import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { createQuestionPaper } from '@/lib/features/questionPaperSlice';
 import { fetchConfig, selectClasses, selectSubjects, selectExamTypes } from '@/lib/features/configSlice';
 import { fetchClassesOverview, selectClassesOverview } from '@/lib/features/classesSlice';
+import { fetchSchoolProfile, selectSchoolProfile } from '@/lib/features/settingsSlice';
 import toast from 'react-hot-toast';
-import { Bot, Save, ArrowLeft } from 'lucide-react';
+import { Bot, Save, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { questionPaperSchema, QuestionPaperForm } from '@/lib/validations';
 import { QuestionPaperFormData } from '@/types/question-paper';
 import { QuestionBuilder } from '@/components/question-paper/QuestionBuilder';
+import { QuestionPaperPreview } from '@/components/question-paper/QuestionPaperPreview';
+import { ResizableLayout } from '@/components/ui/ResizableLayout';
 
 export default function CreateQuestionPaperPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Configuration Selectors
   const CLASSES = useAppSelector(selectClasses);
   const SUBJECTS = useAppSelector(selectSubjects);
   const EXAM_TYPES = useAppSelector(selectExamTypes);
   const classesOverview = useAppSelector(selectClassesOverview);
+  const schoolProfile = useAppSelector(selectSchoolProfile);
 
   useEffect(() => {
     dispatch(fetchConfig());
     dispatch(fetchClassesOverview());
+    dispatch(fetchSchoolProfile());
   }, [dispatch]);
 
   const {
@@ -118,43 +124,9 @@ export default function CreateQuestionPaperPage() {
     }
   };
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-12 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link href="/question-papers">
-            <Button variant="outline" className="px-3 shadow-sm border-slate-200">
-              <ArrowLeft size={18} />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Create New Paper</h1>
-            <p className="text-muted-foreground font-medium mt-1">Configure parameters to generate a new question paper.</p>
-          </div>
-        </div>
-        
-        {/* Autosave Indicator */}
-        <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
-          {isAutosaving ? (
-            <>
-              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-              <span>Saving draft...</span>
-            </>
-          ) : lastSaved ? (
-            <>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-              <span>Draft saved at {lastSaved.toLocaleTimeString()}</span>
-            </>
-          ) : (
-            <>
-              <div className="w-2 h-2 bg-slate-300 rounded-full" />
-              <span>Unsaved changes</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      <Card className="border-slate-200/60 shadow-sm bg-white">
+  const editorPanel = (
+    <div className="space-y-6">
+      <Card className="border-slate-200/60 shadow-sm bg-white overflow-hidden">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
           <CardTitle className="text-xl flex items-center gap-2 text-slate-900">
             <Bot size={20} className="text-primary" />
@@ -261,6 +233,86 @@ export default function CreateQuestionPaperPage() {
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+
+  const previewPanel = (
+    <div className="sticky top-24 h-[calc(100vh-140px)] animate-in slide-in-from-right duration-500">
+      <div className="h-full rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex flex-col shadow-inner">
+        <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+            <span className="text-sm font-bold text-slate-700">Live Preview</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-bold border-slate-200 hover:bg-slate-50">
+              Print / Export
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)} className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600">
+              <EyeOff size={16} />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <QuestionPaperPreview data={formData} schoolProfile={schoolProfile} />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`space-y-6 animate-in fade-in duration-500 pb-12 transition-all duration-500 ${showPreview ? 'max-w-[1600px] mx-auto' : 'max-w-4xl mx-auto'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/question-papers">
+            <Button variant="outline" className="px-3 shadow-sm border-slate-200">
+              <ArrowLeft size={18} />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">Create New Paper</h1>
+            <p className="text-muted-foreground font-medium mt-1">Configure parameters to generate a new question paper.</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Autosave Indicator */}
+          <div className="hidden md:flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+            {isAutosaving ? (
+              <>
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                <span>Saving...</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                <span>Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-slate-300 rounded-full" />
+                <span>Unsaved</span>
+              </>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            variant={showPreview ? "primary" : "outline"}
+            onClick={() => setShowPreview(!showPreview)}
+            className={`gap-2 ${showPreview ? 'bg-primary text-white shadow-primary/20' : 'bg-white border-slate-200 text-slate-700'}`}
+          >
+            {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showPreview ? "Hide Preview" : "Live Preview"}
+          </Button>
+        </div>
+      </div>
+
+      <ResizableLayout
+        leftPanel={editorPanel}
+        rightPanel={previewPanel}
+        showRightPanel={showPreview}
+      />
     </div>
   );
 }
