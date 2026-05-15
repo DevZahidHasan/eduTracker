@@ -13,6 +13,7 @@ import usersReducer from './features/usersSlice';
 import notificationsReducer from './features/notificationsSlice';
 import questionPaperReducer from './features/questionPaperSlice';
 import questionBankReducer from './features/questionBankSlice';
+import financeReducer from './features/financeSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -31,6 +32,7 @@ export const makeStore = () => {
       notifications: notificationsReducer,
       questionPaper: questionPaperReducer,
       questionBank: questionBankReducer,
+      finance: financeReducer,
     },
   });
 };

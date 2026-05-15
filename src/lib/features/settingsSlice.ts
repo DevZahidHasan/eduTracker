@@ -51,6 +51,22 @@ export const updateSchoolProfileThunk = createAsyncThunk(
   }
 );
 
+export const uploadSchoolLogoThunk = createAsyncThunk(
+  'settings/uploadLogo',
+  async (file: File, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+      const response = await api.post('/settings/profile/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data.data.logoUrl as string;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to upload logo');
+    }
+  }
+);
+
 export const fetchSystemSettings = createAsyncThunk(
   'settings/fetchSystemSettings',
   async (_, { rejectWithValue }) => {

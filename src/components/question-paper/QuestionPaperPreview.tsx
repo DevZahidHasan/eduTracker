@@ -66,57 +66,61 @@ export function QuestionPaperPreview({ data, schoolProfile, loading = false }: Q
     <div className="w-full h-full overflow-y-auto bg-slate-100 p-4 lg:p-8 flex justify-center print:block print:overflow-visible print:h-auto print:bg-white print:p-0">
       <Card className="w-full max-w-[210mm] min-h-[297mm] bg-white shadow-xl mx-auto print:shadow-none print:max-w-none print:w-[210mm] print:border-none print:rounded-none">
         <CardContent className="p-8 lg:p-12 space-y-8 print:p-10 print:text-black">
-          {/* Header */}
-          <div className="text-center space-y-4 border-b-2 border-slate-900 pb-6 relative">
-            {schoolProfile?.logo && (
-              <div className="absolute left-0 top-0 w-20 h-20">
-                <Image 
-                  src={schoolProfile.logo} 
-                  alt="School Logo" 
-                  width={80} 
-                  height={80}
-                  className="object-contain"
-                />
+          {/* Professional Branded Header */}
+          <div className="border-b-2 border-slate-900 pb-6 mb-8 flex items-center justify-between">
+            {schoolProfile?.logo ? (
+              <img src={schoolProfile.logo} alt="School Logo" className="h-20 w-auto object-contain" />
+            ) : (
+              <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 print:hidden">
+                <span className="text-xs text-slate-400 font-bold uppercase">Logo</span>
               </div>
             )}
             
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-900">
-                {schoolProfile?.name || 'Your School Name'}
+            <div className="flex-1 text-center px-4">
+              <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">
+                {schoolProfile?.name || 'EduTrack Academy'}
               </h1>
-              {schoolProfile?.address && (
-                <p className="text-sm text-slate-600 italic">{schoolProfile.address}</p>
-              )}
+              <div className="text-[11px] text-slate-500 font-bold uppercase tracking-widest flex flex-wrap justify-center gap-x-3 gap-y-1">
+                {schoolProfile?.address && <span>{schoolProfile.address}</span>}
+                {schoolProfile?.phone && <span>Tel: {schoolProfile.phone}</span>}
+                {schoolProfile?.email && <span>Email: {schoolProfile.email}</span>}
+                {schoolProfile?.website && <span>Web: {schoolProfile.website}</span>}
+              </div>
             </div>
 
-            <div className="pt-2">
-              <h2 className="text-xl font-bold text-slate-900 underline decoration-2 underline-offset-4">
-                {examType ? `${examType} EXAMINATION` : 'ANNUAL EXAMINATION'} - {examDate && !isNaN(new Date(examDate).getTime()) ? new Date(examDate).getFullYear() : new Date().getFullYear()}
-              </h2>
-            </div>
+            <div className="w-20 h-20 opacity-0 hidden sm:block" aria-hidden="true" />
           </div>
 
-          {/* Metadata Grid */}
-          <div className="grid grid-cols-2 gap-y-3 text-sm font-semibold border-b border-slate-200 pb-4">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-bold text-slate-800 underline underline-offset-8 decoration-2 uppercase">
+              {title}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200 p-6 rounded-lg mb-8 text-sm print:bg-transparent">
             <div className="flex gap-2">
-              <span className="text-slate-500 uppercase">Subject:</span>
-              <span className="text-slate-900">{title || '________________'}</span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span className="text-slate-500 uppercase">Class:</span>
-              <span className="text-slate-900">{className || '____'} {section ? `(${section})` : ''}</span>
+              <span className="font-bold text-slate-700 min-w-[100px]">Class/Grade:</span>
+              <span className="text-slate-900">{className} {section ? `(Section ${section})` : ''}</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-slate-500 uppercase">Time:</span>
-              <span className="text-slate-900">{duration || '___'} Minutes</span>
+              <span className="font-bold text-slate-700 min-w-[100px]">Subject:</span>
+              <span className="text-slate-900 font-bold">{subject}</span>
             </div>
-            <div className="flex gap-2 justify-end">
-              <span className="text-slate-500 uppercase">Max Marks:</span>
-              <span className="text-slate-900">{totalMarks || '___'}</span>
+            <div className="flex gap-2">
+              <span className="font-bold text-slate-700 min-w-[100px]">Exam Type:</span>
+              <span className="text-slate-900">{examType.replace(/_/g, ' ')}</span>
             </div>
-            <div className="flex gap-2 col-span-2">
-              <span className="text-slate-500 uppercase">Date:</span>
-              <span className="text-slate-900">{examDate ? new Date(examDate).toLocaleDateString() : '________________'}</span>
+            <div className="flex gap-2">
+              <span className="font-bold text-slate-700 min-w-[100px]">Exam Date:</span>
+              <span className="text-slate-900">{examDate ? new Date(examDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="font-bold text-slate-700 min-w-[100px]">Duration:</span>
+              <span className="text-slate-900 font-bold">{duration} Minutes</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="font-bold text-slate-700 min-w-[100px]">Total Marks:</span>
+              <span className="text-slate-900 font-bold">{totalMarks} Marks</span>
             </div>
           </div>
 

@@ -7,9 +7,11 @@ import {
   getUsers,
   updateUser,
   deleteUser,
-  triggerEndOfDay
+  triggerEndOfDay,
+  uploadLogo
 } from '../controllers/settings.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
+import { upload } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -17,6 +19,7 @@ router.use(authMiddleware);
 
 router.get('/profile', getSchoolProfile);
 router.post('/profile', updateSchoolProfile);
+router.post('/profile/logo', upload.single('logo'), uploadLogo);
 
 router.get('/system', getSystemSettings);
 router.post('/system', updateSystemSettings);

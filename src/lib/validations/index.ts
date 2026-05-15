@@ -49,6 +49,8 @@ export const schoolProfileSchema = z.object({
   phone: z.string().regex(/^\+?[\d\s-]{10,}$/, 'Invalid phone number format'),
   email: z.string().email('Invalid email address'),
   academicYear: z.string().min(4, 'Academic year is required'),
+  website: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  logo: z.string().optional(),
 });
 
 export type SchoolProfileFormData = z.infer<typeof schoolProfileSchema>;

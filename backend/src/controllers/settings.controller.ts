@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/apiResponse';
+import { ApiError } from '../utils/apiError';
+import { AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../prisma';
 import { runEndOfDayTasks } from '../services/cron.service';
 
@@ -12,22 +14,35 @@ export const getSchoolProfile = asyncHandler(async (req: Request, res: Response)
   return res.status(200).json(new ApiResponse(200, profile, 'School profile fetched successfully'));
 });
 
+export const updateSchoolProfile = asyncHandler(async (req: Request, res: Response) => {
+  const { name, address, phone, email, academicYear, logo, website } = req.body;
+  const profile = await prisma.schoolProfile.upsert({
+    where: { id: 1 },
+    update: { name, address, phone, email, academicYear, logo, website },
+    create: { name, address, phone, email, academicYear, logo, website },
+  });
+  return res.status(200).json(new ApiResponse(200, profile, 'School profile updated successfully'));
+});
+
+export const uploadLogo = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.file) {
+    throw new ApiError(400, 'No file uploaded');
+  }
+
+  // Construct the logo URL
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const logoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+  return res.status(200).json(new ApiResponse(200, { logoUrl }, 'Logo uploaded successfully'));
+});
+
 export const triggerEndOfDay = asyncHandler(async (req: Request, res: Response) => {
   const result = await runEndOfDayTasks();
   if (result.status === 'skipped') {
     return res.status(200).json(new ApiResponse(200, null, 'End of day tasks already ran for today.'));
   }
   return res.status(200).json(new ApiResponse(200, null, 'End of day tasks triggered successfully.'));
-});
-
-export const updateSchoolProfile = asyncHandler(async (req: Request, res: Response) => {
-  const { name, address, phone, email, academicYear, logo } = req.body;
-  const profile = await prisma.schoolProfile.upsert({
-    where: { id: 1 },
-    update: { name, address, phone, email, academicYear, logo },
-    create: { name, address, phone, email, academicYear, logo },
-  });
-  return res.status(200).json(new ApiResponse(200, profile, 'School profile updated successfully'));
 });
 
 export const getSystemSettings = asyncHandler(async (req: Request, res: Response) => {
@@ -93,8 +108,6 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  // Prevent deleting the last admin or yourself if we had auth info here
-  // For now, just a simple delete
   await prisma.user.delete({
     where: { id: Number(id) }
   });

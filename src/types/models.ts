@@ -106,6 +106,7 @@ export interface SchoolProfile {
   address: string | null;
   phone: string | null;
   email: string | null;
+  website: string | null;
   academicYear: string;
   logo: string | null;
   updatedAt?: string;

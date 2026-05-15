@@ -64,10 +64,9 @@ export const printQuestionPaper = asyncHandler(async (req: AuthRequest, res: Res
     throw new ApiError(404, 'Question paper not found');
   }
 
-  const schoolProfile = await prisma.schoolProfile.findFirst();
-  const schoolName = schoolProfile?.name || 'EduTrack Academy';
+  const schoolProfile = await prisma.schoolProfile.findFirst({ where: { id: 1 } });
 
-  const html = generateQuestionPaperHtml(paper, schoolName);
+  const html = generateQuestionPaperHtml(paper, schoolProfile);
 
   res.setHeader('Content-Type', 'text/html');
   res.send(html);
@@ -81,10 +80,9 @@ export const exportPdf = asyncHandler(async (req: AuthRequest, res: Response) =>
     throw new ApiError(404, 'Question paper not found');
   }
 
-  const schoolProfile = await prisma.schoolProfile.findFirst();
-  const schoolName = schoolProfile?.name || 'EduTrack Academy';
+  const schoolProfile = await prisma.schoolProfile.findFirst({ where: { id: 1 } });
 
-  const html = generateQuestionPaperHtml(paper, schoolName);
+  const html = generateQuestionPaperHtml(paper, schoolProfile);
   
   const pdfBuffer = await generatePdfFromHtml(html);
 

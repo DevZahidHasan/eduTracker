@@ -236,16 +236,34 @@ export default function ReportsPage() {
           <div className="flex justify-center bg-slate-100 print:bg-white p-8 print:p-0 rounded-2xl">
             <div className="bg-white w-full max-w-[210mm] min-h-[297mm] shadow-2xl print:shadow-none p-[15mm] border border-slate-200 print:border-none relative flex flex-col">
               
-              {/* Document Header */}
-              <div className="text-center border-b-2 border-slate-800 pb-6 mb-8">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
-                  {schoolProfile?.name || 'EduTrack Academy'}
-                </h1>
-                <p className="text-slate-600 font-medium mt-1">
-                  {schoolProfile?.address || '123 Education Boulevard, Knowledge City, AC 12345'}
-                </p>
-                <h2 className="text-xl font-bold text-primary mt-4 uppercase tracking-widest">Official Academic Report</h2>
-                <p className="text-sm font-semibold text-slate-500 mt-1 uppercase">Assessment: {selectedExamType.replace('_', ' ')}</p>
+              {/* Document Header with Professional Branding */}
+              <div className="flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+                {schoolProfile?.logo ? (
+                  <img src={schoolProfile.logo} alt="School Logo" className="h-20 w-auto object-contain" />
+                ) : (
+                  <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center border border-slate-200 print:hidden">
+                    <span className="text-[10px] text-slate-300 font-black uppercase">Logo</span>
+                  </div>
+                )}
+                
+                <div className="flex-1 text-center px-4">
+                  <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight leading-none mb-2">
+                    {schoolProfile?.name || 'EduTrack Academy'}
+                  </h1>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex flex-wrap justify-center gap-x-3 gap-y-1">
+                    {schoolProfile?.address && <span>{schoolProfile.address}</span>}
+                    {schoolProfile?.phone && <span>Tel: {schoolProfile.phone}</span>}
+                    {schoolProfile?.email && <span>Email: {schoolProfile.email}</span>}
+                    {schoolProfile?.website && <span>Web: {schoolProfile.website}</span>}
+                  </div>
+                </div>
+
+                <div className="w-20 h-20 opacity-0 hidden sm:block" aria-hidden="true" />
+              </div>
+
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-bold text-primary uppercase tracking-[0.2em] underline underline-offset-8">Official Academic Report</h2>
+                <p className="text-xs font-black text-slate-400 mt-3 uppercase">Assessment: {selectedExamType.replace('_', ' ')} • Session {schoolProfile?.academicYear || '2026'}</p>
               </div>
 
               {/* Student Information Grid */}

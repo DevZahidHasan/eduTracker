@@ -256,6 +256,7 @@ model SchoolProfile {
   address      String?
   phone        String?
   email        String?
+  website      String?
   academicYear String   @default("2026-2027")
   logo         String?
   updatedAt    DateTime @updatedAt

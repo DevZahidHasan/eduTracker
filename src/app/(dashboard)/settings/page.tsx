@@ -11,12 +11,16 @@ import {
   Save,
   Plus,
   Edit2,
-  Trash2
+  Trash2,
+  Upload,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
   fetchSchoolProfile, 
   updateSchoolProfileThunk, 
+  uploadSchoolLogoThunk,
   fetchSystemSettings, 
   updateSystemSettingsThunk,
   fetchUsers,
@@ -67,6 +71,7 @@ export default function SettingsPage() {
     register: registerProfile,
     handleSubmit: handleSubmitProfile,
     reset: resetProfile,
+    watch,
     formState: { errors: profileErrors },
   } = useForm<SchoolProfileFormData>({
     resolver: zodResolver(schoolProfileSchema),
@@ -74,6 +79,35 @@ export default function SettingsPage() {
 
   const [settingsData, setSettingsData] = useState<Record<string, string>>({});
   const [isTriggering, setIsTriggering] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const resultAction = await dispatch(uploadSchoolLogoThunk(file));
+      if (uploadSchoolLogoThunk.fulfilled.match(resultAction)) {
+        const logoUrl = resultAction.payload as string;
+        // Update the form field
+        resetProfile({ ...schoolProfile as any, logo: logoUrl });
+        toast.success('Logo uploaded successfully. Save the profile to apply changes.');
+      } else {
+        toast.error('Failed to upload logo');
+      }
+    } catch (err) {
+      toast.error('Error uploading logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   // Modal States
   const [confirmModal, setConfirmModal] = useState({
@@ -114,7 +148,9 @@ export default function SettingsPage() {
         address: schoolProfile.address || '',
         phone: schoolProfile.phone || '',
         email: schoolProfile.email || '',
-        academicYear: schoolProfile.academicYear || ''
+        academicYear: schoolProfile.academicYear || '',
+        website: schoolProfile.website || '',
+        logo: schoolProfile.logo || ''
       });
     }
   }, [schoolProfile, resetProfile]);
@@ -320,6 +356,49 @@ export default function SettingsPage() {
                       {...registerProfile('phone')}
                       error={profileErrors.phone?.message}
                     />
+                    <Input 
+                      label="Website URL"
+                      placeholder="https://www.school.com"
+                      {...registerProfile('website')}
+                      error={profileErrors.website?.message}
+                    />
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 ml-0.5">School Logo</label>
+                      <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                          {watch('logo') ? (
+                            <img src={watch('logo')} alt="School Logo" className="h-full w-full object-contain" />
+                          ) : (
+                            <ImageIcon size={24} className="text-slate-300" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <label className={`
+                            flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white 
+                            text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-50 transition-colors
+                            ${isUploadingLogo ? 'opacity-50 cursor-not-allowed' : ''}
+                          `}>
+                            {isUploadingLogo ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Upload size={16} />
+                            )}
+                            {isUploadingLogo ? 'Uploading...' : 'Upload New Logo'}
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={handleLogoUpload}
+                              disabled={isUploadingLogo}
+                            />
+                          </label>
+                          <p className="text-[10px] text-slate-500 mt-1 font-medium">PNG, JPG or SVG (Max 2MB)</p>
+                        </div>
+                      </div>
+                      <input type="hidden" {...registerProfile('logo')} />
+                    </div>
+
                     <div className="md:col-span-2">
                       <Input 
                         label="Physical Address"

@@ -17,7 +17,8 @@ import {
   Settings,
   X,
   FileText,
-  BookOpen
+  BookOpen,
+  Wallet
 } from 'lucide-react';
 
 // ...
@@ -33,6 +34,7 @@ const navItems = [
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Finance', href: '/finance', icon: Wallet, roles: ['ADMIN', 'ACCOUNTANT'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },

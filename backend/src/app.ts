@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
@@ -17,14 +18,15 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.edutracker.com"], // Update with actual API domain if needed
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", "*"], // Allow connecting to any API during development/local deploy
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Fixes logo display across ports
   xssFilter: true, // X-XSS-Protection
   frameguard: {
     action: 'deny', // X-Frame-Options: DENY
@@ -65,6 +67,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Apply global rate limiter to all API routes
 // app.use('/api', apiLimiter);
