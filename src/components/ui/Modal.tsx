@@ -9,9 +9,10 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full';
 }
 
-export function Modal({ isOpen, onClose, title, children, className = '' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className = '', size = 'md' }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -23,6 +24,18 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
       document.body.style.overflow = '';
     };
   }, [isOpen]);
+
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    full: 'max-w-full mx-4',
+  };
 
   if (!isOpen) return null;
 
@@ -40,7 +53,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
       <div
         className={`
           relative bg-white border border-slate-200 shadow-2xl 
-          rounded-t-2xl sm:rounded-2xl w-full max-w-lg overflow-hidden transition-standard
+          rounded-t-2xl sm:rounded-2xl w-full ${sizeClasses[size]} overflow-hidden transition-standard
           animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300
           ${className}
         `}

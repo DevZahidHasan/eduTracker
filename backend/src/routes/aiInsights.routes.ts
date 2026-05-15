@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { getInsights } from '../controllers/aiInsights.controller';
+import { getInsights, generateQuestions } from '../controllers/aiInsights.controller';
 
 const router = Router();
 
 router.post('/', getInsights);
+router.post('/generate-questions', generateQuestions);
 
 export default router;

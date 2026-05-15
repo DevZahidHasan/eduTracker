@@ -16,11 +16,15 @@ import {
   PieChart,
   Settings,
   X,
-  FileText
+  FileText,
+  BookOpen
 } from 'lucide-react';
+
+// ...
+
 import { useAppSelector } from '@/lib/hooks';
 import { selectRole } from '@/lib/features/authSlice';
-import { ConfirmationModal } from '../ui/ConfirmationModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER'] },
@@ -28,6 +32,7 @@ const navItems = [
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },

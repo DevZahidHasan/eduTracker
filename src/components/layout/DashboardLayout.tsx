@@ -26,7 +26,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans print:h-auto print:overflow-visible">
       {/* Sidebar Component */}
       <div className="print:hidden h-full">
         <Sidebar 
@@ -37,12 +37,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden relative">
+      <div className="flex flex-1 flex-col overflow-hidden relative print:overflow-visible print:block">
         <div className="print:hidden">
           <TopNavbar onMenuClick={() => setIsMobileOpen(true)} />
         </div>
         
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar print:p-0 print:overflow-visible">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar print:p-0 print:overflow-visible print:block">
           <div className="mx-auto max-w-7xl print:max-w-none">
             {children}
           </div>

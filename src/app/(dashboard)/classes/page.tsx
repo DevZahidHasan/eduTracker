@@ -14,8 +14,12 @@ import {
   TrendingDown, 
   Search, 
   Filter,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from 'lucide-react';
+import { addSectionThunk } from '@/lib/features/configSlice';
+import { Modal } from '@/components/ui/Modal';
+import { toast } from 'react-hot-toast';
 
 export default function ClassesPage() {
   const dispatch = useAppDispatch();
@@ -23,11 +27,32 @@ export default function ClassesPage() {
   const analytics = useAppSelector(selectClassAnalytics);
   const loading = useAppSelector(selectClassesLoading);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [selectedClassForSection, setSelectedClassForSection] = useState<string | null>(null);
+  const [newSectionName, setNewSectionName] = useState('');
 
   useEffect(() => {
     dispatch(fetchClassesOverview());
     dispatch(fetchClassAnalytics());
   }, [dispatch]);
+
+  const handleAddSection = async () => {
+    if (!selectedClassForSection || !newSectionName.trim()) return;
+    
+    try {
+      await dispatch(addSectionThunk({ 
+        className: selectedClassForSection, 
+        section: newSectionName 
+      })).unwrap();
+      toast.success('Section added successfully');
+      setIsAddSectionModalOpen(false);
+      setNewSectionName('');
+      dispatch(fetchClassesOverview()); // Refresh the list
+    } catch (error: any) {
+      toast.error(error || 'Failed to add section');
+    }
+  };
 
   const filteredClasses = overview.filter(c => 
     c.className.toLowerCase().includes(searchTerm.toLowerCase())
@@ -56,6 +81,32 @@ export default function ClassesPage() {
           <p className="text-muted-foreground">Monitor class performance, attendance, and routines across all sections.</p>
         </div>
       </div>
+
+      {/* Add Section Modal */}
+      <Modal
+        isOpen={isAddSectionModalOpen}
+        onClose={() => setIsAddSectionModalOpen(false)}
+        title={`Add Section to ${selectedClassForSection?.replace('_', ' ')}`}
+      >
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Section Name</label>
+            <Input
+              placeholder="e.g. A, B, Morning, Evening"
+              value={newSectionName}
+              onChange={(e) => setNewSectionName(e.target.value)}
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter a unique identifier for this section.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setIsAddSectionModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddSection} disabled={!newSectionName.trim()}>Add Section</Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Analytics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -135,8 +186,21 @@ export default function ClassesPage() {
                     <CardTitle className="text-xl font-bold">{c.className.replace('_', ' ')}</CardTitle>
                     <p className="text-sm text-muted-foreground">{c.sections.length} Sections</p>
                   </div>
-                  <div className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold">
-                    {c.totalStudents} STUDENTS
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold">
+                      {c.totalStudents} STUDENTS
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 text-[10px] px-2"
+                      onClick={() => {
+                        setSelectedClassForSection(c.className);
+                        setIsAddSectionModalOpen(true);
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Add Section
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -173,6 +237,11 @@ export default function ClassesPage() {
                         </Link>
                       </div>
                     ))}
+                    {c.sections.length === 0 && (
+                      <div className="py-6 text-center text-muted-foreground italic text-sm">
+                        No active sections. Click "Add Section" above to get started.
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

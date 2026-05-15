@@ -20,13 +20,18 @@ import { questionPaperSchema, QuestionPaperForm } from '@/lib/validations';
 import { QuestionPaperFormData } from '@/types/question-paper';
 import { QuestionBuilder } from '@/components/question-paper/QuestionBuilder';
 import { QuestionPaperPreview } from '@/components/question-paper/QuestionPaperPreview';
+import { TemplateSelectorModal } from '@/components/question-paper/TemplateSelectorModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { ResizableLayout } from '@/components/ui/ResizableLayout';
+import { QuestionPaper } from '@/types/question-paper';
 
 export default function CreateQuestionPaperPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [unsavedModalOpen, setUnsavedModalOpen] = useState(false);
 
   // Configuration Selectors
   const CLASSES = useAppSelector(selectClasses);
@@ -46,7 +51,8 @@ export default function CreateQuestionPaperPage() {
     handleSubmit,
     watch,
     control,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm<QuestionPaperForm>({
     resolver: zodResolver(questionPaperSchema) as any,
     defaultValues: {
@@ -67,6 +73,39 @@ export default function CreateQuestionPaperPage() {
   const formData = watch();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isAutosaving, setIsAutosaving] = useState(false);
+
+  const handleBack = () => {
+    if (isDirty) {
+      setUnsavedModalOpen(true);
+    } else {
+      router.push('/question-papers');
+    }
+  };
+
+  const handleSelectTemplate = (template: QuestionPaper) => {
+    reset({
+      title: `${template.title} - ${new Date().getFullYear()}`,
+      className: template.className,
+      section: template.section || '',
+      subject: template.subject,
+      examType: template.examType,
+      duration: template.duration,
+      totalMarks: template.totalMarks,
+      examDate: new Date().toISOString().split('T')[0],
+      instructions: template.instructions || '',
+      questions: template.questions.map((q, idx) => ({
+        questionType: q.questionType as any,
+        questionText: q.questionText,
+        marks: q.marks,
+        options: q.options || [],
+        order: idx,
+        instructions: q.instructions || '',
+        correctAnswer: q.correctAnswer || ''
+      })),
+    });
+    setTemplateModalOpen(false);
+    toast.success('Template loaded successfully');
+  };
 
   // Autosave Draft
   useEffect(() => {
@@ -126,6 +165,16 @@ export default function CreateQuestionPaperPage() {
 
   const editorPanel = (
     <div className="space-y-6">
+      <div className="flex justify-end mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setTemplateModalOpen(true)}
+          className="border-primary text-primary hover:bg-primary/5 font-bold"
+        >
+          <Bot size={18} className="mr-2" />
+          Load from Template
+        </Button>
+      </div>
       <Card className="border-slate-200/60 shadow-sm bg-white overflow-hidden">
         <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
           <CardTitle className="text-xl flex items-center gap-2 text-slate-900">
@@ -225,9 +274,9 @@ export default function CreateQuestionPaperPage() {
             </div>
 
             <div className="flex justify-end pt-6 border-t border-slate-100">
-              <Button type="submit" disabled={loading} className="px-8 shadow-lg shadow-blue-200 h-11 text-sm font-bold tracking-wide">
+              <Button type="submit" loading={loading} className="px-8 shadow-lg shadow-blue-200 h-11 text-sm font-bold tracking-wide">
                 <Save size={18} className="mr-2" />
-                {loading ? 'Processing...' : 'Generate Paper'}
+                Generate Paper
               </Button>
             </div>
           </form>
@@ -237,9 +286,9 @@ export default function CreateQuestionPaperPage() {
   );
 
   const previewPanel = (
-    <div className="sticky top-24 h-[calc(100vh-140px)] animate-in slide-in-from-right duration-500">
-      <div className="h-full rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex flex-col shadow-inner">
-        <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <div className="sticky top-24 h-[calc(100vh-140px)] animate-in slide-in-from-right duration-500 print:static print:h-auto print:block">
+      <div className="h-full rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex flex-col shadow-inner print:border-none print:rounded-none print:shadow-none print:bg-transparent print:overflow-visible print:block">
+        <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-emerald-500" />
             <span className="text-sm font-bold text-slate-700">Live Preview</span>
@@ -253,7 +302,7 @@ export default function CreateQuestionPaperPage() {
             </Button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden print:overflow-visible print:block">
           <QuestionPaperPreview data={formData} schoolProfile={schoolProfile} />
         </div>
       </div>
@@ -261,14 +310,12 @@ export default function CreateQuestionPaperPage() {
   );
 
   return (
-    <div className={`space-y-6 animate-in fade-in duration-500 pb-12 transition-all duration-500 ${showPreview ? 'max-w-[1600px] mx-auto' : 'max-w-4xl mx-auto'}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className={`space-y-6 animate-in fade-in duration-500 pb-12 transition-all duration-500 ${showPreview ? 'max-w-[1600px] mx-auto' : 'max-w-4xl mx-auto'} print:m-0 print:p-0 print:max-w-none print:w-full print:space-y-0`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
-          <Link href="/question-papers">
-            <Button variant="outline" className="px-3 shadow-sm border-slate-200">
-              <ArrowLeft size={18} />
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={handleBack} className="px-3 shadow-sm border-slate-200">
+            <ArrowLeft size={18} />
+          </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Create New Paper</h1>
             <p className="text-muted-foreground font-medium mt-1">Configure parameters to generate a new question paper.</p>
@@ -312,6 +359,23 @@ export default function CreateQuestionPaperPage() {
         leftPanel={editorPanel}
         rightPanel={previewPanel}
         showRightPanel={showPreview}
+      />
+
+      <TemplateSelectorModal 
+        isOpen={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelect={handleSelectTemplate}
+      />
+
+      <ConfirmationModal
+        isOpen={unsavedModalOpen}
+        onClose={() => setUnsavedModalOpen(false)}
+        onConfirm={() => router.push('/question-papers')}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to leave? Your progress will be lost."
+        confirmText="Leave Page"
+        cancelText="Stay Here"
+        destructive={true}
       />
     </div>
   );

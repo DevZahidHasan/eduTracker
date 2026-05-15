@@ -23,11 +23,22 @@ const initialState: QuestionPaperState = {
 
 export const fetchQuestionPapers = createAsyncThunk(
   'questionPaper/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (filters: { isTemplate?: boolean; className?: string; subject?: string } = {}, { rejectWithValue }) => {
     try {
-      return await questionPaperService.getQuestionPapers();
+      return await questionPaperService.getQuestionPapers(filters);
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch papers');
+    }
+  }
+);
+
+export const duplicateQuestionPaper = createAsyncThunk(
+  'questionPaper/duplicate',
+  async ({ id, options }: { id: string, options: { isTemplate?: boolean; title?: string } }, { rejectWithValue }) => {
+    try {
+      return await questionPaperService.duplicateQuestionPaper(id, options);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to duplicate paper');
     }
   }
 );

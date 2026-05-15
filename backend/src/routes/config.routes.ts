@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getConfig, createClass, createSubject, createExamType, updateExamType } from '../controllers/config.controller';
+import { getConfig, createClass, createSection, createSubject, createExamType, updateExamType } from '../controllers/config.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -9,6 +9,7 @@ router.get('/', getConfig);
 // Protected administration routes
 router.use(authMiddleware);
 router.post('/classes', createClass);
+router.post('/sections', createSection);
 router.post('/subjects', createSubject);
 router.post('/exam-types', createExamType);
 router.patch('/exam-types/:name', updateExamType);

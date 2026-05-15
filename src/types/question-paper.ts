@@ -16,14 +16,18 @@ export interface QuestionPaper {
   section?: string;
   subject: string;
   examType: string;
-  examDate: string;
+  examDate?: string;
   duration: number;
   totalMarks: number;
   instructions: string;
   questions: Question[];
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  isTemplate?: boolean;
+  templateId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface QuestionPaperFormData extends Omit<QuestionPaper, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface QuestionPaperFormData extends Omit<QuestionPaper, 'id' | 'createdAt' | 'updatedAt' | 'questions'> {
+  questions?: Partial<Question>[];
+}

@@ -22,7 +22,12 @@ export interface AuthRequest extends Request {
 
 export const authMiddleware = asyncHandler(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    let token = req.header('Authorization')?.replace('Bearer ', '');
+
+    // Allow token to be passed via query string (useful for PDF export and direct print URLs)
+    if (!token && req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
 
     if (!token) {
       throw new ApiError(401, 'Authentication required');

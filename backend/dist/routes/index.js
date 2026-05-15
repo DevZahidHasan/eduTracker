@@ -16,6 +16,7 @@ const settings_routes_1 = __importDefault(require("./settings.routes"));
 const audit_routes_1 = __importDefault(require("./audit.routes"));
 const users_routes_1 = __importDefault(require("./users.routes"));
 const notifications_routes_1 = __importDefault(require("./notifications.routes"));
+const questionPapers_routes_1 = __importDefault(require("./questionPapers.routes"));
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
 // Public routes
@@ -32,4 +33,5 @@ router.use('/settings', auth_middleware_1.authMiddleware, settings_routes_1.defa
 router.use('/audit', auth_middleware_1.authMiddleware, audit_routes_1.default);
 router.use('/users', auth_middleware_1.authMiddleware, users_routes_1.default);
 router.use('/notifications', auth_middleware_1.authMiddleware, notifications_routes_1.default);
+router.use('/question-papers', auth_middleware_1.authMiddleware, questionPapers_routes_1.default);
 exports.default = router;

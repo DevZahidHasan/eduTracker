@@ -84,10 +84,10 @@ export function ResizableLayout({
       </div>
 
       {/* Desktop/Tablet Resizable Layout */}
-      <div className="hidden md:flex w-full h-full items-start">
+      <div className="hidden md:flex w-full h-full items-start print:block">
         <div 
           style={{ width: `${dividerPosition}%` }}
-          className="overflow-y-auto pr-2"
+          className="overflow-y-auto pr-2 print:hidden"
         >
           {leftPanel}
         </div>
@@ -95,7 +95,7 @@ export function ResizableLayout({
         <div
           onMouseDown={startResizing}
           onTouchStart={startResizing}
-          className={`w-4 self-stretch cursor-col-resize hover:bg-primary/5 transition-colors group relative flex items-center justify-center ${isResizing ? 'bg-primary/10' : 'bg-transparent'}`}
+          className={`w-4 self-stretch cursor-col-resize hover:bg-primary/5 transition-colors group relative flex items-center justify-center print:hidden ${isResizing ? 'bg-primary/10' : 'bg-transparent'}`}
         >
           <div className={`w-1 h-12 rounded-full transition-colors ${isResizing ? 'bg-primary' : 'bg-slate-300 group-hover:bg-primary/40'}`} />
           
@@ -109,7 +109,7 @@ export function ResizableLayout({
 
         <div 
           style={{ width: `${100 - dividerPosition}%` }}
-          className="overflow-y-auto pl-2"
+          className="overflow-y-auto pl-2 print:!w-full print:pl-0"
         >
           {rightPanel}
         </div>

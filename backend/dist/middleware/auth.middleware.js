@@ -20,7 +20,11 @@ const prisma_1 = __importDefault(require("../prisma"));
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 exports.authMiddleware = (0, asyncHandler_1.asyncHandler)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+    let token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+    // Allow token to be passed via query string (useful for PDF export and direct print URLs)
+    if (!token && req.query.token && typeof req.query.token === 'string') {
+        token = req.query.token;
+    }
     if (!token) {
         throw new apiError_1.ApiError(401, 'Authentication required');
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchSectionDetail, selectSectionDetail, selectClassesLoading, updateSection, updateRoutine } from '@/lib/features/classesSlice';
+import { addStudentThunk } from '@/lib/features/studentsSlice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,17 +12,17 @@ import { Modal } from '@/components/ui/Modal';
 import { selectTeachers, fetchConfig, selectSubjects } from '@/lib/features/configSlice';
 import { toast } from 'react-hot-toast';
 import { RoutineEditorModal } from '../../RoutineEditorModal';
+import { StudentFormData } from '@/lib/validations';
+import { StudentForm } from '@/components/students/StudentForm';
 import { 
   Users, 
   Calendar, 
   User, 
-  Mail, 
   ArrowLeft,
   Clock,
   Search,
-  BookOpen,
-  GraduationCap,
-  Edit2
+  Edit2,
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -37,6 +38,7 @@ export default function SectionDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
 
   useEffect(() => {
@@ -72,6 +74,17 @@ export default function SectionDetailPage() {
       dispatch(fetchSectionDetail({ className, section })); // Refresh data
     } catch (error: any) {
       toast.error(error || 'Failed to update routine');
+    }
+  };
+
+  const onAddStudent = async (data: StudentFormData) => {
+    try {
+      await dispatch(addStudentThunk(data)).unwrap();
+      toast.success('Student added successfully');
+      setIsAddStudentModalOpen(false);
+      dispatch(fetchSectionDetail({ className, section })); // Refresh list
+    } catch (error: any) {
+      toast.error(error || 'Failed to add student');
     }
   };
 
@@ -186,10 +199,16 @@ export default function SectionDetailPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button size="sm">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Roster
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="hidden sm:flex">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Roster
+              </Button>
+              <Button size="sm" onClick={() => setIsAddStudentModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Student
+              </Button>
+            </div>
           </div>
 
           <Card className="border-none shadow-sm overflow-hidden">
@@ -307,6 +326,22 @@ export default function SectionDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Add Student Modal */}
+      <Modal 
+        isOpen={isAddStudentModalOpen} 
+        onClose={() => setIsAddStudentModalOpen(false)}
+        title={`Register Student: ${className.replace('_', ' ')} Sec ${section}`}
+        className="max-w-3xl"
+      >
+        <StudentForm 
+          key={isAddStudentModalOpen ? 'open' : 'closed'}
+          onSubmit={onAddStudent}
+          onCancel={() => setIsAddStudentModalOpen(false)}
+          initialData={{ className, section }}
+          hideClassAndSection={true}
+        />
+      </Modal>
     </div>
   );
 }

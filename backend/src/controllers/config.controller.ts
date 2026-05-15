@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../prisma';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/apiResponse';
+import { ApiError } from '../utils/apiError';
 
 export const getConfig = asyncHandler(async (req: Request, res: Response) => {
   const classes = await prisma.schoolClass.findMany({
@@ -37,10 +38,36 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
 
 export const createClass = asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.body;
+  const className = name.toUpperCase().replace(/\s+/g, '_');
+  
   const newClass = await prisma.schoolClass.create({
-    data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+    data: { 
+      name: className,
+      sections: {
+        create: { section: 'A' }
+      }
+    },
+    include: { sections: true }
   });
-  return res.status(201).json(new ApiResponse(201, newClass, 'Class created successfully'));
+  
+  return res.status(201).json(new ApiResponse(201, newClass, 'Class created successfully with default Section A'));
+});
+
+export const createSection = asyncHandler(async (req: Request, res: Response) => {
+  const { className, section } = req.body;
+  
+  if (!className || !section) {
+    throw new ApiError(400, 'Class name and section are required');
+  }
+
+  const newSection = await prisma.classSection.create({
+    data: { 
+      className: className.toUpperCase().replace(/\s+/g, '_'),
+      section: section.toUpperCase().trim()
+    }
+  });
+  
+  return res.status(201).json(new ApiResponse(201, newSection, 'Section created successfully'));
 });
 
 export const createSubject = asyncHandler(async (req: Request, res: Response) => {

@@ -67,6 +67,18 @@ export const addClassThunk = createAsyncThunk(
   }
 );
 
+export const addSectionThunk = createAsyncThunk(
+  'config/addSection',
+  async ({ className, section }: { className: string, section: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/config/sections', { className, section });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add section');
+    }
+  }
+);
+
 export const addSubjectThunk = createAsyncThunk(
   'config/addSubject',
   async (name: string, { rejectWithValue }) => {

@@ -8,6 +8,7 @@ router.get('/', config_controller_1.getConfig);
 // Protected administration routes
 router.use(auth_middleware_1.authMiddleware);
 router.post('/classes', config_controller_1.createClass);
+router.post('/sections', config_controller_1.createSection);
 router.post('/subjects', config_controller_1.createSubject);
 router.post('/exam-types', config_controller_1.createExamType);
 router.patch('/exam-types/:name', config_controller_1.updateExamType);

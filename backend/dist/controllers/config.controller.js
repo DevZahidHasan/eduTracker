@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateExamType = exports.createExamType = exports.createSubject = exports.createClass = exports.getConfig = void 0;
+exports.updateExamType = exports.createExamType = exports.createSubject = exports.createSection = exports.createClass = exports.getConfig = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
+const apiError_1 = require("../utils/apiError");
 exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const classes = yield prisma_1.default.schoolClass.findMany({
         orderBy: { name: 'asc' }
@@ -42,10 +43,30 @@ exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
 }));
 exports.createClass = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name } = req.body;
+    const className = name.toUpperCase().replace(/\s+/g, '_');
     const newClass = yield prisma_1.default.schoolClass.create({
-        data: { name: name.toUpperCase().replace(/\s+/g, '_') }
+        data: {
+            name: className,
+            sections: {
+                create: { section: 'A' }
+            }
+        },
+        include: { sections: true }
     });
-    return res.status(201).json(new apiResponse_1.ApiResponse(201, newClass, 'Class created successfully'));
+    return res.status(201).json(new apiResponse_1.ApiResponse(201, newClass, 'Class created successfully with default Section A'));
+}));
+exports.createSection = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, section } = req.body;
+    if (!className || !section) {
+        throw new apiError_1.ApiError(400, 'Class name and section are required');
+    }
+    const newSection = yield prisma_1.default.classSection.create({
+        data: {
+            className: className.toUpperCase().replace(/\s+/g, '_'),
+            section: section.toUpperCase().trim()
+        }
+    });
+    return res.status(201).json(new apiResponse_1.ApiResponse(201, newSection, 'Section created successfully'));
 }));
 exports.createSubject = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name } = req.body;

@@ -1,9 +1,12 @@
-import React from 'react';
-import { useFieldArray, Control, UseFormRegister, FieldErrors } from 'react-hook-form';
+import React, { useState } from 'react';
+import { useFieldArray, Control, UseFormRegister, FieldErrors, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/Button';
-import { Plus } from 'lucide-react';
+import { Plus, BookOpen, Sparkles } from 'lucide-react';
 import { QuestionPaperForm } from '@/lib/validations';
 import { QuestionItem } from './QuestionItem';
+import { QuestionBankModal } from './QuestionBankModal';
+import { AIQuestionGeneratorModal } from './AIQuestionGeneratorModal';
+import { BankQuestion } from '@/types/question-bank';
 import {
   DndContext,
   closestCenter,
@@ -31,6 +34,11 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
     name: 'questions',
   });
 
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const currentSubject = useWatch({ control, name: 'subject' });
+  const currentClass = useWatch({ control, name: 'className' });
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -53,6 +61,19 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
     });
   };
 
+  const handleImportQuestions = (bankQuestions: any[]) => {
+    const formattedQuestions = bankQuestions.map(bq => ({
+      questionText: bq.questionText,
+      questionType: bq.questionType as any,
+      marks: bq.marks,
+      options: bq.options && bq.options.length > 0 ? bq.options : ['', '', '', ''],
+      correctAnswer: bq.correctAnswer || '',
+      instructions: '',
+    }));
+    
+    append(formattedQuestions);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -65,18 +86,40 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
         <h3 className="text-lg font-bold text-slate-900">Questions</h3>
-        <Button 
-          type="button" 
-          onClick={handleAddQuestion}
-          variant="outline" 
-          size="sm"
-          className="border-primary/20 text-primary hover:bg-primary/5"
-        >
-          <Plus size={16} className="mr-2" />
-          Add Question
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            type="button" 
+            onClick={() => setIsAIModalOpen(true)}
+            variant="outline" 
+            size="sm"
+            className="border-purple-200 text-purple-600 hover:bg-purple-50"
+          >
+            <Sparkles size={16} className="mr-2" />
+            AI Suggest
+          </Button>
+          <Button 
+            type="button" 
+            onClick={() => setIsBankModalOpen(true)}
+            variant="outline" 
+            size="sm"
+            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+          >
+            <BookOpen size={16} className="mr-2" />
+            Import from Bank
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleAddQuestion}
+            variant="outline" 
+            size="sm"
+            className="border-primary/20 text-primary hover:bg-primary/5"
+          >
+            <Plus size={16} className="mr-2" />
+            Add Blank
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -110,16 +153,50 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
             </div>
             <h4 className="text-slate-900 font-bold mb-1">No Questions Added</h4>
             <p className="text-slate-500 text-sm mb-4">Start building your question paper by adding the first question.</p>
-            <Button 
-              type="button" 
-              onClick={handleAddQuestion}
-              className="shadow-sm"
-            >
-              Add First Question
-            </Button>
+            <div className="flex justify-center gap-3 flex-wrap">
+              <Button 
+                type="button" 
+                onClick={() => setIsAIModalOpen(true)}
+                variant="outline"
+                className="border-purple-200 text-purple-600 hover:bg-purple-50"
+              >
+                <Sparkles size={16} className="mr-2" />
+                AI Suggest
+              </Button>
+              <Button 
+                type="button" 
+                onClick={() => setIsBankModalOpen(true)}
+                variant="outline"
+              >
+                <BookOpen size={16} className="mr-2" />
+                Import from Bank
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleAddQuestion}
+                className="shadow-sm"
+              >
+                Add Blank Question
+              </Button>
+            </div>
           </div>
         )}
       </div>
+
+      <QuestionBankModal 
+        isOpen={isBankModalOpen} 
+        onClose={() => setIsBankModalOpen(false)} 
+        onSelect={handleImportQuestions}
+        subject={currentSubject}
+        className={currentClass}
+      />
+      <AIQuestionGeneratorModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        onSelect={handleImportQuestions}
+        defaultClass={currentClass}
+        defaultSubject={currentSubject}
+      />
     </div>
   );
 }

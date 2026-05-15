@@ -26,6 +26,8 @@ model User {
   refreshTokens  RefreshToken[]
   notifications  Notification[]
   questionPapers QuestionPaper[]
+  salary         StaffSalary?
+  payrollRecords PayrollRecord[]
 }
 
 model Notification {
@@ -97,6 +99,9 @@ model Student {
   marks        Mark[]
   attendances  Attendance[]
   reports      AcademicReport[]
+  termResults  TermResult[]
+  vouchers     FeeVoucher[]
+  payments     FeePayment[]
   class        SchoolClass      @relation(fields: [className], references: [name])
   classSection ClassSection?    @relation(fields: [className, section], references: [className, section])
 
@@ -110,9 +115,10 @@ enum Gender {
 }
 
 model SchoolClass {
-  name     String         @id
-  students Student[]
-  sections ClassSection[]
+  name          String         @id
+  students      Student[]
+  sections      ClassSection[]
+  feeStructures FeeStructure[]
 }
 
 model ClassSection {
@@ -275,15 +281,19 @@ model QuestionPaper {
   examType     String
   totalMarks   Int
   duration     Int
-  examDate     DateTime
+  examDate     DateTime?
   instructions String?
   status       QuestionPaperStatus @default(DRAFT)
+  isTemplate   Boolean             @default(false)
+  templateId   String?
   createdBy    Int
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
-  user      User       @relation(fields: [createdBy], references: [id])
-  questions Question[]
+  user         User            @relation(fields: [createdBy], references: [id])
+  questions    Question[]
+  template     QuestionPaper?  @relation("TemplateToPaper", fields: [templateId], references: [id])
+  derivedPapers QuestionPaper[] @relation("TemplateToPaper")
 
   @@index([className, subject])
   @@index([examDate])
@@ -303,4 +313,137 @@ model Question {
   questionPaper QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
 
   @@index([questionPaperId])
+}
+
+model BankQuestion {
+  id            String   @id @default(uuid())
+  className     String
+  subject       String
+  chapter       String?
+  questionType  String
+  questionText  String
+  marks         Int
+  options       String[]
+  correctAnswer String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([className, subject])
+}
+
+// --- Financial Models ---
+
+model FeeType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Tuition, Exam, Transport, etc.
+  isMonthly   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  structures   FeeStructure[]
+  voucherItems FeeVoucherItem[]
+}
+
+model FeeStructure {
+  id         Int    @id @default(autoincrement())
+  className  String
+  feeTypeId  Int
+  amount     Float
+
+  class   SchoolClass @relation(fields: [className], references: [name])
+  feeType FeeType     @relation(fields: [feeTypeId], references: [id])
+
+  @@unique([className, feeTypeId])
+}
+
+model FeeVoucher {
+  id          String   @id @default(uuid())
+  studentId   Int
+  month       Int // 1-12
+  year        Int
+  dueDate     DateTime
+  totalAmount Float
+  paidAmount  Float    @default(0)
+  status      String   @default("UNPAID") // UNPAID, PARTIAL, PAID, OVERDUE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student  Student          @relation(fields: [studentId], references: [id])
+  items    FeeVoucherItem[]
+  payments FeePayment[]
+}
+
+model FeeVoucherItem {
+  id        Int    @id @default(autoincrement())
+  voucherId String
+  feeTypeId Int
+  amount    Float
+
+  voucher FeeVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  feeType FeeType    @relation(fields: [feeTypeId], references: [id])
+}
+
+model FeePayment {
+  id            String   @id @default(uuid())
+  voucherId     String
+  studentId     Int
+  amount        Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String // CASH, BANK_TRANSFER, ONLINE
+  transactionId String?
+  receivedBy    Int // User ID (Accountant/Admin)
+
+  voucher FeeVoucher @relation(fields: [voucherId], references: [id])
+  student Student    @relation(fields: [studentId], references: [id])
+}
+
+// --- HR & Payroll Models ---
+
+model StaffSalary {
+  userId     Int   @id
+  baseSalary Float
+  allowances Float @default(0)
+  deductions Float @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PayrollRecord {
+  id          String   @id @default(uuid())
+  userId      Int
+  month       Int
+  year        Int
+  amountPaid  Float
+  paymentDate DateTime @default(now())
+  status      String   @default("PAID") // PAID, PENDING
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// --- Enhanced Academic Models ---
+
+model GradeScale {
+  id       Int    @id @default(autoincrement())
+  grade    String // A+, A, B, etc.
+  minScore Float
+  maxScore Float
+  points   Float // 4.0
+}
+
+model TermResult {
+  id             Int      @id @default(autoincrement())
+  studentId      Int
+  examType       String
+  totalMarks     Float
+  obtainedMarks  Float
+  percentage     Float
+  grade          String?
+  gpa            Float?
+  position       Int?
+  teacherRemarks String?
+  status         String   @default("FINAL") // DRAFT, FINAL
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
