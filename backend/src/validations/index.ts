@@ -34,7 +34,7 @@ export const studentSchema = {
     bloodGroup: z.string().optional().or(z.literal('')),
     dateOfBirth: z.string().optional().or(z.literal('')),
     admissionDate: z.string().optional().or(z.literal('')),
-    profileImage: z.string().url().optional().or(z.literal('')),
+    profileImage: z.string().optional().or(z.literal('')),
   }),
 };
 

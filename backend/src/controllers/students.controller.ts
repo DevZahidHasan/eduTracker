@@ -43,6 +43,20 @@ export const getStudentById = asyncHandler(async (req: Request, res: Response) =
   );
 });
 
+export const uploadStudentPhoto = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new ApiError(400, 'No file uploaded');
+  }
+
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+  return res.status(200).json(
+    new ApiResponse(200, { imageUrl }, 'Student photo uploaded successfully')
+  );
+});
+
 export const createStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     studentId, fullName, rollNumber, className, section, gender,

@@ -27,6 +27,7 @@ export const studentSchema = z.object({
   dateOfBirth: z.string().optional().or(z.literal('')),
   bloodGroup: z.string().optional().or(z.literal('')),
   admissionDate: z.string().optional().or(z.literal('')),
+  profileImage: z.string().optional().or(z.literal('')),
 });
 
 export type StudentFormData = z.infer<typeof studentSchema>;

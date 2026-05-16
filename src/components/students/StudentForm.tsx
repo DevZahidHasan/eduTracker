@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Users, Plus, MoreVertical, Search } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Users, Plus, MoreVertical, Search, Camera, Upload, X, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, StudentFormData } from '@/lib/validations';
@@ -10,6 +10,9 @@ import { selectClasses, selectGenders } from '@/lib/features/configSlice';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import api from '@/lib/api';
+import { toast } from 'react-hot-toast';
+import Image from 'next/image';
 
 interface StudentFormProps {
   onSubmit: (data: StudentFormData) => void;
@@ -28,10 +31,14 @@ export function StudentForm({
 }: StudentFormProps) {
   const CLASSES = useAppSelector(selectClasses);
   const GENDERS = useAppSelector(selectGenders);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -50,8 +57,41 @@ export function StudentForm({
       bloodGroup: initialData?.bloodGroup || '',
       dateOfBirth: initialData?.dateOfBirth || '',
       admissionDate: initialData?.admissionDate || '',
+      profileImage: initialData?.profileImage || '',
     }
   });
+
+  const profileImage = watch('profileImage' as any);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size must be less than 2MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('student-photo', file);
+
+    setIsUploading(true);
+    try {
+      const response = await api.post('students/upload-photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const imageUrl = response.data.data.imageUrl;
+      setValue('profileImage' as any, imageUrl);
+      toast.success('Photo uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
@@ -63,6 +103,61 @@ export function StudentForm({
           </div>
           <h3 className="text-base font-bold text-slate-900">Student Identity</h3>
         </div>
+
+        <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+          <div className="relative group">
+            <div className="h-24 w-24 rounded-2xl bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden relative shadow-sm">
+              {profileImage ? (
+                <Image 
+                  src={profileImage} 
+                  alt="Profile" 
+                  fill 
+                  className="object-cover"
+                />
+              ) : (
+                <Camera size={28} />
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                  <Loader2 size={24} className="animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+            {profileImage && !isUploading && (
+              <button
+                type="button"
+                onClick={() => setValue('profileImage' as any, '')}
+                className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-slate-900">Student Profile Photo</h4>
+            <p className="text-xs text-slate-500 max-w-[200px]">Upload a clear passport-sized photo. Max size 2MB (JPG, PNG).</p>
+            <input 
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              className="hidden"
+              accept="image/*"
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="gap-2 h-9 text-xs font-bold"
+            >
+              <Upload size={14} />
+              {profileImage ? 'Change Photo' : 'Upload Photo'}
+            </Button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="md:col-span-2">
             <Input 
@@ -90,12 +185,6 @@ export function StudentForm({
             placeholder="e.g. O+"
             {...register('bloodGroup')}
             error={errors.bloodGroup?.message}
-          />
-          <Input 
-            label="Profile Image URL"
-            placeholder="https://images.unsplash.com/..."
-            {...register('profileImage' as any)}
-            error={(errors as any).profileImage?.message}
           />
         </div>
       </div>

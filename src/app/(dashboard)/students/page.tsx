@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import { Search, Plus, FileText, Users, Download, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
@@ -319,8 +320,12 @@ export default function StudentsPage() {
                       <td className="px-6 py-4 text-slate-900 font-bold font-mono">{student.rollNumber || '--'}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0">
-                            {student.fullName.charAt(0)}
+                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0 overflow-hidden">
+                            {student.profileImage ? (
+                              <Image src={student.profileImage} alt={student.fullName} width={36} height={36} className="object-cover" />
+                            ) : (
+                              student.fullName.charAt(0)
+                            )}
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 leading-tight">{student.fullName}</span>
@@ -442,8 +447,12 @@ export default function StudentsPage() {
                     onClick={() => setExpandedStudentId(isExpanded ? null : student.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0">
-                        {student.fullName.charAt(0)}
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0 overflow-hidden">
+                        {student.profileImage ? (
+                          <Image src={student.profileImage} alt={student.fullName} width={40} height={40} className="object-cover" />
+                        ) : (
+                          student.fullName.charAt(0)
+                        )}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-900 leading-tight">{student.fullName}</span>
