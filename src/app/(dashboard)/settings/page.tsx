@@ -774,6 +774,22 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between border-t border-border pt-6">
                       <div>
+                        <h4 className="font-bold text-foreground text-sm">Fee Billing Notifications</h4>
+                        <p className="text-muted-foreground text-xs mt-1">Notify parents when vouchers are issued or payments confirmed.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={settingsData.feeNotifications === 'true'} 
+                          onChange={(e) => handleSettingChange('feeNotifications', e.target.checked ? 'true' : 'false')}
+                          className="sr-only peer" 
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-border pt-6">
+                      <div>
                         <h4 className="font-bold text-foreground text-sm">Parent Notifications</h4>
                         <p className="text-muted-foreground text-xs mt-1">Enable automated SMS/Email for parents (Requires API Gateway).</p>
                       </div>

@@ -183,3 +183,101 @@ export const sendMarkFinalizationAlert = async (className: string, subject: stri
     console.error('Error sending mark finalization alert:', error);
   }
 };
+
+export const sendVoucherGenerationNotification = async (voucherId: string) => {
+  const settings = await prisma.systemSetting.findUnique({
+    where: { key: 'feeNotifications' }
+  });
+
+  if (settings?.value !== 'true') return;
+
+  const voucher = await prisma.feeVoucher.findUnique({
+    where: { id: voucherId },
+    include: { student: true }
+  });
+
+  if (!voucher || !voucher.student.email) return;
+
+  const transporter = getTransporter();
+  const monthName = new Date(0, voucher.month - 1).toLocaleString('default', { month: 'long' });
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <h2 style="color: #2563eb;">New Fee Voucher Issued</h2>
+      <p>Dear Parent/Guardian,</p>
+      <p>A new fee voucher has been issued for <strong>${voucher.student.fullName}</strong> for the month of <strong>${monthName} ${voucher.year}</strong>.</p>
+      
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 5px 0;"><strong>Voucher ID:</strong> ${voucher.id.substring(0, 8).toUpperCase()}</p>
+        <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${voucher.totalAmount.toLocaleString()}</p>
+        <p style="margin: 5px 0; color: #ef4444;"><strong>Due Date:</strong> ${voucher.dueDate.toLocaleDateString()}</p>
+      </div>
+
+      <p>Please ensure the payment is made before the due date to avoid late fees.</p>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+      <p style="font-size: 12px; color: #64748b;">This is an automated message from EduTrack Academy.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"EduTrack Academy" <noreply@edutrack.ai>',
+      to: voucher.student.email,
+      subject: `Fee Voucher Issued: ${monthName} ${voucher.year} - ${voucher.student.fullName}`,
+      html,
+    });
+    console.log(`Voucher notification sent to ${voucher.student.email}`);
+  } catch (error) {
+    console.error('Error sending voucher notification:', error);
+  }
+};
+
+export const sendPaymentConfirmationNotification = async (paymentId: string) => {
+  const settings = await prisma.systemSetting.findUnique({
+    where: { key: 'feeNotifications' }
+  });
+
+  if (settings?.value !== 'true') return;
+
+  const payment: any = await prisma.feePayment.findUnique({
+    where: { id: paymentId },
+    include: { 
+      student: true, 
+      voucher: true 
+    }
+  });
+
+  if (!payment || !payment.student?.email) return;
+
+  const transporter = getTransporter();
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <h2 style="color: #059669;">Payment Confirmation</h2>
+      <p>Dear Parent/Guardian,</p>
+      <p>This is to confirm that we have successfully received a payment of <strong>$${payment.amount.toLocaleString()}</strong> for <strong>${payment.student.fullName}</strong>.</p>
+      
+      <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 5px 0;"><strong>Transaction ID:</strong> ${payment.transactionId || 'N/A'}</p>
+        <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${new Date(payment.paymentDate).toLocaleString()}</p>
+        <p style="margin: 5px 0;"><strong>Voucher Status:</strong> <span style="font-weight: bold;">${payment.voucher?.status}</span></p>
+        <p style="margin: 5px 0;"><strong>Remaining Balance:</strong> $${(payment.voucher?.totalAmount - payment.voucher?.paidAmount).toLocaleString()}</p>
+      </div>
+
+      <p>Thank you for your timely payment.</p>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+      <p style="font-size: 12px; color: #64748b;">This is an automated message from EduTrack Academy.</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"EduTrack Academy" <noreply@edutrack.ai>',
+      to: payment.student.email,
+      subject: `Payment Confirmation: $${payment.amount} - ${payment.student.fullName}`,
+      html,
+    });
+    console.log(`Payment confirmation sent to ${payment.student.email}`);
+  } catch (error) {
+    console.error('Error sending payment confirmation:', error);
+  }
+};

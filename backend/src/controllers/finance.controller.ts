@@ -5,6 +5,7 @@ import { ApiError } from '../utils/apiError';
 import prisma from '../prisma';
 import { generateReceiptHtml } from '../utils/receiptHtmlGenerator';
 import { generatePdfFromHtml } from '../utils/pdfGenerator';
+import { sendVoucherGenerationNotification, sendPaymentConfirmationNotification } from '../services/email.service';
 
 // --- Fee Types ---
 
@@ -151,6 +152,11 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
     return createdVouchers;
   });
 
+  // 4. Send email notifications (Async)
+  results.forEach(voucher => {
+    sendVoucherGenerationNotification(voucher.id).catch(err => console.error('Email failed:', err));
+  });
+
   return res.status(201).json(new ApiResponse(201, { count: results.length }, `${results.length} vouchers generated successfully`));
 });
 
@@ -177,8 +183,9 @@ export const getVouchers = asyncHandler(async (req: Request, res: Response) => {
   const vouchers = await prisma.feeVoucher.findMany({
     where,
     include: {
-      student: { select: { fullName: true, rollNumber: true, className: true, section: true } },
-      items: { include: { feeType: true } }
+      student: { select: { fullName: true, rollNumber: true, className: true, section: true, studentId: true } },
+      items: { include: { feeType: true } },
+      payments: true
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -233,6 +240,9 @@ export const collectPayment = asyncHandler(async (req: Request, res: Response) =
 
     return payment;
   });
+
+  // 4. Send payment confirmation (Async)
+  sendPaymentConfirmationNotification(result.id).catch(err => console.error('Payment email failed:', err));
 
   return res.status(201).json(new ApiResponse(201, result, 'Payment recorded successfully'));
 });
