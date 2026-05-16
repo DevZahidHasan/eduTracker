@@ -27,9 +27,14 @@ import {
   updateUserThunk,
   deleteUserThunk,
   triggerEndOfDayThunk,
+  fetchGradeScales,
+  createGradeScaleThunk,
+  updateGradeScaleThunk,
+  deleteGradeScaleThunk,
   selectSchoolProfile,
   selectSystemSettings,
-  selectUsers
+  selectUsers,
+  selectGradeScales
 } from '@/lib/features/settingsSlice';
 import { 
   selectClasses, 
@@ -52,7 +57,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
 
-type TabId = 'profile' | 'academic' | 'users' | 'theme' | 'notifications' | 'security';
+type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security';
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
@@ -62,11 +67,24 @@ export default function SettingsPage() {
   const schoolProfile = useAppSelector(selectSchoolProfile);
   const systemSettings = useAppSelector(selectSystemSettings);
   const users = useAppSelector(selectUsers);
+  const gradeScales = useAppSelector(selectGradeScales);
   const classes = useAppSelector(selectClasses);
   const subjects = useAppSelector(selectSubjects);
   const examTypes = useAppSelector(selectExamTypes);
 
+  // Grade Scale State
+  const [isGradeScaleModalOpen, setIsGradeScaleModalOpen] = useState(false);
+  const [isEditingScale, setIsEditingScale] = useState(false);
+  const [selectedScale, setSelectedScale] = useState<any>(null);
+  const [scaleFormData, setScaleFormData] = useState({
+    grade: '',
+    minScore: '',
+    maxScore: '',
+    points: ''
+  });
+
   // Forms
+// ... existing code ...
   const {
     register: registerProfile,
     handleSubmit: handleSubmitProfile,
@@ -238,6 +256,75 @@ export default function SettingsPage() {
       .catch((err) => toast.error(err || 'Failed to update user'));
   };
 
+  // Grade Scale Handlers
+  useEffect(() => {
+    if (activeTab === 'grading') {
+      dispatch(fetchGradeScales());
+    }
+  }, [activeTab, dispatch]);
+
+  const handleAddGradeScale = () => {
+    setIsEditingScale(false);
+    setScaleFormData({ grade: '', minScore: '', maxScore: '', points: '' });
+    setIsGradeScaleModalOpen(true);
+  };
+
+  const handleEditGradeScale = (scale: any) => {
+    setIsEditingScale(true);
+    setSelectedScale(scale);
+    setScaleFormData({
+      grade: scale.grade,
+      minScore: scale.minScore.toString(),
+      maxScore: scale.maxScore.toString(),
+      points: scale.points.toString()
+    });
+    setIsGradeScaleModalOpen(true);
+  };
+
+  const handleDeleteGradeScale = (id: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Grade Scale',
+      message: 'Are you sure you want to delete this grade scale entry?',
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => {
+        dispatch(deleteGradeScaleThunk(id))
+          .unwrap()
+          .then(() => toast.success('Grade scale deleted'))
+          .catch(err => toast.error(err));
+      }
+    });
+  };
+
+  const handleGradeScaleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = {
+      grade: scaleFormData.grade,
+      minScore: parseFloat(scaleFormData.minScore),
+      maxScore: parseFloat(scaleFormData.maxScore),
+      points: parseFloat(scaleFormData.points)
+    };
+
+    if (isEditingScale && selectedScale) {
+      dispatch(updateGradeScaleThunk({ id: selectedScale.id, ...data }))
+        .unwrap()
+        .then(() => {
+          toast.success('Grade scale updated');
+          setIsGradeScaleModalOpen(false);
+        })
+        .catch(err => toast.error(err));
+    } else {
+      dispatch(createGradeScaleThunk(data))
+        .unwrap()
+        .then(() => {
+          toast.success('Grade scale created');
+          setIsGradeScaleModalOpen(false);
+        })
+        .catch(err => toast.error(err));
+    }
+  };
+
   // Academic Handlers
   const handleAddAcademic = (type: 'class' | 'subject' | 'examType') => {
     setAcademicModal({ isOpen: true, type, value: '', baseMark: 100, isEditing: false });
@@ -286,6 +373,7 @@ export default function SettingsPage() {
   const TABS: { id: TabId; label: string; icon: any }[] = [
     { id: 'profile', label: 'School Profile', icon: Building2 },
     { id: 'academic', label: 'Academic Settings', icon: GraduationCap },
+    { id: 'grading', label: 'Grade Scale', icon: ShieldCheck },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'theme', label: 'Theme & UI', icon: Palette },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -739,8 +827,120 @@ export default function SettingsPage() {
             </Card>
           )}
 
+          {/* GRADING TAB */}
+          {activeTab === 'grading' && (
+            <Card className="border-border shadow-sm overflow-hidden p-0">
+              <CardHeader className="border-b border-border bg-muted/50 p-6 flex flex-row justify-between items-center mb-0">
+                <div>
+                  <CardTitle className="text-xl">Grade Scale Definitions</CardTitle>
+                  <CardDescription>Map percentage ranges to letter grades and GPAs.</CardDescription>
+                </div>
+                <Button onClick={handleAddGradeScale}><Plus size={16} className="mr-2" /> Add Rule</Button>
+              </CardHeader>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-muted/50 border-b border-border">
+                    <tr>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Letter Grade</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Min Score (%)</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">Max Score (%)</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs">GP Points</th>
+                      <th className="px-6 py-4 font-bold text-muted-foreground uppercase tracking-wider text-xs text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border bg-card">
+                    {gradeScales?.map(scale => (
+                      <tr key={scale.id} className="hover:bg-muted/30 transition-colors group">
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-md bg-primary/10 text-primary font-black text-sm">
+                            {scale.grade}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-slate-700">{scale.minScore}%</td>
+                        <td className="px-6 py-4 font-bold text-slate-700">{scale.maxScore}%</td>
+                        <td className="px-6 py-4">
+                          <span className="font-black text-emerald-600">{scale.points.toFixed(2)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleEditGradeScale(scale)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteGradeScale(scale.id)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {(gradeScales || []).length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground italic">
+                          No custom grade scales defined. Using system defaults (80%=A, 70%=B, etc.)
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
         </div>
       </div>
+
+      {/* Grade Scale Modal */}
+      <Modal
+        isOpen={isGradeScaleModalOpen}
+        onClose={() => setIsGradeScaleModalOpen(false)}
+        title={isEditingScale ? 'Edit Grading Rule' : 'New Grading Rule'}
+      >
+        <form onSubmit={handleGradeScaleSubmit} className="space-y-4">
+          <Input 
+            label="Letter Grade (e.g. A+)"
+            value={scaleFormData.grade}
+            onChange={(e) => setScaleFormData(prev => ({ ...prev, grade: e.target.value }))}
+            required
+            autoFocus
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Min Score %"
+              type="number"
+              step="0.01"
+              value={scaleFormData.minScore}
+              onChange={(e) => setScaleFormData(prev => ({ ...prev, minScore: e.target.value }))}
+              required
+            />
+            <Input 
+              label="Max Score %"
+              type="number"
+              step="0.01"
+              value={scaleFormData.maxScore}
+              onChange={(e) => setScaleFormData(prev => ({ ...prev, maxScore: e.target.value }))}
+              required
+            />
+          </div>
+          <Input 
+            label="Grade Points (e.g. 4.00)"
+            type="number"
+            step="0.01"
+            value={scaleFormData.points}
+            onChange={(e) => setScaleFormData(prev => ({ ...prev, points: e.target.value }))}
+            required
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsGradeScaleModalOpen(false)}>Cancel</Button>
+            <Button type="submit">{isEditingScale ? 'Update Rule' : 'Create Rule'}</Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Edit User Modal */}
       <Modal

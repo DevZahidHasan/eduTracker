@@ -4,8 +4,8 @@
 - [x] **Phase 1:** Enterprise Schema Expansion
 - [x] **Phase 2:** Institutional Branding & PDF Headers
 - [x] **Phase 3:** Fee Automation & Receipts
-- [ ] **Phase 4:** Result Aggregation & GPA Engine
-- [ ] **Phase 5:** Professional Report Cards
+- [x] **Phase 4:** Result Aggregation & GPA Engine
+- [x] **Phase 5:** Professional Report Cards
 - [ ] **Phase 6:** Bulk ID Card Generator
 - [ ] **Phase 7:** Automated Data Safeguard (Backup)
 - [ ] **Phase 8:** One-Click Local Installer

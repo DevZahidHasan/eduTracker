@@ -2,24 +2,67 @@ import prisma from '../prisma';
 import { generatePerformanceInsights } from './ai.service';
 
 /**
- * Calculate GPA based on marks.
- * standard grading system (80+ = 5.0, 70+ = 4.0, 60+ = 3.5, 50+ = 3.0, 40+ = 2.0, 33+ = 1.0, <33 = 0.0)
+ * Calculate GPA based on marks and GradeScale table.
  */
-export const calculateGPA = (marks: { score: number, maxScore: number }[]): number => {
-  if (marks.length === 0) return 0;
+export const calculateGPA = async (marks: { score: number, maxScore: number }[]): Promise<{ gpa: number, grade: string }> => {
+  if (marks.length === 0) return { gpa: 0, grade: 'N/A' };
 
-  const totalPoints = marks.reduce((acc, mark) => {
+  const scales = await prisma.gradeScale.findMany({
+    orderBy: { minScore: 'desc' }
+  });
+
+  // If no scales defined, use a default fallback
+  if (scales.length === 0) {
+    const totalPoints = marks.reduce((acc, mark) => {
+      const percentage = (mark.score / mark.maxScore) * 100;
+      if (percentage >= 80) return acc + 5.0;
+      if (percentage >= 70) return acc + 4.0;
+      if (percentage >= 60) return acc + 3.5;
+      if (percentage >= 50) return acc + 3.0;
+      if (percentage >= 40) return acc + 2.0;
+      if (percentage >= 33) return acc + 1.0;
+      return acc + 0;
+    }, 0);
+    const gpa = Math.round((totalPoints / marks.length) * 100) / 100;
+    
+    const totalObtained = marks.reduce((acc, m) => acc + m.score, 0);
+    const totalMax = marks.reduce((acc, m) => acc + m.maxScore, 0);
+    const avgPercentage = (totalObtained / totalMax) * 100;
+    let grade = 'F';
+    if (avgPercentage >= 80) grade = 'A+';
+    else if (avgPercentage >= 70) grade = 'A';
+    else if (avgPercentage >= 60) grade = 'B';
+    else if (avgPercentage >= 50) grade = 'C';
+    else if (avgPercentage >= 40) grade = 'D';
+    else if (avgPercentage >= 33) grade = 'E';
+
+    return { gpa, grade };
+  }
+
+  const getPointsAndGrade = (percentage: number) => {
+    for (const scale of scales) {
+      if (percentage >= scale.minScore) {
+        return { points: scale.points, grade: scale.grade };
+      }
+    }
+    return { points: 0, grade: 'F' };
+  };
+
+  let totalPoints = 0;
+  for (const mark of marks) {
     const percentage = (mark.score / mark.maxScore) * 100;
-    if (percentage >= 80) return acc + 5.0;
-    if (percentage >= 70) return acc + 4.0;
-    if (percentage >= 60) return acc + 3.5;
-    if (percentage >= 50) return acc + 3.0;
-    if (percentage >= 40) return acc + 2.0;
-    if (percentage >= 33) return acc + 1.0;
-    return acc + 0;
-  }, 0);
+    const { points } = getPointsAndGrade(percentage);
+    totalPoints += points;
+  }
 
-  return Math.round((totalPoints / marks.length) * 100) / 100;
+  const avgPoints = Math.round((totalPoints / marks.length) * 100) / 100;
+  
+  const totalObtained = marks.reduce((acc, m) => acc + m.score, 0);
+  const totalMax = marks.reduce((acc, m) => acc + m.maxScore, 0);
+  const avgPercentage = (totalObtained / totalMax) * 100;
+  const { grade: overallGrade } = getPointsAndGrade(avgPercentage);
+
+  return { gpa: avgPoints, grade: overallGrade };
 };
 
 export const getAttendanceStats = async (studentId: number, startDate?: Date, endDate?: Date) => {
@@ -53,16 +96,42 @@ export const getStudentReportData = async (studentId: number, examType: string) 
 
   if (!student) return null;
 
+  const scales = await prisma.gradeScale.findMany({
+    orderBy: { minScore: 'desc' }
+  });
+
+  const getGrade = (percentage: number) => {
+    if (scales.length === 0) {
+      if (percentage >= 80) return 'A+';
+      if (percentage >= 70) return 'A';
+      if (percentage >= 60) return 'B';
+      if (percentage >= 50) return 'C';
+      if (percentage >= 40) return 'D';
+      if (percentage >= 33) return 'E';
+      return 'F';
+    }
+    for (const scale of scales) {
+      if (percentage >= scale.minScore) return scale.grade;
+    }
+    return 'F';
+  };
+
+  const marksWithGrades = student.marks.map(m => ({
+    ...m,
+    grade: getGrade((m.score / m.maxScore) * 100)
+  }));
+
   const attendanceRate = await getAttendanceStats(studentId);
-  const gpa = calculateGPA(student.marks);
+  const { gpa, grade } = await calculateGPA(student.marks);
   
   // existing report if any
   const existingReport = student.reports[0];
 
   return {
     student,
-    marks: student.marks,
+    marks: marksWithGrades,
     gpa,
+    grade,
     attendanceRate,
     teacherRemarks: existingReport?.teacherRemarks || '',
     aiInsights: existingReport?.aiInsights || ''
@@ -78,7 +147,7 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
     aiInsights = await generatePerformanceInsights(data.marks as any, []); // Simplified call
   }
 
-  return await prisma.academicReport.upsert({
+  const report = await prisma.academicReport.upsert({
     where: {
       studentId_examType: { studentId, examType }
     },
@@ -97,6 +166,44 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
       aiInsights
     }
   });
+
+  // Also update TermResult for historical records
+  const totalMarks = data.marks.reduce((acc, m) => acc + m.maxScore, 0);
+  const obtainedMarks = data.marks.reduce((acc, m) => acc + m.score, 0);
+  const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
+
+  const existingTermResult = await prisma.termResult.findFirst({
+    where: { studentId, examType }
+  });
+
+  if (existingTermResult) {
+    await prisma.termResult.update({
+      where: { id: existingTermResult.id },
+      data: {
+        totalMarks,
+        obtainedMarks,
+        percentage,
+        grade: data.grade,
+        gpa: data.gpa,
+        teacherRemarks: teacherRemarks || data.teacherRemarks
+      }
+    });
+  } else {
+    await prisma.termResult.create({
+      data: {
+        studentId,
+        examType,
+        totalMarks,
+        obtainedMarks,
+        percentage,
+        grade: data.grade,
+        gpa: data.gpa,
+        teacherRemarks: teacherRemarks || data.teacherRemarks
+      }
+    });
+  }
+
+  return report;
 };
 
 export const getClassPerformance = async (className: string, examType: string, section?: string) => {
@@ -110,12 +217,16 @@ export const getClassPerformance = async (className: string, examType: string, s
     }
   });
 
-  const performance = students.map(s => ({
-    id: s.id,
-    fullName: s.fullName,
-    rollNumber: s.rollNumber,
-    gpa: calculateGPA(s.marks),
-    totalScore: s.marks.reduce((acc, m) => acc + m.score, 0)
+  const performance = await Promise.all(students.map(async (s) => {
+    const { gpa, grade } = await calculateGPA(s.marks);
+    return {
+      id: s.id,
+      fullName: s.fullName,
+      rollNumber: s.rollNumber,
+      gpa,
+      grade,
+      totalScore: s.marks.reduce((acc, m) => acc + m.score, 0)
+    };
   }));
 
   const sorted = [...performance].sort((a, b) => b.totalScore - a.totalScore);

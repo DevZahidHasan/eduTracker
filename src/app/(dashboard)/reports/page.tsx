@@ -97,6 +97,26 @@ export default function ReportsPage() {
     })).unwrap().then(() => toast.success('Remarks updated'));
   };
 
+  const auth = useAppSelector((state: any) => state.auth);
+  const token = auth.token;
+
+  const handleDownloadPDF = () => {
+    if (!selectedStudentId || !selectedExamType) return;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const url = `${baseUrl}/reports/export/${selectedStudentId}/${selectedExamType}?token=${token}`;
+    window.open(url, '_blank');
+  };
+
+  const handleBulkExport = () => {
+    if (!selectedClass || !selectedExamType) {
+      toast.error('Please select both a class and an exam type');
+      return;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const url = `${baseUrl}/reports/export-bulk/${selectedClass}/${selectedExamType}?token=${token}`;
+    window.open(url, '_blank');
+  };
+
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) return;
     const headers = Object.keys(data[0]).join(',');
@@ -132,14 +152,24 @@ export default function ReportsPage() {
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Reporting Center</h1>
             <p className="text-slate-500 font-medium mt-1">Generate and export comprehensive academic insights.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="hidden sm:flex gap-2">
-              <Download size={16} />
-              Bulk Export
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTab === 'report-card' && (
+              <>
+                {studentReport && (
+                  <Button onClick={handleDownloadPDF} variant="outline" className="flex gap-2 border-blue-200 hover:bg-blue-50 text-blue-700 shadow-sm">
+                    <Download size={16} />
+                    <span className="hidden sm:inline">Download</span> PDF
+                  </Button>
+                )}
+                <Button onClick={handleBulkExport} variant="outline" className="flex gap-2 border-slate-200 hover:bg-slate-50 shadow-sm">
+                  <Download size={16} />
+                  Bulk Export
+                </Button>
+              </>
+            )}
             <Button onClick={() => window.print()} className="flex items-center gap-2 shadow-lg shadow-blue-200">
               <Printer size={18} />
-              Print Current View
+              <span className="hidden sm:inline">Print View</span>
             </Button>
           </div>
         </div>

@@ -114,3 +114,48 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
 
   return res.status(200).json(new ApiResponse(200, null, 'User deleted successfully'));
 });
+
+// --- Grade Scale ---
+
+export const getGradeScales = asyncHandler(async (req: Request, res: Response) => {
+  const scales = await prisma.gradeScale.findMany({
+    orderBy: { minScore: 'desc' }
+  });
+  return res.status(200).json(new ApiResponse(200, scales, 'Grade scales fetched successfully'));
+});
+
+export const createGradeScale = asyncHandler(async (req: Request, res: Response) => {
+  const { grade, minScore, maxScore, points } = req.body;
+  
+  const scale = await prisma.gradeScale.create({
+    data: { 
+      grade, 
+      minScore: parseFloat(minScore), 
+      maxScore: parseFloat(maxScore), 
+      points: parseFloat(points) 
+    }
+  });
+  return res.status(201).json(new ApiResponse(201, scale, 'Grade scale created successfully'));
+});
+
+export const updateGradeScale = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { grade, minScore, maxScore, points } = req.body;
+
+  const scale = await prisma.gradeScale.update({
+    where: { id: Number(id) },
+    data: { 
+      grade, 
+      minScore: parseFloat(minScore), 
+      maxScore: parseFloat(maxScore), 
+      points: parseFloat(points) 
+    }
+  });
+  return res.status(200).json(new ApiResponse(200, scale, 'Grade scale updated successfully'));
+});
+
+export const deleteGradeScale = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await prisma.gradeScale.delete({ where: { id: Number(id) } });
+  return res.status(200).json(new ApiResponse(200, null, 'Grade scale deleted successfully'));
+});
