@@ -8,18 +8,19 @@ import {
   getClassPerformance, 
   getAttendanceSummary 
 } from '../controllers/reports.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware, authorize } from '../middleware/auth.middleware';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/student', getStudentReport);
-router.get('/consolidated/:studentId/:examType', getConsolidatedReport);
-router.get('/export/:studentId/:examType', exportReportCardPdf);
-router.get('/export-bulk/:className/:examType', exportClassReportCardsPdf);
-router.post('/remarks', updateTeacherRemarks);
-router.get('/performance', getClassPerformance);
-router.get('/attendance', getAttendanceSummary);
+router.get('/student', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), getStudentReport);
+router.get('/consolidated/:studentId/:examType', authorize('ADMIN', 'PRINCIPAL'), getConsolidatedReport);
+router.get('/export/:studentId/:examType', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), exportReportCardPdf);
+router.get('/export-bulk/:className/:examType', authorize('ADMIN', 'PRINCIPAL'), exportClassReportCardsPdf);
+router.post('/remarks', authorize('ADMIN', 'TEACHER'), updateTeacherRemarks);
+router.get('/performance', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), getClassPerformance);
+router.get('/attendance', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), getAttendanceSummary);
 
 export default router;

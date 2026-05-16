@@ -14,7 +14,9 @@ import {
   Trash2,
   Upload,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Database,
+  Download as DownloadIcon
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
@@ -27,6 +29,7 @@ import {
   updateUserThunk,
   deleteUserThunk,
   triggerEndOfDayThunk,
+  triggerBackupThunk,
   fetchGradeScales,
   createGradeScaleThunk,
   updateGradeScaleThunk,
@@ -57,7 +60,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
 
-type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security';
+type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security' | 'database';
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
@@ -215,6 +218,17 @@ export default function SettingsPage() {
       .unwrap()
       .then((msg) => toast.success(msg || 'End of day tasks completed'))
       .catch((err) => toast.error(err || 'Failed to run tasks'))
+      .finally(() => setIsTriggering(false));
+  };
+
+  const handleTriggerBackup = () => {
+    setIsTriggering(true);
+    dispatch(triggerBackupThunk())
+      .unwrap()
+      .then((data: any) => {
+        toast.success(`Backup successful: ${data.filename}`);
+      })
+      .catch((err) => toast.error(err || 'Backup failed'))
       .finally(() => setIsTriggering(false));
   };
 
@@ -378,6 +392,7 @@ export default function SettingsPage() {
     { id: 'theme', label: 'Theme & UI', icon: Palette },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: ShieldCheck },
+    { id: 'database', label: 'Database & Backup', icon: Database },
   ];
 
   return (
@@ -892,6 +907,64 @@ export default function SettingsPage() {
             </Card>
           )}
 
+          {/* DATABASE TAB */}
+          {activeTab === 'database' && (
+            <Card className="border-border shadow-sm">
+              <CardHeader className="border-b border-border bg-muted/50 pb-6">
+                <CardTitle className="text-xl">Database & Data Safeguard</CardTitle>
+                <CardDescription>Configure automated backups and manage institutional data integrity.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-8">
+                  <div className="max-w-xl space-y-4">
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex gap-4">
+                       <ShieldCheck className="text-amber-600 shrink-0" size={24} />
+                       <div>
+                          <p className="text-sm font-bold text-amber-900">Data Protection</p>
+                          <p className="text-xs text-amber-800 mt-0.5">Automated backups are scheduled to run daily at 2:00 AM. Ensure your backup path is accessible.</p>
+                       </div>
+                    </div>
+
+                    <div className="space-y-2 pt-4">
+                      <label className="text-sm font-bold text-foreground/80">Local Backup Path</label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={settingsData.backupPath || ''} 
+                          onChange={(e) => handleSettingChange('backupPath', e.target.value)} 
+                          placeholder="e.g. C:\EduTracker\Backups or E:\" 
+                        />
+                        <Button onClick={handleSettingsSave} variant="outline" className="shrink-0">
+                           <Save size={16} />
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-medium italic">If left empty, backups will be stored in the application's root 'backups' folder.</p>
+                    </div>
+
+                    <div className="pt-6 border-t border-border">
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                         <div>
+                            <h4 className="font-bold text-foreground text-sm">Manual Database Dump</h4>
+                            <p className="text-muted-foreground text-xs mt-1">Trigger an immediate full SQL backup of the system.</p>
+                         </div>
+                         <Button onClick={handleTriggerBackup} disabled={isTriggering} className="gap-2 shadow-lg shadow-blue-200 min-w-[160px]">
+                            {isTriggering ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} />}
+                            {isTriggering ? 'Backing up...' : 'Backup Now'}
+                         </Button>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-border">
+                       <h4 className="font-bold text-foreground text-sm mb-2">Backup History</h4>
+                       <div className="text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-border">
+                          Last successful backup: <span className="font-bold text-foreground">{settingsData.lastBackupRun ? new Date(settingsData.lastBackupRun).toLocaleString() : 'Never'}</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </div>
 
@@ -968,7 +1041,14 @@ export default function SettingsPage() {
               className="w-full h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="ADMIN">Admin</option>
+              <option value="PRINCIPAL">Principal</option>
               <option value="TEACHER">Teacher</option>
+              <option value="ACCOUNTANT">Accountant</option>
+              <option value="LIBRARIAN">Librarian</option>
+              <option value="STAFF">General Staff</option>
+              <option value="CLERK">Clerk</option>
+              <option value="SECURITY">Security</option>
+              <option value="CLEANER">Cleaner</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4">

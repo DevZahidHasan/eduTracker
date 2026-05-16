@@ -28,17 +28,18 @@ import { selectRole } from '@/lib/features/authSlice';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
+  { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
+  { name: 'ID Cards', href: '/id-cards', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Finance', href: '/finance', icon: Wallet, roles: ['ADMIN', 'ACCOUNTANT'] },
-  { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
+  { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },
-  { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },
+  { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN', 'PRINCIPAL'] },
   { name: 'Audit Logs', href: '/audit', icon: LayoutDashboard, roles: ['ADMIN'] },
 ];
 

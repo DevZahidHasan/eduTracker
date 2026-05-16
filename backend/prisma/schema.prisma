@@ -67,6 +67,7 @@ model AuditLog {
 
 enum Role {
   ADMIN
+  PRINCIPAL
   TEACHER
   STAFF
   LIBRARIAN

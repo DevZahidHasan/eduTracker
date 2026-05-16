@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import prisma from '../prisma';
 import { sendDailyAttendanceReport } from './email.service';
+import { performDatabaseBackup } from './backup.service';
 
 export const runEndOfDayTasks = async () => {
   const todayDateString = new Date().toISOString().split('T')[0];
@@ -35,6 +36,16 @@ export const initCronJobs = () => {
   cron.schedule('0 16 * * *', async () => {
     console.log('Cron triggered: End of day tasks');
     await runEndOfDayTasks();
+  });
+
+  // Run at 02:00 (2 AM) every day for database backup
+  cron.schedule('0 2 * * *', async () => {
+    console.log('Cron triggered: Automated Database Backup');
+    try {
+      await performDatabaseBackup();
+    } catch (error) {
+      console.error('Scheduled backup failed:', error);
+    }
   });
 
   console.log('Cron jobs initialized');

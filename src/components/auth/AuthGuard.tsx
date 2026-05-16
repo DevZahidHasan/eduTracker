@@ -8,12 +8,19 @@ import { selectIsAuthenticated, selectRole } from '@/lib/features/authSlice';
 // Define route access map. 
 // Roles are expected to be uppercase ('ADMIN', 'TEACHER', etc.) to match the store.
 const ROUTE_ROLES: Record<string, string[]> = {
-  '/dashboard': ['ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
-  '/students': ['ADMIN', 'TEACHER'],
+  '/dashboard': ['ADMIN', 'TEACHER', 'PRINCIPAL', 'ACCOUNTANT', 'LIBRARIAN', 'STAFF', 'PARENT', 'STUDENT'],
+  '/students': ['ADMIN', 'TEACHER', 'PRINCIPAL'],
+  '/id-cards': ['ADMIN', 'TEACHER', 'PRINCIPAL'],
   '/attendance': ['ADMIN', 'TEACHER'],
   '/marks': ['ADMIN', 'TEACHER', 'STUDENT', 'PARENT'],
-  '/settings': ['ADMIN'],
-  '/reports': ['ADMIN', 'TEACHER'],
+  '/question-papers': ['ADMIN', 'TEACHER'],
+  '/question-bank': ['ADMIN', 'TEACHER'],
+  '/finance': ['ADMIN', 'ACCOUNTANT'],
+  '/classes': ['ADMIN', 'TEACHER', 'PRINCIPAL'],
+  '/reports': ['ADMIN', 'TEACHER', 'PRINCIPAL'],
+  '/staff': ['ADMIN'],
+  '/settings': ['ADMIN', 'PRINCIPAL'],
+  '/audit': ['ADMIN'],
 };
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {

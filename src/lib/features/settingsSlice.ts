@@ -190,12 +190,25 @@ export const triggerEndOfDayThunk = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.post('/settings/end-of-day');
-      return response.data.message;
+      return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to trigger end of day');
+      return rejectWithValue(error.response?.data?.message || 'Failed to trigger end of day tasks');
     }
   }
 );
+
+export const triggerBackupThunk = createAsyncThunk(
+  'settings/triggerBackup',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/settings/backup');
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to trigger database backup');
+    }
+  }
+);
+
 
 const settingsSlice = createSlice({
   name: 'settings',

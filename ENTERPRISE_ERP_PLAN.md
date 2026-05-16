@@ -6,11 +6,11 @@
 - [x] **Phase 3:** Fee Automation & Receipts
 - [x] **Phase 4:** Result Aggregation & GPA Engine
 - [x] **Phase 5:** Professional Report Cards
-- [ ] **Phase 6:** Bulk ID Card Generator
-- [ ] **Phase 7:** Automated Data Safeguard (Backup)
-- [ ] **Phase 8:** One-Click Local Installer
-- [ ] **Phase 9:** Enterprise RBAC (Permissions)
-- [ ] **Phase 10:** Local Network Wi-Fi Access
+- [x] **Phase 6:** Bulk ID Card Generator
+- [x] **Phase 7:** Automated Data Safeguard (Backup)
+- [x] **Phase 8:** One-Click Local Installer
+- [x] **Phase 9:** Enterprise RBAC (Permissions)
+- [x] **Phase 10:** Local Network Wi-Fi Access
 
 This document serves as the technical blueprint to transform **EduTracker** from a classroom tool into a commercial-grade School/University ERP system. Each phase is designed as a "Prompt" that provides the necessary context and instructions for an AI developer to execute.
 

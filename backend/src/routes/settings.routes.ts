@@ -8,6 +8,7 @@ import {
   updateUser,
   deleteUser,
   triggerEndOfDay,
+  triggerBackup,
   uploadLogo,
   getGradeScales,
   createGradeScale,
@@ -22,23 +23,24 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/profile', getSchoolProfile);
-router.post('/profile', updateSchoolProfile);
-router.post('/profile/logo', upload.single('logo'), uploadLogo);
+router.get('/profile', authorize('ADMIN', 'PRINCIPAL'), getSchoolProfile);
+router.post('/profile', authorize('ADMIN'), updateSchoolProfile);
+router.post('/profile/logo', authorize('ADMIN'), upload.single('logo'), uploadLogo);
 
-router.get('/system', getSystemSettings);
-router.post('/system', updateSystemSettings);
+router.get('/system', authorize('ADMIN'), getSystemSettings);
+router.post('/system', authorize('ADMIN'), updateSystemSettings);
 
-router.get('/users', getUsers);
-router.put('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
+router.get('/users', authorize('ADMIN'), getUsers);
+router.put('/users/:id', authorize('ADMIN'), updateUser);
+router.delete('/users/:id', authorize('ADMIN'), deleteUser);
 
 // Grade Scale
-router.get('/grade-scale', getGradeScales);
-router.post('/grade-scale', authorize(Role.ADMIN), createGradeScale);
-router.put('/grade-scale/:id', authorize(Role.ADMIN), updateGradeScale);
-router.delete('/grade-scale/:id', authorize(Role.ADMIN), deleteGradeScale);
+router.get('/grade-scale', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), getGradeScales);
+router.post('/grade-scale', authorize('ADMIN'), createGradeScale);
+router.put('/grade-scale/:id', authorize('ADMIN'), updateGradeScale);
+router.delete('/grade-scale/:id', authorize('ADMIN'), deleteGradeScale);
 
-router.post('/end-of-day', triggerEndOfDay);
+router.post('/end-of-day', authorize('ADMIN'), triggerEndOfDay);
+router.post('/backup', authorize('ADMIN'), triggerBackup);
 
 export default router;

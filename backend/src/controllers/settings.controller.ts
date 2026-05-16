@@ -5,6 +5,7 @@ import { ApiError } from '../utils/apiError';
 import { AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../prisma';
 import { runEndOfDayTasks } from '../services/cron.service';
+import { performDatabaseBackup } from '../services/backup.service';
 
 export const getSchoolProfile = asyncHandler(async (req: Request, res: Response) => {
   let profile = await prisma.schoolProfile.findUnique({ where: { id: 1 } });
@@ -113,6 +114,11 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   });
 
   return res.status(200).json(new ApiResponse(200, null, 'User deleted successfully'));
+});
+
+export const triggerBackup = asyncHandler(async (req: Request, res: Response) => {
+  const result = await performDatabaseBackup();
+  return res.status(200).json(new ApiResponse(200, result, 'Database backup completed successfully.'));
 });
 
 // --- Grade Scale ---
