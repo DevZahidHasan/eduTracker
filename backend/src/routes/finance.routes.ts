@@ -24,6 +24,7 @@ router.get('/vouchers/student/:studentId', financeController.getStudentVouchers)
 
 // --- Payments ---
 router.post('/payments/collect', authorize(Role.ADMIN, Role.ACCOUNTANT as any), financeController.collectPayment);
+router.get('/export-receipt/:id', authorize(Role.ADMIN, Role.ACCOUNTANT as any), financeController.exportVoucherReceiptPdf);
 
 // --- Dashboard Stats ---
 router.get('/stats', authorize(Role.ADMIN, Role.ACCOUNTANT as any), financeController.getFinanceStats);

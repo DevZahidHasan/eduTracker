@@ -3,6 +3,8 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/apiResponse';
 import { ApiError } from '../utils/apiError';
 import prisma from '../prisma';
+import { generateReceiptHtml } from '../utils/receiptHtmlGenerator';
+import { generatePdfFromHtml } from '../utils/pdfGenerator';
 
 // --- Fee Types ---
 
@@ -233,6 +235,36 @@ export const collectPayment = asyncHandler(async (req: Request, res: Response) =
   });
 
   return res.status(201).json(new ApiResponse(201, result, 'Payment recorded successfully'));
+});
+
+export const exportVoucherReceiptPdf = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const voucher = await prisma.feeVoucher.findUnique({
+    where: { id },
+    include: {
+      student: true,
+      payments: {
+        orderBy: { paymentDate: 'desc' }
+      },
+      items: {
+        include: { feeType: true }
+      }
+    }
+  });
+
+  if (!voucher) {
+    throw new ApiError(404, 'Voucher not found');
+  }
+
+  const schoolProfile = await prisma.schoolProfile.findUnique({ where: { id: 1 } });
+  
+  const html = generateReceiptHtml(voucher, schoolProfile);
+  const pdfBuffer = await generatePdfFromHtml(html);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=Receipt_${voucher.student.fullName.replace(/\s+/g, '_')}_${voucher.month}_${voucher.year}.pdf`);
+  return res.send(pdfBuffer);
 });
 
 export const getFinanceStats = asyncHandler(async (req: Request, res: Response) => {

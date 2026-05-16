@@ -61,6 +61,8 @@ export default function FinancePage() {
   const vouchers = useAppSelector(selectVouchers);
   const stats = useAppSelector(selectFinanceStats);
   const loading = useAppSelector(selectFinanceLoading);
+  const auth = useAppSelector((state: any) => state.auth);
+  const token = auth.token;
 
   // Local State
   const [selectedClass, setSelectedClass] = useState('');
@@ -73,6 +75,18 @@ export default function FinancePage() {
   const [voucherModalOpen, setVoucherModalOpen] = useState(false);
   const [deleteVoucherModalOpen, setDeleteVoucherModalOpen] = useState(false);
   const [voucherToDelete, setVoucherToDelete] = useState<string | null>(null);
+  
+  // Payment Collection State
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
+  const [paymentData, setPaymentData] = useState({
+    amount: '',
+    paymentMethod: 'CASH',
+    transactionId: ''
+  });
+
+  const [payments, setPayments] = useState<any[]>([]);
+  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false);
   
   const [voucherData, setVoucherData] = useState({
     month: new Date().getMonth() + 1,
@@ -96,12 +110,63 @@ export default function FinancePage() {
     }
   }, [selectedClass, activeTab, dispatch]);
 
-  // Fetch vouchers when filters change
   useEffect(() => {
     if (activeTab === 'vouchers') {
       dispatch(fetchAllVouchers({ className: selectedClass, status: statusFilter }));
     }
+    if (activeTab === 'payments') {
+      fetchPayments();
+    }
   }, [selectedClass, statusFilter, activeTab, dispatch]);
+
+  const fetchPayments = async () => {
+    setIsPaymentsLoading(true);
+    try {
+      const res = await api.get('/finance/vouchers');
+      const allPayments = res.data.data.flatMap((v: any) => 
+        (v.payments || []).map((p: any) => ({ ...p, student: v.student, month: v.month, year: v.year }))
+      ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setPayments(allPayments);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsPaymentsLoading(false);
+    }
+  };
+
+  const handleOpenPayment = (voucher: any) => {
+    setSelectedVoucher(voucher);
+    setPaymentData({
+      amount: (voucher.totalAmount - voucher.paidAmount).toString(),
+      paymentMethod: 'CASH',
+      transactionId: ''
+    });
+    setPaymentModalOpen(true);
+  };
+
+  const handleCollectPayment = async () => {
+    if (!selectedVoucher || !paymentData.amount) return;
+    try {
+      await api.post('/finance/payments/collect', {
+        voucherId: selectedVoucher.id,
+        amount: parseFloat(paymentData.amount),
+        paymentMethod: paymentData.paymentMethod,
+        transactionId: paymentData.transactionId
+      });
+      toast.success('Payment recorded successfully');
+      setPaymentModalOpen(false);
+      dispatch(fetchAllVouchers({ className: selectedClass, status: statusFilter }));
+      dispatch(fetchFinanceStats());
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to record payment');
+    }
+  };
+
+  const handlePrintReceipt = (voucherId: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const url = `${baseUrl}/finance/export-receipt/${voucherId}?token=${token}`;
+    window.open(url, '_blank');
+  };
 
   const handleCreateFeeType = async () => {
     if (!newFeeType.name) return;
@@ -378,7 +443,22 @@ export default function FinancePage() {
                            </span>
                         </td>
                         <td className="px-6 py-4 text-right space-x-2">
-                           <button className="p-2 text-slate-400 hover:text-primary transition-colors" title="View Details"><Eye size={16} /></button>
+                           {v.status !== 'PAID' && (
+                             <button 
+                              onClick={() => handleOpenPayment(v)}
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                              title="Collect Payment"
+                             >
+                               <Wallet size={16} />
+                             </button>
+                           )}
+                           <button 
+                            onClick={() => handlePrintReceipt(v.id)}
+                            className="p-2 text-slate-400 hover:text-primary transition-colors" 
+                            title="View Receipt"
+                           >
+                             <Eye size={16} />
+                           </button>
                            <button 
                             onClick={() => {
                               setVoucherToDelete(v.id);
@@ -394,6 +474,63 @@ export default function FinancePage() {
                     )) : (
                       <tr>
                         <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No vouchers found matching the filters.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Payments History Tab */}
+      {activeTab === 'payments' && (
+        <div className="space-y-6">
+           <Card className="overflow-hidden border-slate-200/60 shadow-sm p-0">
+             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                <CardTitle className="text-lg">Recent Payment Transactions</CardTitle>
+                <CardDescription>A chronological record of all fees collected.</CardDescription>
+             </CardHeader>
+             <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Date</th>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Student</th>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Method</th>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Transaction ID</th>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px]">Amount</th>
+                      <th className="px-6 py-4 font-bold text-slate-600 uppercase tracking-wider text-[10px] text-right">Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {isPaymentsLoading ? (
+                      Array(5).fill(0).map((_, i) => <TableRowSkeleton key={i} columns={6} />)
+                    ) : payments.length > 0 ? payments.map((p: any) => (
+                      <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                           <p className="font-bold text-slate-900">{p.student.fullName}</p>
+                           <p className="text-[10px] text-slate-400 font-medium">Voucher for {new Date(0, p.month-1).toLocaleString('default', {month:'long'})} {p.year}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                           <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-600 uppercase">{p.paymentMethod}</span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-[11px] text-slate-400">{p.transactionId || 'N/A'}</td>
+                        <td className="px-6 py-4 font-black text-emerald-600">${p.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-right">
+                           <button 
+                            onClick={() => handlePrintReceipt(p.voucherId)}
+                            className="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors" 
+                            title="Print Receipt"
+                           >
+                             <Printer size={16} />
+                           </button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No payment history found.</td>
                       </tr>
                     )}
                   </tbody>
@@ -680,6 +817,65 @@ export default function FinancePage() {
         cancelText="Cancel"
         destructive={true}
       />
+
+      {/* Collect Payment Modal */}
+      <Modal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        title="Record Fee Payment"
+      >
+        <div className="space-y-4">
+           {selectedVoucher && (
+             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Student</p>
+                <p className="font-bold text-slate-900">{selectedVoucher.student.fullName}</p>
+                <div className="mt-3 flex justify-between items-end">
+                   <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending Balance</p>
+                      <p className="text-xl font-black text-primary">${(selectedVoucher.totalAmount - selectedVoucher.paidAmount).toLocaleString()}</p>
+                   </div>
+                   <div className="text-right text-[10px] font-bold text-slate-500 uppercase">
+                      Total: ${selectedVoucher.totalAmount.toLocaleString()}
+                   </div>
+                </div>
+             </div>
+           )}
+
+           <Input 
+             label="Amount to Collect ($)" 
+             type="number"
+             value={paymentData.amount}
+             onChange={(e) => setPaymentData({...paymentData, amount: e.target.value})}
+             autoFocus
+           />
+
+           <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase ml-1">Payment Method</label>
+              <select
+                value={paymentData.paymentMethod}
+                onChange={(e) => setPaymentData({...paymentData, paymentMethod: e.target.value})}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="CASH">Cash</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+                <option value="CHECK">Check / Cheque</option>
+                <option value="OTHER">Other</option>
+              </select>
+           </div>
+
+           <Input 
+             label="Transaction Reference / ID" 
+             placeholder="e.g. Bank Ref # or Check #"
+             value={paymentData.transactionId}
+             onChange={(e) => setPaymentData({...paymentData, transactionId: e.target.value})}
+           />
+
+           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleCollectPayment} className="shadow-lg shadow-emerald-200 bg-emerald-600 hover:bg-emerald-700">Confirm Payment</Button>
+           </div>
+        </div>
+      </Modal>
     </div>
   );
 }
