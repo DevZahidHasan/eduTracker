@@ -57,8 +57,8 @@ Set-Location ..
 Write-Host "[4/6] Setting up Database..." -ForegroundColor Yellow
 Set-Location backend
 npx prisma generate
-# npx prisma migrate deploy # Uncomment in production if using a real DB
-Write-Host "Database schema generated." -ForegroundColor Green
+npx prisma migrate deploy
+Write-Host "Database schema and migrations applied." -ForegroundColor Green
 Set-Location ..
 
 # 5. Build Application

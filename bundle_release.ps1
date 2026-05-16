@@ -44,6 +44,7 @@ Copy-Item "backend\.env" -Destination "$ReleaseFolder\backend\.env"
 # Operational Scripts & Docs
 Copy-Item "setup.ps1" -Destination "$ReleaseFolder\setup.ps1"
 Copy-Item "START_SYSTEM.bat" -Destination "$ReleaseFolder\START_SYSTEM.bat"
+Copy-Item "CLIENT_DEPLOYMENT_GUIDE.md" -Destination "$ReleaseFolder\CLIENT_DEPLOYMENT_GUIDE.md"
 Copy-Item -Recurse "business_document" -Destination "$ReleaseFolder\business_document"
 
 Write-Host ""
