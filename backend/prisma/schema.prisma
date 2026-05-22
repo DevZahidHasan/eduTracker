@@ -28,6 +28,7 @@ model User {
   questionPapers QuestionPaper[]
   salary         StaffSalary?
   payrollRecords PayrollRecord[]
+  libraryMember  LibraryMember?
 }
 
 model Notification {
@@ -95,20 +96,20 @@ model Student {
   admissionDate DateTime  @default(now())
   profileImage  String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  marks        Mark[]
-  attendances  Attendance[]
-  reports      AcademicReport[]
-  termResults  TermResult[]
-  vouchers     FeeVoucher[]
-  payments     FeePayment[]
-  class        SchoolClass      @relation(fields: [className], references: [name])
-  classSection ClassSection?    @relation(fields: [className, section], references: [className, section])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  marks         Mark[]
+  attendances   Attendance[]
+  reports       AcademicReport[]
+  termResults   TermResult[]
+  vouchers      FeeVoucher[]
+  payments      FeePayment[]
+  class         SchoolClass      @relation(fields: [className], references: [name])
+  classSection  ClassSection?    @relation(fields: [className, section], references: [className, section])
+  libraryMember LibraryMember?
 
   @@unique([className, section, rollNumber])
 }
-
 
 enum Gender {
   MALE
@@ -293,9 +294,9 @@ model QuestionPaper {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
-  user         User            @relation(fields: [createdBy], references: [id])
-  questions    Question[]
-  template     QuestionPaper?  @relation("TemplateToPaper", fields: [templateId], references: [id])
+  user          User            @relation(fields: [createdBy], references: [id])
+  questions     Question[]
+  template      QuestionPaper?  @relation("TemplateToPaper", fields: [templateId], references: [id])
   derivedPapers QuestionPaper[] @relation("TemplateToPaper")
 
   @@index([className, subject])
@@ -303,7 +304,7 @@ model QuestionPaper {
 }
 
 model Question {
-  id              String  @id @default(uuid())
+  id              String   @id @default(uuid())
   questionPaperId String
   questionType    String
   questionText    String
@@ -337,21 +338,21 @@ model BankQuestion {
 // --- Financial Models ---
 
 model FeeType {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique // Tuition, Exam, Transport, etc.
-  isMonthly   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // Tuition, Exam, Transport, etc.
+  isMonthly Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   structures   FeeStructure[]
   voucherItems FeeVoucherItem[]
 }
 
 model FeeStructure {
-  id         Int    @id @default(autoincrement())
-  className  String
-  feeTypeId  Int
-  amount     Float
+  id        Int    @id @default(autoincrement())
+  className String
+  feeTypeId Int
+  amount    Float
 
   class   SchoolClass @relation(fields: [className], references: [name])
   feeType FeeType     @relation(fields: [feeTypeId], references: [id])
@@ -449,4 +450,51 @@ model TermResult {
   updatedAt      DateTime @updatedAt
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// --- Library Management Models ---
+
+model Book {
+  id              Int      @id @default(autoincrement())
+  isbn            String?  @unique
+  title           String
+  author          String
+  publisher       String?
+  category        String
+  totalCopies     Int      @default(1)
+  availableCopies Int      @default(1)
+  location        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  issues BookIssue[]
+}
+
+model LibraryMember {
+  id        Int      @id @default(autoincrement())
+  memberId  String   @unique // System generated or manual barcode
+  studentId Int?     @unique
+  userId    Int?     @unique
+  status    String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user    User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issues  BookIssue[]
+}
+
+model BookIssue {
+  id         Int       @id @default(autoincrement())
+  bookId     Int
+  memberId   Int
+  issueDate  DateTime  @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     String    @default("ISSUED") // ISSUED, RETURNED, OVERDUE
+  fineAmount Float     @default(0)
+  notes      String?
+
+  book   Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }

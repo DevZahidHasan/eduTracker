@@ -14,6 +14,7 @@ import notificationRoutes from './notifications.routes';
 import questionPapersRoutes from './questionPapers.routes';
 import questionBankRoutes from './questionBank.routes';
 import financeRoutes from './finance.routes';
+import libraryRoutes from './library.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -36,5 +37,6 @@ router.use('/notifications', authMiddleware, notificationRoutes);
 router.use('/question-papers', authMiddleware, questionPapersRoutes);
 router.use('/question-bank', authMiddleware, questionBankRoutes);
 router.use('/finance', authMiddleware, financeRoutes);
+router.use('/library', authMiddleware, libraryRoutes);
 
 export default router;

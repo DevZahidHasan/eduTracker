@@ -5,7 +5,7 @@ This file tracks the progress of the Enterprise-level features required for comm
 ## 📊 Progress Overview
 - [x] **Task 1: Communication Gateway** (SMS & WhatsApp) - `COMPLETED`
 - [x] **Task 2: Parent Access Portal** - `SKIPPED` (Relying on Push Notifications for local deployment)
-- [ ] **Task 3: Library Management System** - `PENDING`
+- [x] **Task 3: Library Management System** - `COMPLETED`
 - [ ] **Task 4: Transport & Fleet Management** - `PENDING`
 - [ ] **Task 5: Admissions & Lead CRM** - `PENDING`
 - [ ] **Task 6: Staff HR & Payroll** - `PENDING`
@@ -31,10 +31,10 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ### Task 3: Library Management System
 *Goal: Centralize book inventory and circulation tracking.*
-- [ ] Define Prisma models for `Book`, `BookIssue`, and `LibraryMember`.
-- [ ] Build an inventory dashboard (Add/Edit/Search books).
-- [ ] Create an "Issue/Return" workflow with QR/Barcode support.
-- [ ] Implement automatic "Overdue Fine" calculation linked to the Finance module.
+- [x] Define Prisma models for `Book`, `BookIssue`, and `LibraryMember`.
+- [x] Build an inventory dashboard (Add/Edit/Search books).
+- [x] Create an "Issue/Return" workflow with QR/Barcode support.
+- [x] Implement automatic "Overdue Fine" calculation linked to the Finance module.
 
 ### Task 4: Transport & Fleet Management
 *Goal: Manage school bus routes, drivers, and transport-specific fees.*

@@ -18,7 +18,8 @@ import {
   X,
   FileText,
   BookOpen,
-  Wallet
+  Wallet,
+  Library as LibraryIcon
 } from 'lucide-react';
 
 // ...
@@ -38,6 +39,7 @@ const navItems = [
   { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Finance', href: '/finance', icon: Wallet, roles: ['ADMIN', 'ACCOUNTANT'] },
+  { name: 'Library', href: '/library', icon: LibraryIcon, roles: ['ADMIN', 'LIBRARIAN', 'PRINCIPAL'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },
