@@ -24,8 +24,10 @@ import {
 // ...
 
 import { useAppSelector } from '@/lib/hooks';
-import { selectRole } from '@/lib/features/authSlice';
+import { selectRole, logout } from '@/lib/features/authSlice';
+import api from '@/lib/api';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { useAppDispatch } from '@/lib/hooks';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
@@ -65,8 +67,19 @@ export function Sidebar({
     !item.roles || (role && item.roles.includes(role.toUpperCase()))
   );
 
-  const handleLogoutConfirm = () => {
-    router.push('/login');
+  const dispatch = useAppDispatch();
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await api.post('/auth/logout');
+      dispatch(logout());
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if API fails, force local logout and redirect
+      dispatch(logout());
+      router.push('/login');
+    }
   };
 
   return (

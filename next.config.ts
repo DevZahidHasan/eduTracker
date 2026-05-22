@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'http',
-        hostname: '192.168.0.102',
+        hostname: '192.168.0.101',
         port: '5000',
         pathname: '/uploads/**',
       },

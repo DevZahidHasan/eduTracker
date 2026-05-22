@@ -6,6 +6,7 @@ import prisma from '../prisma';
 import { generateReceiptHtml } from '../utils/receiptHtmlGenerator';
 import { generatePdfFromHtml } from '../utils/pdfGenerator';
 import { sendVoucherGenerationNotification, sendPaymentConfirmationNotification } from '../services/email.service';
+import { sendVoucherWhatsAppNotification, sendPaymentConfirmationWhatsApp } from '../services/whatsapp.service';
 
 // --- Fee Types ---
 
@@ -155,6 +156,7 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
   // 4. Send email notifications (Async)
   results.forEach(voucher => {
     sendVoucherGenerationNotification(voucher.id).catch(err => console.error('Email failed:', err));
+    sendVoucherWhatsAppNotification(voucher.id).catch(err => console.error('WhatsApp failed:', err));
   });
 
   return res.status(201).json(new ApiResponse(201, { count: results.length }, `${results.length} vouchers generated successfully`));
@@ -243,6 +245,7 @@ export const collectPayment = asyncHandler(async (req: Request, res: Response) =
 
   // 4. Send payment confirmation (Async)
   sendPaymentConfirmationNotification(result.id).catch(err => console.error('Payment email failed:', err));
+  sendPaymentConfirmationWhatsApp(result.id).catch(err => console.error('Payment WhatsApp failed:', err));
 
   return res.status(201).json(new ApiResponse(201, result, 'Payment recorded successfully'));
 });

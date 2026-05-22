@@ -57,6 +57,12 @@ export const uploadStudentPhoto = asyncHandler(async (req: Request, res: Respons
   );
 });
 
+const toBool = (val: any) => {
+  if (val === true || val === 'true' || val === 1 || val === '1') return true;
+  if (val === false || val === 'false' || val === 0 || val === '0') return false;
+  return undefined;
+};
+
 export const createStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     studentId, fullName, rollNumber, className, section, gender,
@@ -128,7 +134,7 @@ export const createStudent = asyncHandler(async (req: AuthRequest, res: Response
         parentPhone: parentPhone || null,
         address: address || null,
         admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
-        profileImage: profileImage || null,
+        profileImage: profileImage || null
       },
     });
 
@@ -147,6 +153,10 @@ export const createStudent = asyncHandler(async (req: AuthRequest, res: Response
 
 export const updateStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  
+  // Log the incoming body to see what the frontend is sending
+  console.log(`[BACKEND DEBUG] Updating student ${id}. Body:`, req.body);
+
   const {
     fullName, rollNumber, className, section, gender,
     email, dateOfBirth, bloodGroup, phone, parentName, parentPhone,
@@ -178,7 +188,7 @@ export const updateStudent = asyncHandler(async (req: AuthRequest, res: Response
         parentPhone: parentPhone || null,
         address: address || null,
         admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
-        profileImage: profileImage || null,
+        profileImage: profileImage || null
       },
     });
 

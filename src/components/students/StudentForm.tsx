@@ -34,6 +34,8 @@ export function StudentForm({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  console.log('StudentForm InitialData:', initialData);
+
   const {
     register,
     handleSubmit,
@@ -60,6 +62,11 @@ export function StudentForm({
       profileImage: initialData?.profileImage || '',
     }
   });
+
+  const onSubmitLocal = (data: StudentFormData) => {
+    console.log('BROWSER DEBUG: Data to be sent:', data);
+    onSubmit(data);
+  };
 
   const profileImage = watch('profileImage' as any);
 
@@ -94,7 +101,7 @@ export function StudentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
+    <form onSubmit={handleSubmit(onSubmitLocal)} className="space-y-8 pb-4">
       {/* Section 1: Student Information */}
       <div className="space-y-5">
         <div className="flex items-center gap-2 border-b border-slate-100 pb-3">

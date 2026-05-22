@@ -5,6 +5,7 @@ import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
 import { Prisma, AttendanceStatus } from '@prisma/client';
 import { sendParentAttendanceNotification } from '../services/email.service';
+import { sendParentAttendanceWhatsApp } from '../services/whatsapp.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AuditService } from '../services/audit.service';
 import { createNotification } from './notifications.controller';
@@ -82,7 +83,10 @@ export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: R
   // Trigger parent notifications in background
   results.forEach(record => {
     sendParentAttendanceNotification(record.id).catch(err => 
-      console.error(`Failed to send notification for attendance ${record.id}:`, err)
+      console.error(`Failed to send email for attendance ${record.id}:`, err)
+    );
+    sendParentAttendanceWhatsApp(record.id).catch(err => 
+      console.error(`Failed to send WhatsApp for attendance ${record.id}:`, err)
     );
   });
 
@@ -136,7 +140,10 @@ export const createAttendance = asyncHandler(async (req: AuthRequest, res: Respo
   }
 
   sendParentAttendanceNotification(attendance.id).catch(err => 
-    console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
+    console.error(`Failed to send email for attendance ${attendance.id}:`, err)
+  );
+  sendParentAttendanceWhatsApp(attendance.id).catch(err => 
+    console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err)
   );
 
   return res.status(201).json(
@@ -169,7 +176,10 @@ export const updateAttendance = asyncHandler(async (req: AuthRequest, res: Respo
   }
 
   sendParentAttendanceNotification(attendance.id).catch(err => 
-    console.error(`Failed to send notification for attendance ${attendance.id}:`, err)
+    console.error(`Failed to send email for attendance ${attendance.id}:`, err)
+  );
+  sendParentAttendanceWhatsApp(attendance.id).catch(err => 
+    console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err)
   );
 
   return res.status(200).json(

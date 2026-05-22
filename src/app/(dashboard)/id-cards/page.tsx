@@ -128,10 +128,10 @@ const PrintGrid = React.forwardRef(({ students, schoolProfile }: { students: any
             background: white !important;
           }
           .print-area { 
-            padding: 10mm !important;
+            padding: 15mm !important;
             display: grid !important; 
             grid-template-columns: repeat(2, 54mm) !important; 
-            gap: 10mm 15mm !important; 
+            gap: 15mm 20mm !important; 
             justify-content: center !important;
             align-content: start !important;
             background: white !important;
@@ -145,7 +145,6 @@ const PrintGrid = React.forwardRef(({ students, schoolProfile }: { students: any
             page-break-inside: avoid !important; 
             width: 54mm !important;
             height: 86mm !important;
-            margin-bottom: 2mm !important;
           }
           .id-card-container {
             border: 1px solid #ddd !important;
@@ -158,7 +157,7 @@ const PrintGrid = React.forwardRef(({ students, schoolProfile }: { students: any
           }
         }
       `}} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center print:grid print:grid-cols-2 print:gap-x-20 print:gap-y-12">
         {students.map((student) => (
           <div key={student.id} className="id-card-wrapper">
             <StudentIDCard student={student} schoolProfile={schoolProfile} />

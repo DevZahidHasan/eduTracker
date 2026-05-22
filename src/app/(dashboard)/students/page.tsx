@@ -163,8 +163,10 @@ export default function StudentsPage() {
   };
 
   const onSubmit = async (data: StudentFormData) => {
+    console.log('PAGE DEBUG: Data received in onSubmit:', data);
     try {
       if (isEditing && editingId) {
+        console.log('PAGE DEBUG: Dispatching updateStudentThunk with:', { ...data, id: editingId });
         await dispatch(updateStudentThunk({ ...data, id: editingId } as Student)).unwrap();
         toast.success('Student profile updated successfully');
       } else {
