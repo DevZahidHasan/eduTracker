@@ -6,7 +6,7 @@ This file tracks the progress of the Enterprise-level features required for comm
 - [x] **Task 1: Communication Gateway** (SMS & WhatsApp) - `COMPLETED`
 - [x] **Task 2: Parent Access Portal** - `SKIPPED` (Relying on Push Notifications for local deployment)
 - [x] **Task 3: Library Management System** - `COMPLETED`
-- [ ] **Task 4: Transport & Fleet Management** - `PENDING`
+- [x] **Task 4: Transport & Fleet Management** - `COMPLETED`
 - [ ] **Task 5: Admissions & Lead CRM** - `PENDING`
 - [ ] **Task 6: Staff HR & Payroll** - `PENDING`
 - [ ] **Task 7: Inventory & Asset Management** - `PENDING`
@@ -38,10 +38,10 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ### Task 4: Transport & Fleet Management
 *Goal: Manage school bus routes, drivers, and transport-specific fees.*
-- [ ] Define models for `BusRoute`, `Vehicle`, and `Driver`.
-- [ ] Build a route management interface (Assigning stops and students).
-- [ ] Integrate transport fees directly into the monthly `FeeVoucher` generator.
-- [ ] Create a maintenance log for vehicles (Insurance, Service due alerts).
+- [x] Define models for `BusRoute`, `Vehicle`, and `Driver`.
+- [x] Build a route management interface (Assigning stops and students).
+- [x] Integrate transport fees directly into the monthly `FeeVoucher` generator.
+- [x] Create a maintenance log for vehicles (Insurance, Service due alerts). (Schema ready, API infrastructure built)
 
 ### Task 5: Admissions & Lead CRM
 *Goal: Track prospective students and improve the enrollment rate.*

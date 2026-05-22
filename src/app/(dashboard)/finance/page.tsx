@@ -790,7 +790,7 @@ export default function FinancePage() {
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="">Select Category...</option>
-                {feeTypes.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {feeTypes.filter((t: any) => t.name !== 'Transport Fee').map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
            </div>
            <Input 

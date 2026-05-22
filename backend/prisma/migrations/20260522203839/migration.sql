@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Driver" ALTER COLUMN "driverId" DROP DEFAULT,
+ALTER COLUMN "name" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "Vehicle" ALTER COLUMN "vehicleId" DROP DEFAULT;

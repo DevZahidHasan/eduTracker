@@ -29,6 +29,7 @@ model User {
   salary         StaffSalary?
   payrollRecords PayrollRecord[]
   libraryMember  LibraryMember?
+  driver         Driver?
 }
 
 model Notification {
@@ -107,6 +108,10 @@ model Student {
   class         SchoolClass      @relation(fields: [className], references: [name])
   classSection  ClassSection?    @relation(fields: [className, section], references: [className, section])
   libraryMember LibraryMember?
+  busRoute      BusRoute?        @relation(fields: [busRouteId], references: [id])
+  busRouteId    Int?
+  busStop       BusStop?         @relation(fields: [busStopId], references: [id])
+  busStopId     Int?
 
   @@unique([className, section, rollNumber])
 }
@@ -497,4 +502,79 @@ model BookIssue {
 
   book   Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
   member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+// --- Transport & Fleet Management Models ---
+
+model Vehicle {
+  id                 Int       @id @default(autoincrement())
+  vehicleId          String    @unique // System generated unique ID (e.g. VH-1001)
+  registrationNumber String    @unique
+  make               String?
+  model              String?
+  capacity           Int       @default(0)
+  status             String    @default("ACTIVE") // ACTIVE, MAINTENANCE, RETIRED
+  insuranceExpiry    DateTime?
+  nextServiceDate    DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  routes          BusRoute[]
+  maintenanceLogs VehicleMaintenance[]
+}
+
+model Driver {
+  id            Int      @id @default(autoincrement())
+  driverId      String   @unique // System generated unique ID (e.g. DR-1001)
+  name          String
+  userId        Int?     @unique
+  licenseNumber String   @unique
+  phone         String?
+  status        String   @default("ACTIVE") // ACTIVE, ON_LEAVE
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  routes BusRoute[]
+}
+
+model BusRoute {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  vehicleId   Int?
+  driverId    Int?
+  fare        Float    @default(0) // Default monthly fare
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driver   Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  stops    BusStop[]
+  students Student[]
+}
+
+model BusStop {
+  id         Int     @id @default(autoincrement())
+  routeId    Int
+  name       String
+  pickupTime String?
+  dropTime   String?
+  fare       Float? // Optional override for specific stop fare
+
+  route    BusRoute  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  students Student[]
+}
+
+model VehicleMaintenance {
+  id          Int      @id @default(autoincrement())
+  vehicleId   Int
+  date        DateTime @default(now())
+  description String
+  cost        Float    @default(0)
+  type        String   @default("SERVICE") // SERVICE, REPAIR, INSPECTION
+  reportedBy  String?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 }

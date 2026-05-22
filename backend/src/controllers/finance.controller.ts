@@ -95,7 +95,8 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
 
   // 1. Get all students in the class
   const students = await prisma.student.findMany({
-    where: { className }
+    where: { className },
+    include: { busRoute: true, busStop: true }
   });
 
   if (students.length === 0) {
@@ -103,7 +104,8 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
   }
 
   // 2. Get the fee structure for this class - ONLY include Monthly/Recurring fees
-  const structures = await prisma.feeStructure.findMany({
+  // IMPORTANT: We filter out 'Transport Fee' because it is managed dynamically by the Transport Module
+  const allMonthlyStructures = await prisma.feeStructure.findMany({
     where: { 
       className,
       feeType: { isMonthly: true } 
@@ -111,7 +113,17 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
     include: { feeType: true }
   });
 
-  if (structures.length === 0) {
+  const structures = allMonthlyStructures.filter(s => s.feeType.name !== 'Transport Fee');
+
+  // Ensure Transport FeeType exists for the system to use
+  let transportFeeType = await prisma.feeType.findFirst({ where: { name: 'Transport Fee' } });
+  if (!transportFeeType) {
+    transportFeeType = await prisma.feeType.create({
+      data: { name: 'Transport Fee', isMonthly: true }
+    });
+  }
+
+  if (structures.length === 0 && students.every(s => !s.busRouteId && !s.busStopId)) {
     throw new ApiError(400, 'No monthly fee structures defined for this class. Please set recurring fees first.');
   }
 
@@ -130,7 +142,28 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
 
       if (existing) continue;
 
-      const totalAmount = structures.reduce((sum, s) => sum + s.amount, 0);
+      let totalAmount = structures.reduce((sum, s) => sum + s.amount, 0);
+      const itemsData: any[] = structures.map(s => ({
+        feeTypeId: s.feeTypeId,
+        amount: s.amount
+      }));
+
+      // Add transport fee if assigned
+      if (student.busRouteId || student.busStopId) {
+        const routeFare = student.busRoute?.fare || 0;
+        const stopExtraFare = student.busStop?.fare || 0;
+        const totalTransportFare = routeFare + stopExtraFare;
+
+        if (totalTransportFare > 0 && transportFeeType) {
+          totalAmount += totalTransportFare;
+          itemsData.push({
+            feeTypeId: transportFeeType.id,
+            amount: totalTransportFare
+          });
+        }
+      }
+
+      if (itemsData.length === 0) continue;
 
       const voucher = await tx.feeVoucher.create({
         data: {
@@ -141,10 +174,7 @@ export const generateMonthlyVouchers = asyncHandler(async (req: Request, res: Re
           totalAmount,
           status: 'UNPAID',
           items: {
-            create: structures.map(s => ({
-              feeTypeId: s.feeTypeId,
-              amount: s.amount
-            }))
+            create: itemsData
           }
         }
       });
