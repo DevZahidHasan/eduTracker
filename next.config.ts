@@ -2,6 +2,18 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*', // Proxy to Backend API
+      },
+      {
+        source: '/uploads/:path*',
+        destination: 'http://localhost:5000/uploads/:path*', // Proxy to Backend static uploads
+      },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -28,9 +28,9 @@ if (-not $localIp) {
     Write-Host "Local Network IP detected: $localIp" -ForegroundColor Green
 }
 
-# Update .env file with detected IP
+# Update .env file to use Next.js API Rewrite
 $envPath = Join-Path $PSScriptRoot ".env"
-$apiUrl = "NEXT_PUBLIC_API_URL=`"http://$localIp`:5000/api`""
+$apiUrl = "NEXT_PUBLIC_API_URL=`"/api`""
 if (Test-Path $envPath) {
     $content = Get-Content $envPath
     if ($content -match "NEXT_PUBLIC_API_URL") {
@@ -42,7 +42,7 @@ if (Test-Path $envPath) {
 } else {
     Set-Content $envPath $apiUrl
 }
-Write-Host "Configured API URL: http://$localIp`:5000/api" -ForegroundColor Gray
+Write-Host "Configured API URL: /api (Using Next.js proxy)" -ForegroundColor Gray
 
 # 3. Install Dependencies
 Write-Host "[3/6] Installing dependencies (this may take a few minutes)..." -ForegroundColor Yellow
