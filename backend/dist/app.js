@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const path_1 = __importDefault(require("path"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -20,14 +21,15 @@ app.use((0, helmet_1.default)({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https://api.edutracker.com"], // Update with actual API domain if needed
+            imgSrc: ["'self'", "data:", "https:", "http:"],
+            connectSrc: ["'self'", "*"], // Allow connecting to any API during development/local deploy
             fontSrc: ["'self'"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
         },
     },
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Fixes logo display across ports
     xssFilter: true, // X-XSS-Protection
     frameguard: {
         action: 'deny', // X-Frame-Options: DENY
@@ -66,6 +68,9 @@ app.use((0, cors_1.default)({
 }));
 app.use(express_1.default.json({ limit: '5mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '5mb' }));
+// Static files
+app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../public/uploads')));
+app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
 // Apply global rate limiter to all API routes
 // app.use('/api', apiLimiter);
 // Routes

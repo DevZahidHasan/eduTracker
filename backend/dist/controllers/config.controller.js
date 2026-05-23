@@ -27,6 +27,9 @@ exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
     const examTypes = yield prisma_1.default.examType.findMany({
         orderBy: { name: 'asc' }
     });
+    const roles = yield prisma_1.default.role.findMany({
+        orderBy: { name: 'asc' }
+    });
     const teachers = yield prisma_1.default.user.findMany({
         where: { role: 'TEACHER' },
         select: { id: true, name: true, email: true },
@@ -37,6 +40,7 @@ exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
         classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
         subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
         examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name), baseMark: e.baseMark })),
+        roles: roles.map(r => ({ value: r.name, label: formatLabel(r.name) })),
         teachers: teachers.map(t => ({ value: t.id.toString(), label: t.name || t.email }))
     };
     return res.status(200).json(new apiResponse_1.ApiResponse(200, config, 'Configuration fetched successfully'));

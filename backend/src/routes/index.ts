@@ -19,6 +19,7 @@ import transportRoutes from './transport.routes';
 import admissionsRoutes from './admissions.routes';
 import hrRoutes from './hr.routes';
 import inventoryRoutes from './inventory.routes';
+import documentRoutes from './document.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -46,5 +47,6 @@ router.use('/transport', authMiddleware, transportRoutes);
 router.use('/admissions', authMiddleware, admissionsRoutes);
 router.use('/hr', authMiddleware, hrRoutes);
 router.use('/inventory', authMiddleware, inventoryRoutes);
+router.use('/documents', authMiddleware, documentRoutes);
 
 export default router;

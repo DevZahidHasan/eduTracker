@@ -253,8 +253,21 @@ model SchoolProfile {
   email        String?
   academicYear String   @default("2026-2027")
   logo         String?
+  signature    String? // Path to principal's signature
   updatedAt    DateTime @updatedAt
   website      String?
+}
+
+// --- ID Card & Certificate Templates ---
+
+model DocumentTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String // ID_CARD, LEAVING_CERTIFICATE, CHARACTER_CERTIFICATE
+  config      Json // Stores colors, layout settings, background image, etc.
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model SystemSetting {

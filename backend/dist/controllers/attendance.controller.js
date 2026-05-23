@@ -18,6 +18,7 @@ const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
 const apiResponse_1 = require("../utils/apiResponse");
 const email_service_1 = require("../services/email.service");
+const whatsapp_service_1 = require("../services/whatsapp.service");
 const audit_service_1 = require("../services/audit.service");
 const notifications_controller_1 = require("./notifications.controller");
 exports.getAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -80,7 +81,8 @@ exports.bulkCreateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __
     }
     // Trigger parent notifications in background
     results.forEach(record => {
-        (0, email_service_1.sendParentAttendanceNotification)(record.id).catch(err => console.error(`Failed to send notification for attendance ${record.id}:`, err));
+        (0, email_service_1.sendParentAttendanceNotification)(record.id).catch(err => console.error(`Failed to send email for attendance ${record.id}:`, err));
+        (0, whatsapp_service_1.sendParentAttendanceWhatsApp)(record.id).catch(err => console.error(`Failed to send WhatsApp for attendance ${record.id}:`, err));
     });
     // Notify Admins about bulk update
     const admins = yield prisma_1.default.user.findMany({ where: { role: 'ADMIN' } });
@@ -118,7 +120,8 @@ exports.createAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
     if (req.user) {
         yield audit_service_1.AuditService.logChange('CREATE', 'Attendance', attendance.id, req.user.id, null, attendance);
     }
-    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
+    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send email for attendance ${attendance.id}:`, err));
+    (0, whatsapp_service_1.sendParentAttendanceWhatsApp)(attendance.id).catch(err => console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err));
     return res.status(201).json(new apiResponse_1.ApiResponse(201, attendance, 'Attendance record created successfully'));
 }));
 exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -140,7 +143,8 @@ exports.updateAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awai
     if (req.user) {
         yield audit_service_1.AuditService.logChange('UPDATE', 'Attendance', id, req.user.id, oldAttendance, attendance);
     }
-    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send notification for attendance ${attendance.id}:`, err));
+    (0, email_service_1.sendParentAttendanceNotification)(attendance.id).catch(err => console.error(`Failed to send email for attendance ${attendance.id}:`, err));
+    (0, whatsapp_service_1.sendParentAttendanceWhatsApp)(attendance.id).catch(err => console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err));
     return res.status(200).json(new apiResponse_1.ApiResponse(200, attendance, 'Attendance record updated successfully'));
 }));
 exports.deleteAttendance = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

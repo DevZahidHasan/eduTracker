@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInsights = void 0;
+exports.generateQuestions = exports.getInsights = void 0;
 const ai_service_1 = require("../services/ai.service");
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
@@ -21,4 +21,12 @@ exports.getInsights = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     }
     const insights = yield (0, ai_service_1.generatePerformanceInsights)(marks, attendance);
     return res.status(200).json(new apiResponse_1.ApiResponse(200, { result: insights }, 'Insights generated successfully'));
+}));
+exports.generateQuestions = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, subject, topic, difficulty, count } = req.body;
+    if (!className || !subject || !topic || !difficulty) {
+        throw new apiError_1.ApiError(400, 'Class, subject, topic, and difficulty are required');
+    }
+    const questions = yield (0, ai_service_1.generateQuestions)(className, subject, topic, difficulty, count);
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, questions, 'Questions generated successfully'));
 }));

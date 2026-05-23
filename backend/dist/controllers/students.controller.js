@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteStudent = exports.updateStudent = exports.createStudent = exports.getStudentById = exports.getAllStudents = void 0;
+exports.deleteStudent = exports.updateStudent = exports.createStudent = exports.generateStudentCredentials = exports.uploadStudentPhoto = exports.getStudentById = exports.getAllStudents = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
@@ -42,6 +42,79 @@ exports.getStudentById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaite
         throw new apiError_1.ApiError(404, 'Student not found');
     }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, student, 'Student fetched successfully'));
+}));
+exports.uploadStudentPhoto = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.file) {
+        throw new apiError_1.ApiError(400, 'No file uploaded');
+    }
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, { imageUrl }, 'Student photo uploaded successfully'));
+}));
+const toBool = (val) => {
+    if (val === true || val === 'true' || val === 1 || val === '1')
+        return true;
+    if (val === false || val === 'false' || val === 0 || val === '0')
+        return false;
+    return undefined;
+};
+exports.generateStudentCredentials = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, section } = req.query;
+    if (!className || !section) {
+        throw new apiError_1.ApiError(400, 'Class and Section are required to generate credentials');
+    }
+    // 1. Generate Next Roll Number for the specific Class and Section
+    const studentsInSection = yield prisma_1.default.student.findMany({
+        where: {
+            className: className,
+            section: section,
+        },
+        select: { rollNumber: true },
+    });
+    let nextRollNumber = 1;
+    if (studentsInSection.length > 0) {
+        // Extract numeric parts of roll numbers to find the max
+        const rollNumbers = studentsInSection
+            .map(s => parseInt(s.rollNumber, 10))
+            .filter(n => !isNaN(n));
+        if (rollNumbers.length > 0) {
+            nextRollNumber = Math.max(...rollNumbers) + 1;
+        }
+        else {
+            // Fallback if roll numbers are purely strings (unlikely but possible)
+            nextRollNumber = studentsInSection.length + 1;
+        }
+    }
+    // 2. Generate Unique Student ID
+    // Format: STU-[Year]-[ClassCode]-[Section]-[NextRoll]
+    // Alternatively: STU-[Year]-[NextGlobalId]
+    const currentYear = new Date().getFullYear();
+    const lastStudent = yield prisma_1.default.student.findFirst({
+        where: {
+            studentId: {
+                startsWith: `STU-${currentYear}-`
+            }
+        },
+        orderBy: {
+            id: 'desc'
+        }
+    });
+    let nextStudentSeq = 1;
+    if (lastStudent) {
+        const parts = lastStudent.studentId.split('-');
+        if (parts.length >= 3) {
+            const lastSeq = parseInt(parts[2], 10);
+            if (!isNaN(lastSeq)) {
+                nextStudentSeq = lastSeq + 1;
+            }
+        }
+    }
+    const generatedStudentId = `STU-${currentYear}-${nextStudentSeq.toString().padStart(4, '0')}`;
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, {
+        studentId: generatedStudentId,
+        rollNumber: nextRollNumber.toString()
+    }, 'Credentials generated successfully'));
 }));
 exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, fullName, rollNumber, className, section, gender, email, dateOfBirth, bloodGroup, phone, parentName, parentPhone, address, admissionDate, profileImage } = req.body;
@@ -103,7 +176,7 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
                 parentPhone: parentPhone || null,
                 address: address || null,
                 admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
-                profileImage: profileImage || null,
+                profileImage: profileImage || null
             },
         });
         if (req.user) {
@@ -118,6 +191,8 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
 }));
 exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
+    // Log the incoming body to see what the frontend is sending
+    console.log(`[BACKEND DEBUG] Updating student ${id}. Body:`, req.body);
     const { fullName, rollNumber, className, section, gender, email, dateOfBirth, bloodGroup, phone, parentName, parentPhone, address, admissionDate, profileImage } = req.body;
     const oldStudent = yield prisma_1.default.student.findUnique({
         where: { id: Number(id) }
@@ -142,7 +217,7 @@ exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
                 parentPhone: parentPhone || null,
                 address: address || null,
                 admissionDate: (admissionDate && admissionDate !== '') ? new Date(admissionDate) : undefined,
-                profileImage: profileImage || null,
+                profileImage: profileImage || null
             },
         });
         if (req.user) {

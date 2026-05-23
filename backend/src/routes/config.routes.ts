@@ -4,7 +4,10 @@ import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/', getConfig);
+router.get('/', (req, res, next) => {
+  console.log('Public config route hit');
+  next();
+}, getConfig);
 
 // Protected administration routes
 router.use(authMiddleware);

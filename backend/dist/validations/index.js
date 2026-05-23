@@ -14,7 +14,7 @@ exports.registerSchema = {
         email: zod_1.z.string().email('Invalid email address'),
         password: zod_1.z.string().min(6, 'Password must be at least 6 characters'),
         name: zod_1.z.string().min(2, 'Name must be at least 2 characters'),
-        role: zod_1.z.enum(['ADMIN', 'TEACHER']).optional(),
+        role: zod_1.z.string().min(1, 'Role is required').optional(),
     }),
 };
 // Student Schemas
@@ -34,7 +34,7 @@ exports.studentSchema = {
         bloodGroup: zod_1.z.string().optional().or(zod_1.z.literal('')),
         dateOfBirth: zod_1.z.string().optional().or(zod_1.z.literal('')),
         admissionDate: zod_1.z.string().optional().or(zod_1.z.literal('')),
-        profileImage: zod_1.z.string().url().optional().or(zod_1.z.literal('')),
+        profileImage: zod_1.z.string().optional().or(zod_1.z.literal('')),
     }),
 };
 exports.studentQuerySchema = {
@@ -62,9 +62,11 @@ exports.createQuestionPaperSchema = {
         examType: zod_1.z.string().min(1, 'Exam type is required'),
         totalMarks: zod_1.z.number().positive('Total marks must be positive'),
         duration: zod_1.z.number().positive('Duration must be positive'),
-        examDate: zod_1.z.string().datetime({ message: "Invalid datetime string" }).or(zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').transform(val => new Date(val).toISOString())),
+        examDate: zod_1.z.string().datetime({ message: "Invalid datetime string" }).or(zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').transform(val => new Date(val).toISOString())).optional(),
         instructions: zod_1.z.string().optional(),
         status: zod_1.z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+        isTemplate: zod_1.z.boolean().optional(),
+        templateId: zod_1.z.string().uuid().optional(),
         questions: zod_1.z.array(zod_1.z.object({
             questionType: zod_1.z.string().min(1),
             questionText: zod_1.z.string().min(1),
@@ -88,6 +90,8 @@ exports.updateQuestionPaperSchema = {
         examDate: zod_1.z.string().datetime().or(zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/).transform(val => new Date(val).toISOString())).optional(),
         instructions: zod_1.z.string().optional(),
         status: zod_1.z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+        isTemplate: zod_1.z.boolean().optional(),
+        templateId: zod_1.z.string().uuid().optional(),
         questions: zod_1.z.array(zod_1.z.object({
             questionType: zod_1.z.string().min(1),
             questionText: zod_1.z.string().min(1),

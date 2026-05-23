@@ -34,17 +34,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const questionPaperController = __importStar(require("../controllers/questionPapers.controller"));
-const validation_middleware_1 = require("../middleware/validation.middleware");
-const validations_1 = require("../validations");
+const questionBankController = __importStar(require("../controllers/questionBank.controller"));
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.get('/', questionPaperController.getQuestionPapers);
-router.get('/templates', questionPaperController.getTemplates);
-router.get('/:id', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), questionPaperController.getQuestionPaperById);
-router.get('/:id/print', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), questionPaperController.printQuestionPaper);
-router.get('/:id/export/pdf', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), questionPaperController.exportPdf);
-router.post('/', (0, validation_middleware_1.validate)(validations_1.createQuestionPaperSchema), questionPaperController.createQuestionPaper);
-router.post('/:id/duplicate', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), questionPaperController.duplicateQuestionPaper);
-router.put('/:id', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), (0, validation_middleware_1.validate)(validations_1.updateQuestionPaperSchema), questionPaperController.updateQuestionPaper);
-router.delete('/:id', (0, validation_middleware_1.validate)(validations_1.uuidParamSchema), questionPaperController.deleteQuestionPaper);
+router.use(auth_middleware_1.authMiddleware);
+router.get('/', questionBankController.getBankQuestions);
+router.get('/:id', questionBankController.getBankQuestionById);
+// Only ADMIN and TEACHER can manage bank questions
+router.use((0, auth_middleware_1.authorize)('ADMIN', 'TEACHER'));
+router.post('/', questionBankController.createBankQuestion);
+router.put('/:id', questionBankController.updateBankQuestion);
+router.delete('/:id', questionBankController.deleteBankQuestion);
 exports.default = router;

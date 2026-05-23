@@ -10,7 +10,7 @@ This file tracks the progress of the Enterprise-level features required for comm
 - [x] **Task 5: Admissions & Lead CRM** - `COMPLETED`
 - [x] **Task 6: Staff HR & Payroll** - `COMPLETED`
 - [x] **Task 7: Inventory & Asset Management** - `COMPLETED`
-- [ ] **Task 8: ID Card & Certificate Designer** - `PENDING`
+- [x] **Task 8: ID Card & Certificate Designer** - `COMPLETED`
 
 ---
 
@@ -66,11 +66,10 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ### Task 8: ID Card & Certificate Designer
 *Goal: Eliminate the need for external designers for basic school documents.*
-- [ ] Build a "Dynamic ID Card" generator that pulls student data/photos into a template.
-- [ ] Create templates for "Leaving Certificates" and "Character Certificates".
-- [ ] Implement "Bulk PDF Export" for a whole class or section.
+- [x] Build a "Dynamic ID Card" generator that pulls student data/photos into a template.
+- [x] Create templates for "Leaving Certificates" and "Character Certificates".
+- [x] Implement "Bulk PDF Export" for a whole class or section.
+- [x] Integrated "Document Center" with live preview and custom branding (Colors, Layouts).
 
 ---
 *Note: Update this file after completing each task to maintain synchronization.*
-
-

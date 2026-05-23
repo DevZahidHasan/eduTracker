@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteQuestionPaper = exports.updateQuestionPaper = exports.createQuestionPaper = exports.exportPdf = exports.printQuestionPaper = exports.getQuestionPaperById = exports.getQuestionPapers = void 0;
+exports.deleteQuestionPaper = exports.updateQuestionPaper = exports.createQuestionPaper = exports.exportPdf = exports.printQuestionPaper = exports.getQuestionPaperById = exports.duplicateQuestionPaper = exports.getTemplates = exports.getQuestionPapers = void 0;
 const questionPapers_service_1 = require("../services/questionPapers.service");
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
@@ -21,8 +21,34 @@ const prisma_1 = __importDefault(require("../prisma"));
 const questionPaperHtmlGenerator_1 = require("../utils/questionPaperHtmlGenerator");
 const pdfGenerator_1 = require("../utils/pdfGenerator");
 exports.getQuestionPapers = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const papers = yield questionPapers_service_1.questionPaperService.getAllQuestionPapers();
+    const { isTemplate, className, subject } = req.query;
+    const filters = {
+        isTemplate: isTemplate === 'true' ? true : isTemplate === 'false' ? false : undefined,
+        className: className,
+        subject: subject,
+    };
+    const papers = yield questionPapers_service_1.questionPaperService.getAllQuestionPapers(filters);
     res.status(200).json(new apiResponse_1.ApiResponse(200, papers, 'Question papers retrieved successfully'));
+}));
+exports.getTemplates = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, subject } = req.query;
+    const filters = {
+        isTemplate: true,
+        className: className,
+        subject: subject,
+    };
+    const templates = yield questionPapers_service_1.questionPaperService.getAllQuestionPapers(filters);
+    res.status(200).json(new apiResponse_1.ApiResponse(200, templates, 'Templates retrieved successfully'));
+}));
+exports.duplicateQuestionPaper = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { id } = req.params;
+    const { isTemplate, title } = req.body;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    if (!userId)
+        throw new apiError_1.ApiError(401, 'Unauthorized');
+    const paper = yield questionPapers_service_1.questionPaperService.duplicateQuestionPaper(id, userId, { isTemplate, title });
+    res.status(201).json(new apiResponse_1.ApiResponse(201, paper, 'Question paper duplicated successfully'));
 }));
 exports.getQuestionPaperById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
@@ -38,9 +64,8 @@ exports.printQuestionPaper = (0, asyncHandler_1.asyncHandler)((req, res) => __aw
     if (!paper) {
         throw new apiError_1.ApiError(404, 'Question paper not found');
     }
-    const schoolProfile = yield prisma_1.default.schoolProfile.findFirst();
-    const schoolName = (schoolProfile === null || schoolProfile === void 0 ? void 0 : schoolProfile.name) || 'EduTrack Academy';
-    const html = (0, questionPaperHtmlGenerator_1.generateQuestionPaperHtml)(paper, schoolName);
+    const schoolProfile = yield prisma_1.default.schoolProfile.findFirst({ where: { id: 1 } });
+    const html = (0, questionPaperHtmlGenerator_1.generateQuestionPaperHtml)(paper, schoolProfile);
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
 }));
@@ -50,9 +75,8 @@ exports.exportPdf = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
     if (!paper) {
         throw new apiError_1.ApiError(404, 'Question paper not found');
     }
-    const schoolProfile = yield prisma_1.default.schoolProfile.findFirst();
-    const schoolName = (schoolProfile === null || schoolProfile === void 0 ? void 0 : schoolProfile.name) || 'EduTrack Academy';
-    const html = (0, questionPaperHtmlGenerator_1.generateQuestionPaperHtml)(paper, schoolName);
+    const schoolProfile = yield prisma_1.default.schoolProfile.findFirst({ where: { id: 1 } });
+    const html = (0, questionPaperHtmlGenerator_1.generateQuestionPaperHtml)(paper, schoolProfile);
     const pdfBuffer = yield (0, pdfGenerator_1.generatePdfFromHtml)(html);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="question_paper_${id}.pdf"`);

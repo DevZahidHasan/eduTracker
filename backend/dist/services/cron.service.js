@@ -16,6 +16,7 @@ exports.initCronJobs = exports.runEndOfDayTasks = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
 const prisma_1 = __importDefault(require("../prisma"));
 const email_service_1 = require("./email.service");
+const backup_service_1 = require("./backup.service");
 const runEndOfDayTasks = () => __awaiter(void 0, void 0, void 0, function* () {
     const todayDateString = new Date().toISOString().split('T')[0];
     // Check if we already ran today
@@ -43,6 +44,16 @@ const initCronJobs = () => {
     node_cron_1.default.schedule('0 16 * * *', () => __awaiter(void 0, void 0, void 0, function* () {
         console.log('Cron triggered: End of day tasks');
         yield (0, exports.runEndOfDayTasks)();
+    }));
+    // Run at 02:00 (2 AM) every day for database backup
+    node_cron_1.default.schedule('0 2 * * *', () => __awaiter(void 0, void 0, void 0, function* () {
+        console.log('Cron triggered: Automated Database Backup');
+        try {
+            yield (0, backup_service_1.performDatabaseBackup)();
+        }
+        catch (error) {
+            console.error('Scheduled backup failed:', error);
+        }
     }));
     console.log('Cron jobs initialized');
 };
