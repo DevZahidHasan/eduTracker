@@ -25,6 +25,8 @@ export default function TransportPage() {
   const [selectedSection, setSelectedSection] = useState('');
   const [selectedRoute, setSelectedRoute] = useState('');
   const [assignedStudents, setAssignedStudents] = useState<any[]>([]);
+  const [tableFilterClass, setTableFilterClass] = useState('all');
+  const [tableFilterSection, setTableFilterSection] = useState('all');
 
   // Stop Management States
   const [isStopsModalOpen, setIsStopsModalOpen] = useState(false);
@@ -42,6 +44,12 @@ export default function TransportPage() {
   const [newRoute, setNewRoute] = useState({ name: '', description: '', fare: 0, vehicleId: '', driverId: '' });
   const [newAssignment, setNewAssignment] = useState({ studentId: '', busRouteId: '', busStopId: '' });
 
+  // Editing States
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [editingDriver, setEditingDriver] = useState<any>(null);
+  const [editingRoute, setEditingRoute] = useState<any>(null);
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
+
   useEffect(() => {
     fetchData();
   }, [activeTab]);
@@ -57,8 +65,9 @@ export default function TransportPage() {
   }, [selectedClass]);
 
   useEffect(() => {
-    if (activeTab === 'assignments' && selectedRoute) {
-      api.get(`/transport/routes/${selectedRoute}/students`).then(res => {
+    if (activeTab === 'assignments') {
+      const routeParam = selectedRoute === '' || selectedRoute === 'all' ? 'all' : selectedRoute;
+      api.get(`/transport/routes/${routeParam}/students`).then(res => {
         setAssignedStudents(res.data.data || []);
       }).catch(console.error);
     }
@@ -100,11 +109,27 @@ export default function TransportPage() {
   // --- Vehicles ---
   const handleAddVehicle = async () => {
     try {
-      await api.post('/transport/vehicles', newVehicle);
-      toast.success('Vehicle added');
+      if (editingVehicle) {
+        await api.put(`/transport/vehicles/${editingVehicle.id}`, newVehicle);
+        toast.success('Vehicle updated');
+        setEditingVehicle(null);
+      } else {
+        await api.post('/transport/vehicles', newVehicle);
+        toast.success('Vehicle added');
+      }
       setNewVehicle({ registrationNumber: '', make: '', model: '', capacity: 0 });
       fetchData();
-    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to add vehicle'); }
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to save vehicle'); }
+  };
+
+  const handleEditVehicle = (v: any) => {
+    setEditingVehicle(v);
+    setNewVehicle({
+      registrationNumber: v.registrationNumber,
+      make: v.make,
+      model: v.model,
+      capacity: v.capacity
+    });
   };
 
   const confirmDeleteVehicle = (id: number) => {
@@ -123,11 +148,26 @@ export default function TransportPage() {
   // --- Drivers ---
   const handleAddDriver = async () => {
     try {
-      await api.post('/transport/drivers', newDriver);
-      toast.success('Driver added');
+      if (editingDriver) {
+        await api.put(`/transport/drivers/${editingDriver.id}`, newDriver);
+        toast.success('Driver updated');
+        setEditingDriver(null);
+      } else {
+        await api.post('/transport/drivers', newDriver);
+        toast.success('Driver added');
+      }
       setNewDriver({ name: '', licenseNumber: '', phone: '' });
       fetchData();
-    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to add driver'); }
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to save driver'); }
+  };
+
+  const handleEditDriver = (d: any) => {
+    setEditingDriver(d);
+    setNewDriver({
+      name: d.name,
+      licenseNumber: d.licenseNumber,
+      phone: d.phone
+    });
   };
 
   const confirmDeleteDriver = (id: number) => {
@@ -146,11 +186,28 @@ export default function TransportPage() {
   // --- Routes ---
   const handleAddRoute = async () => {
     try {
-      await api.post('/transport/routes', newRoute);
-      toast.success('Route added');
+      if (editingRoute) {
+        await api.put(`/transport/routes/${editingRoute.id}`, newRoute);
+        toast.success('Route updated');
+        setEditingRoute(null);
+      } else {
+        await api.post('/transport/routes', newRoute);
+        toast.success('Route added');
+      }
       setNewRoute({ name: '', description: '', fare: 0, vehicleId: '', driverId: '' });
       fetchData();
-    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to add route'); }
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to save route'); }
+  };
+
+  const handleEditRoute = (r: any) => {
+    setEditingRoute(r);
+    setNewRoute({
+      name: r.name,
+      description: r.description || '',
+      fare: r.fare,
+      vehicleId: r.vehicle?.vehicleId || '',
+      driverId: r.driver?.driverId || ''
+    });
   };
 
   const confirmDeleteRoute = (id: number) => {
@@ -203,15 +260,28 @@ export default function TransportPage() {
   const handleAssignTransport = async () => {
     try {
       await api.post('/transport/assign', newAssignment);
-      toast.success('Student assigned to transport');
+      toast.success(editingAssignment ? 'Assignment updated' : 'Student assigned to transport');
       setNewAssignment({ studentId: '', busRouteId: '', busStopId: '' });
-      if (selectedRoute === newAssignment.busRouteId) {
-        const res = await api.get(`/transport/routes/${selectedRoute}/students`);
+      setEditingAssignment(null);
+      const routeParam = selectedRoute === '' || selectedRoute === 'all' ? 'all' : selectedRoute;
+      if (routeParam === 'all' || routeParam === newAssignment.busRouteId) {
+        const res = await api.get(`/transport/routes/${routeParam}/students`);
         setAssignedStudents(res.data.data || []);
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to assign transport');
     }
+  };
+
+  const handleEditAssignment = (s: any) => {
+    setEditingAssignment(s);
+    setSelectedClass(s.className);
+    setSelectedSection(s.section);
+    setNewAssignment({
+      studentId: s.id.toString(),
+      busRouteId: s.busRouteId?.toString() || '',
+      busStopId: s.busStopId?.toString() || ''
+    });
   };
 
   const handleUnassignStudent = async (studentId: number) => {
@@ -223,10 +293,9 @@ export default function TransportPage() {
         try {
           await api.post('/transport/assign', { studentId, busRouteId: null, busStopId: null });
           toast.success('Student removed from route');
-          if (selectedRoute) {
-            const res = await api.get(`/transport/routes/${selectedRoute}/students`);
-            setAssignedStudents(res.data.data || []);
-          }
+          const routeParam = selectedRoute === '' || selectedRoute === 'all' ? 'all' : selectedRoute;
+          const res = await api.get(`/transport/routes/${routeParam}/students`);
+          setAssignedStudents(res.data.data || []);
         } catch (err: any) {
           toast.error(err.response?.data?.message || 'Failed to remove assignment');
         }
@@ -293,7 +362,9 @@ export default function TransportPage() {
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Passenger Capacity</label>
                 <Input type="number" value={newVehicle.capacity} onChange={e => setNewVehicle({...newVehicle, capacity: parseInt(e.target.value) || 0})} />
               </div>
-              <Button className="w-full" onClick={handleAddVehicle} disabled={!newVehicle.registrationNumber}>Register Vehicle</Button>
+              <Button className="w-full" onClick={handleAddVehicle} disabled={!newVehicle.registrationNumber}>
+                {editingVehicle ? 'Update Vehicle' : 'Register Vehicle'}
+              </Button>
             </CardContent>
           </Card>
           
@@ -320,9 +391,14 @@ export default function TransportPage() {
                       </div>
                       <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Capacity: <span className="font-bold text-foreground">{v.capacity}</span></span>
-                        <button onClick={() => confirmDeleteVehicle(v.id)} className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50 opacity-0 group-hover:opacity-100">
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="flex gap-2 transition-opacity">
+                          <button onClick={() => handleEditVehicle(v)} className="text-primary hover:text-primary/80 transition-colors p-1 rounded-md hover:bg-primary/5">
+                            <Edit size={16} />
+                          </button>
+                          <button onClick={() => confirmDeleteVehicle(v.id)} className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -350,7 +426,9 @@ export default function TransportPage() {
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Phone Number</label>
                 <Input placeholder="+1 234 567 890" value={newDriver.phone} onChange={e => setNewDriver({...newDriver, phone: e.target.value})} />
               </div>
-              <Button className="w-full" onClick={handleAddDriver} disabled={!newDriver.licenseNumber || !newDriver.name}>Register Driver</Button>
+              <Button className="w-full" onClick={handleAddDriver} disabled={!newDriver.licenseNumber || !newDriver.name}>
+                {editingDriver ? 'Update Driver' : 'Register Driver'}
+              </Button>
             </CardContent>
           </Card>
           
@@ -377,9 +455,14 @@ export default function TransportPage() {
                       </div>
                       <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Phone: <span className="font-bold text-foreground">{d.phone || 'N/A'}</span></span>
-                        <button onClick={() => confirmDeleteDriver(d.id)} className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50 opacity-0 group-hover:opacity-100">
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="flex gap-2 transition-opacity">
+                          <button onClick={() => handleEditDriver(d)} className="text-primary hover:text-primary/80 transition-colors p-1 rounded-md hover:bg-primary/5">
+                            <Edit size={16} />
+                          </button>
+                          <button onClick={() => confirmDeleteDriver(d.id)} className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -413,7 +496,9 @@ export default function TransportPage() {
                 <Input list="d-list" placeholder="Search Driver..." value={newRoute.driverId} onChange={e => setNewRoute({...newRoute, driverId: e.target.value})} />
                 <datalist id="d-list">{drivers.map(d => <option key={d.id} value={d.driverId}>{d.name}</option>)}</datalist>
               </div>
-              <Button className="w-full mt-2" onClick={handleAddRoute} disabled={!newRoute.name}>Launch Route</Button>
+              <Button className="w-full mt-2" onClick={handleAddRoute} disabled={!newRoute.name}>
+                {editingRoute ? 'Update Route' : 'Launch Route'}
+              </Button>
             </CardContent>
           </Card>
           
@@ -444,9 +529,14 @@ export default function TransportPage() {
                           >
                             <Settings size={14} /> Manage Stops
                           </Button>
-                          <button onClick={() => confirmDeleteRoute(r.id)} className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50">
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="flex gap-1 transition-opacity">
+                            <button onClick={() => handleEditRoute(r)} className="text-primary hover:text-primary/80 transition-colors p-2 rounded-lg hover:bg-primary/5">
+                              <Edit size={18} />
+                            </button>
+                            <button onClick={() => confirmDeleteRoute(r.id)} className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50">
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mt-4 bg-muted/30 p-3 rounded-lg border border-border/30">
@@ -576,7 +666,12 @@ export default function TransportPage() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Student</label>
                 <Select
-                  options={studentsList.filter(s => !selectedSection || s.section === selectedSection).map(s => ({ value: s.id, label: `${s.fullName} (${s.rollNumber})` }))}
+                  options={studentsList
+                    .filter(s => 
+                      (!selectedSection || s.section === selectedSection) && 
+                      (!s.busRouteId || editingAssignment?.id === s.id)
+                    )
+                    .map(s => ({ value: s.id, label: `${s.fullName} (${s.rollNumber})` }))}
                   value={newAssignment.studentId}
                   onChange={e => setNewAssignment({ ...newAssignment, studentId: e.target.value })}
                   placeholder="Select Student"
@@ -603,42 +698,57 @@ export default function TransportPage() {
                 />
               </div>
               <Button className="w-full mt-2" onClick={handleAssignTransport} disabled={!newAssignment.studentId || !newAssignment.busRouteId}>
-                Confirm Assignment
+                {editingAssignment ? 'Update Assignment' : 'Confirm Assignment'}
               </Button>
             </CardContent>
           </Card>
           
           <Card className="lg:col-span-2 shadow-sm border-border/60">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg">Current Assignments</CardTitle>
-              <div className="w-48">
-                <Select
-                  options={routes.map(r => ({ value: r.id, label: r.name }))}
-                  value={selectedRoute}
-                  onChange={e => setSelectedRoute(e.target.value)}
-                  placeholder="Filter by Route"
-                />
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 gap-4">
+              <CardTitle className="text-lg whitespace-nowrap">Current Assignments</CardTitle>
+              <div className="flex flex-row items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <div className="w-40 min-w-[160px]">
+                  <Select
+                    options={[{ value: 'all', label: 'All Classes' }, ...classesList.map(c => ({ value: c.className, label: c.className.replace('_', ' ') }))]}
+                    value={tableFilterClass}
+                    onChange={e => { setTableFilterClass(e.target.value); setTableFilterSection('all'); }}
+                    placeholder="Filter Class"
+                  />
+                </div>
+                <div className="w-40 min-w-[160px]">
+                  <Select
+                    options={[{ value: 'all', label: 'All Sections' }, ...(tableFilterClass !== 'all' ? (classesList.find(c => c.className === tableFilterClass)?.sections || []).map((s: any) => ({ value: s.section, label: s.section })) : [])]}
+                    value={tableFilterSection}
+                    onChange={e => setTableFilterSection(e.target.value)}
+                    placeholder="Filter Section"
+                    disabled={tableFilterClass === 'all'}
+                  />
+                </div>
+                <div className="w-48 min-w-[192px]">
+                  <Select
+                    options={[{ value: 'all', label: 'All Routes' }, ...routes.map(r => ({ value: r.id, label: r.name }))]}
+                    value={selectedRoute || 'all'}
+                    onChange={e => setSelectedRoute(e.target.value)}
+                    placeholder="Filter Route"
+                  />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              {!selectedRoute ? (
-                <div className="text-center py-20 bg-muted/20 rounded-2xl border border-dashed border-border flex flex-col items-center gap-3">
-                  <div className="p-4 rounded-full bg-primary/10 text-primary"><Info size={24} /></div>
-                  <p className="text-muted-foreground max-w-[280px]">Please select a route from the dropdown to see assigned students.</p>
-                </div>
-              ) : assignedStudents.length > 0 ? (
+              {assignedStudents.filter(s => (tableFilterClass === 'all' || s.className === tableFilterClass) && (tableFilterSection === 'all' || s.section === tableFilterSection)).length > 0 ? (
                 <div className="overflow-hidden border border-border/50 rounded-xl bg-card">
                   <table className="w-full text-left">
                     <thead className="bg-muted/50 border-b border-border/50">
                       <tr>
                         <th className="px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Student</th>
                         <th className="px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Class</th>
+                        <th className="px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Route & Bus</th>
                         <th className="px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Bus Stop</th>
                         <th className="px-4 py-3 text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
-                      {assignedStudents.map(s => (
+                      {assignedStudents.filter(s => (tableFilterClass === 'all' || s.className === tableFilterClass) && (tableFilterSection === 'all' || s.section === tableFilterSection)).map(s => (
                         <tr key={s.id} className="hover:bg-muted/30 transition-colors group">
                           <td className="px-4 py-3">
                             <div>
@@ -647,18 +757,29 @@ export default function TransportPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm">{s.className} - {s.section}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold">{s.busRoute?.name || 'N/A'}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">{s.busRoute?.vehicle?.registrationNumber || 'No Bus'}</span>
+                            </div>
+                          </td>
                           <td className="px-4 py-3 text-sm italic text-muted-foreground">{s.busStop?.name || 'N/A'}</td>
                           <td className="px-4 py-3 text-right">
-                            <button onClick={() => handleUnassignStudent(s.id)} className="text-muted-foreground hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
-                              <Trash2 size={16} />
-                            </button>
+                            <div className="flex gap-1 justify-end transition-all">
+                              <button onClick={() => handleEditAssignment(s)} className="text-primary hover:text-primary/80 p-1.5 rounded-lg hover:bg-primary/5">
+                                <Edit size={16} />
+                              </button>
+                              <button onClick={() => handleUnassignStudent(s.id)} className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              ) : <p className="text-center py-10 text-muted-foreground italic">No students assigned to this route yet.</p>}
+              ) : <p className="text-center py-10 text-muted-foreground italic">No students assigned to transport yet.</p>}
             </CardContent>
           </Card>
         </div>

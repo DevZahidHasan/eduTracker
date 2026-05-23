@@ -197,9 +197,17 @@ export const assignTransport = asyncHandler(async (req: Request, res: Response) 
 
 export const getAssignedStudents = asyncHandler(async (req: Request, res: Response) => {
   const { routeId } = req.params;
+  
+  let whereClause: any = {};
+  if (routeId !== 'all') {
+    whereClause = { busRouteId: parseInt(routeId) };
+  } else {
+    whereClause = { busRouteId: { not: null } };
+  }
+
   const students = await prisma.student.findMany({
-    where: { busRouteId: parseInt(routeId) },
-    include: { class: true, busStop: true }
+    where: whereClause,
+    include: { class: true, busStop: true, busRoute: { include: { vehicle: true } } }
   });
   res.status(200).json(new ApiResponse(200, students, 'Assigned students fetched successfully'));
 });
