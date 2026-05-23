@@ -7,7 +7,7 @@ This file tracks the progress of the Enterprise-level features required for comm
 - [x] **Task 2: Parent Access Portal** - `SKIPPED` (Relying on Push Notifications for local deployment)
 - [x] **Task 3: Library Management System** - `COMPLETED`
 - [x] **Task 4: Transport & Fleet Management** - `COMPLETED`
-- [ ] **Task 5: Admissions & Lead CRM** - `PENDING`
+- [x] **Task 5: Admissions & Lead CRM** - `COMPLETED`
 - [ ] **Task 6: Staff HR & Payroll** - `PENDING`
 - [ ] **Task 7: Inventory & Asset Management** - `PENDING`
 - [ ] **Task 8: ID Card & Certificate Designer** - `PENDING`
@@ -45,10 +45,10 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ### Task 5: Admissions & Lead CRM
 *Goal: Track prospective students and improve the enrollment rate.*
-- [ ] Create an `Inquiry` model to track leads (Source, Status, Interested Grade).
-- [ ] Build an Inquiry Form and Lead Management dashboard.
-- [ ] Implement a "Follow-up" reminder system for the front-office staff.
-- [ ] Build a "One-Click Admission" button to convert a Lead into a Student.
+- [x] Create an `Inquiry` model to track leads (Source, Status, Interested Grade).
+- [x] Build an Inquiry Form and Lead Management dashboard.
+- [x] Implement a "Follow-up" reminder system for the front-office staff.
+- [x] Build a "One-Click Admission" button to convert a Lead into a Student.
 
 ### Task 6: Staff HR & Payroll
 *Goal: Automate staff salaries, attendance, and leave management.*
@@ -71,3 +71,4 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ---
 *Note: Update this file after completing each task to maintain synchronization.*
+

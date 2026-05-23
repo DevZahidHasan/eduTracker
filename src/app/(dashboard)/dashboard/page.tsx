@@ -2,45 +2,45 @@
 
 import React, { useEffect, useMemo } from 'react';
 import {
+  Zap,
+  Bell,
   Users,
+  Clock,
   BookOpen,
   Calendar,
-  TrendingUp,
   Sparkles,
-  ArrowUpRight,
-  GraduationCap,
+  TrendingUp,
   LayoutGrid,
-  Bell,
   ArrowRight,
-  Clock,
-  CheckCircle2,
   AlertCircle,
-  Zap,
+  ArrowUpRight,
+  CheckCircle2,
+  GraduationCap,
 } from 'lucide-react';
+import { selectRole } from '@/lib/features/authSlice';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
-import { selectRole } from '@/lib/features/authSlice';
 import Link from 'next/link';
 import {
+  fetchMarks,
+  selectAllMarks,
   selectAverageMarks,
   selectMarksTrendData,
-  selectAllMarks,
-  fetchMarks,
 } from '@/lib/features/marksSlice';
 import {
-  selectOverallAttendanceRate,
-  selectAttendanceBreakdownData,
+  fetchAttendance,
   selectAttendanceTrendData,
   selectAllAttendanceRecords,
-  fetchAttendance,
+  selectOverallAttendanceRate,
+  selectAttendanceBreakdownData,
 } from '@/lib/features/attendanceSlice';
-import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
+import dynamic from 'next/dynamic';
+import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses } from '@/lib/features/configSlice';
 import { generateInsights } from '@/lib/features/aiInsightsSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Skeleton } from '@/components/ui/Skeleton';
-import dynamic from 'next/dynamic';
+import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
 
 // Lazy load Recharts components
 const ResponsiveContainer = dynamic(

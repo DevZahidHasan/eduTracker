@@ -6,19 +6,42 @@ import { TopNavbar } from './TopNavbar';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchConfig, selectConfigInitialized } from '@/lib/features/configSlice';
 import { usePathname } from 'next/navigation';
+import { selectRole } from '@/lib/features/authSlice';
+import { navItems } from '@/lib/navigation';
+import { AccessDeniedModal } from '../ui/AccessDeniedModal';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAccessDeniedOpen, setIsAccessDeniedOpen] = useState(false);
   const dispatch = useAppDispatch();
   const configInitialized = useAppSelector(selectConfigInitialized);
   const pathname = usePathname();
+  const role = useAppSelector(selectRole);
 
   useEffect(() => {
     if (!configInitialized) {
       dispatch(fetchConfig());
     }
   }, [dispatch, configInitialized]);
+
+  // Role-based Access Control for Routes
+  useEffect(() => {
+    const currentNavItem = navItems.find(item => 
+      pathname === item.href || pathname.startsWith(item.href + '/')
+    );
+
+    if (currentNavItem && currentNavItem.roles && role) {
+      const isAuthorized = currentNavItem.roles.includes(role.toUpperCase());
+      if (!isAuthorized) {
+        setIsAccessDeniedOpen(true);
+      } else {
+        setIsAccessDeniedOpen(false);
+      }
+    } else {
+      setIsAccessDeniedOpen(false);
+    }
+  }, [pathname, role]);
 
   // Close mobile sidebar on navigation
   useEffect(() => {
@@ -47,6 +70,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+
+        <AccessDeniedModal 
+          isOpen={isAccessDeniedOpen} 
+          onClose={() => setIsAccessDeniedOpen(false)} 
+        />
       </div>
     </div>
   );

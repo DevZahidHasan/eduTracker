@@ -10,9 +10,18 @@ interface ModalProps {
   children: React.ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full';
+  showCloseButton?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, className = '', size = 'md' }: ModalProps) {
+export function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  className = '', 
+  size = 'md',
+  showCloseButton = true
+}: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -60,13 +69,15 @@ export function Modal({ isOpen, onClose, title, children, className = '', size =
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           {title && <h2 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h2>}
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-standard p-2 rounded-lg focus:outline-none"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
+          {showCloseButton && (
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-standard p-2 rounded-lg focus:outline-none"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
         <div className="p-4 sm:p-6 max-h-[85vh] sm:max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
           {children}

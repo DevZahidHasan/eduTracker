@@ -31,6 +31,8 @@ model User {
   libraryMember     LibraryMember?
   driver            Driver?
   assignedInquiries Inquiry[]
+  staffAttendances  StaffAttendance[]
+  leaveRequests     LeaveRequest[]
 }
 
 model Notification {
@@ -459,15 +461,52 @@ model StaffSalary {
 }
 
 model PayrollRecord {
-  id          String   @id @default(uuid())
-  userId      Int
-  month       Int
-  year        Int
-  amountPaid  Float
-  paymentDate DateTime @default(now())
-  status      String   @default("PAID") // PAID, PENDING
+  id            String   @id @default(uuid())
+  userId        Int
+  month         Int
+  year          Int
+  baseSalary    Float
+  allowances    Float    @default(0)
+  deductions    Float    @default(0)
+  netPay        Float
+  paymentDate   DateTime @default(now())
+  status        String   @default("PAID") // PAID, PENDING
+  paymentMethod String?
 
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month, year])
+}
+
+model StaffAttendance {
+  id      Int              @id @default(autoincrement())
+  userId  Int
+  date    DateTime
+  status  AttendanceStatus
+  remarks String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  startDate DateTime
+  endDate   DateTime
+  reason    String      @db.Text
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // --- Enhanced Academic Models ---

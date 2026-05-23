@@ -1,55 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+
+import api from '@/lib/api';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  CalendarCheck,
-  FileSpreadsheet,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  LayoutGrid,
-  PieChart,
-  Settings,
-  X,
-  FileText,
-  BookOpen,
-  Wallet,
-  Library as LibraryIcon,
-  Bus as TransportIcon,
-  UserPlus
-} from 'lucide-react';
-
-// ...
-
+import React, { useState } from 'react';
+import { navItems } from '@/lib/navigation';
 import { useAppSelector } from '@/lib/hooks';
-import { selectRole, logout } from '@/lib/features/authSlice';
-import api from '@/lib/api';
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useAppDispatch } from '@/lib/hooks';
-
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
-  { name: 'Admissions', href: '/admissions', icon: UserPlus, roles: ['ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK'] },
-  { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
-  { name: 'ID Cards', href: '/id-cards', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
-  { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },
-  { name: 'Finance', href: '/finance', icon: Wallet, roles: ['ADMIN', 'ACCOUNTANT'] },
-  { name: 'Transport', href: '/transport', icon: TransportIcon, roles: ['ADMIN', 'PRINCIPAL'] },
-  { name: 'Library', href: '/library', icon: LibraryIcon, roles: ['ADMIN', 'LIBRARIAN', 'PRINCIPAL'] },
-  { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
-  { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
-  { name: 'Staff', href: '/staff', icon: Users, roles: ['ADMIN'] },
-  { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN', 'PRINCIPAL'] },
-  { name: 'Audit Logs', href: '/audit', icon: LayoutDashboard, roles: ['ADMIN'] },
-];
+import { usePathname, useRouter } from 'next/navigation';
+import { selectRole, logout } from '@/lib/features/authSlice';
+import { ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -58,19 +20,14 @@ interface SidebarProps {
   setIsMobileOpen: (val: boolean) => void;
 }
 
-export function Sidebar({
-  collapsed,
-  setCollapsed,
-  isMobileOpen,
-  setIsMobileOpen,
-}: SidebarProps) {
+export function Sidebar({ collapsed, setCollapsed, isMobileOpen, setIsMobileOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const role = useAppSelector(selectRole);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.roles || (role && item.roles.includes(role.toUpperCase()))
+  const filteredNavItems = navItems.filter(
+    (item) => !item.roles || (role && item.roles.includes(role.toUpperCase())),
   );
 
   const dispatch = useAppDispatch();
@@ -92,7 +49,7 @@ export function Sidebar({
     <>
       {/* Backdrop for Mobile */}
       {isMobileOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40"
           onClick={() => setIsMobileOpen(false)}
         />
@@ -108,17 +65,19 @@ export function Sidebar({
         `}
       >
         <div className="flex h-28 items-center px-4 border-b border-border shrink-0 overflow-hidden">
-          <div className={`relative h-28 transition-all duration-300 ease-in-out ${collapsed && !isMobileOpen ? 'w-12 mx-auto' : 'w-full px-2'}`}>
-            <Image 
-              src="/edutrackerLogo.png" 
-              alt="EduTracker Logo" 
+          <div
+            className={`relative h-28 transition-all duration-300 ease-in-out ${collapsed && !isMobileOpen ? 'w-12 mx-auto' : 'w-full px-2'}`}
+          >
+            <Image
+              src="/edutrackerLogo.png"
+              alt="EduTracker Logo"
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 256px"
               className="object-contain"
               priority
             />
           </div>
-          
+
           {isMobileOpen && (
             <button
               onClick={() => setIsMobileOpen(false)}
@@ -151,9 +110,16 @@ export function Sidebar({
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Icon size={20} className={isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} />
+                <Icon
+                  size={20}
+                  className={
+                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                  }
+                />
                 {(!collapsed || isMobileOpen) && (
-                  <span className="text-sm font-semibold whitespace-nowrap overflow-hidden">{item.name}</span>
+                  <span className="text-sm font-semibold whitespace-nowrap overflow-hidden">
+                    {item.name}
+                  </span>
                 )}
               </Link>
             );
@@ -166,7 +132,9 @@ export function Sidebar({
             className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-standard group focus:outline-none"
           >
             <LogOut size={20} className="text-muted-foreground group-hover:text-red-500" />
-            {(!collapsed || isMobileOpen) && <span className="text-sm font-semibold whitespace-nowrap">Logout</span>}
+            {(!collapsed || isMobileOpen) && (
+              <span className="text-sm font-semibold whitespace-nowrap">Logout</span>
+            )}
           </button>
         </div>
       </aside>

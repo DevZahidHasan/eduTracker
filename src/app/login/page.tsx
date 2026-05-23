@@ -15,6 +15,7 @@ import { useAppDispatch } from '@/lib/hooks';
 import { login } from '@/lib/features/authSlice';
 import { loginSchema, LoginFormData } from '@/lib/validations';
 import api from '@/lib/api';
+import { navItems } from '@/lib/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function LoginPage() {
       }
 
       const { user, token } = result.data;
+      const userRole = user.role.toUpperCase();
 
       dispatch(
         login({
@@ -59,19 +61,28 @@ export default function LoginPage() {
             id: Number(user.id),
             name: user.name || user.email.split('@')[0],
             email: user.email,
-            role: user.role.toUpperCase() as any,
+            role: userRole as any,
             profileImage: user.profileImage,
             nid: user.nid || null,
             phone: user.phone || null,
             address: user.address || null,
             canLogin: user.canLogin ?? true
           },
-          role: user.role.toUpperCase() as any,
+          role: userRole as any,
           token: token,
         })
       );
 
-      router.push('/dashboard');
+      // Role-based smart redirection
+      const firstAllowedItem = navItems.find(item => 
+        item.roles && item.roles.includes(userRole)
+      );
+
+      if (firstAllowedItem) {
+        router.push(firstAllowedItem.href);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setServerError(err.response?.data?.message || err.message || 'An error occurred during login');
     } finally {
