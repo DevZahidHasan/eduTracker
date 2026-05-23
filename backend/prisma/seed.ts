@@ -12,106 +12,123 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@edutracker.com' },
-    update: {},
-    create: {
-      email: 'admin@edutracker.com',
-      name: 'Admin User',
-      password: hashedPassword,
-      role: 'ADMIN',
-    },
-  });
+  console.log('Starting seed...');
 
-  const teacherNames = ['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown'];
-  const teachers = [];
-  for (const name of teacherNames) {
-    const email = name.toLowerCase().replace(' ', '.') + '@edutracker.com';
-    const teacher = await prisma.user.upsert({
+  // 1. Seed Roles
+  const roles = [
+    { name: 'ADMIN', description: 'Full system access' },
+    { name: 'PRINCIPAL', description: 'Academic and administrative oversight' },
+    { name: 'TEACHER', description: 'Class and student management' },
+    { name: 'STAFF', description: 'General school staff' },
+    { name: 'LIBRARIAN', description: 'Library management' },
+    { name: 'ACCOUNTANT', description: 'Financial management' },
+    { name: 'CLERK', description: 'Front desk and admissions' },
+    { name: 'SECURITY', description: 'Campus security' },
+    { name: 'CLEANER', description: 'Maintenance staff' },
+  ];
+
+  for (const role of roles) {
+    await prisma.role.upsert({
+      where: { name: role.name },
+      update: { description: role.description },
+      create: role,
+    });
+  }
+  console.log('Roles seeded.');
+
+  // 2. Seed Users for each role
+  const hashedPassword = await bcrypt.hash('123456', 10);
+  
+  for (const role of roles) {
+    const email = `${role.name.toLowerCase()}@edutracker.com`;
+    await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { password: hashedPassword },
       create: {
         email,
-        name,
+        name: `${role.name.charAt(0) + role.name.slice(1).toLowerCase()} User`,
         password: hashedPassword,
-        role: 'TEACHER',
+        role: role.name,
       },
     });
-    teachers.push(teacher);
   }
+  console.log('Role-based users seeded with password: 123456');
 
-  const classes = [
-    'CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6', 'CLASS_7', 'CLASS_8', 'CLASS_9', 'CLASS_10'
-  ];
-
-  const subjects = [
-    'BANGLA', 'ENGLISH', 'MATH', 'SCIENCE', 'ICT', 'RELIGION', 'SOCIAL_SCIENCE'
-  ];
-
-  const examTypes = [
-    'CLASS_TEST', 'MONTHLY_EXAM', 'MID_TERM', 'FINAL_EXAM', 'OTHER'
-  ];
+  // 3. Seed Subjects & Exam Types
+  const subjects = ['BANGLA', 'ENGLISH', 'MATH', 'SCIENCE', 'ICT', 'RELIGION', 'SOCIAL_SCIENCE'];
+  const examTypes = ['CLASS_TEST', 'MONTHLY_EXAM', 'MID_TERM', 'FINAL_EXAM'];
 
   for (const name of subjects) {
-    await prisma.subject.upsert({
-      where: { name },
-      update: {},
-      create: { name }
-    });
+    await prisma.subject.upsert({ where: { name }, update: {}, create: { name } });
   }
-
   for (const name of examTypes) {
-    await prisma.examType.upsert({
-      where: { name },
-      update: {},
-      create: { name }
-    });
+    await prisma.examType.upsert({ where: { name }, update: {}, create: { name } });
   }
+  console.log('Subjects and Exam Types seeded.');
 
-  const sections = ['A', 'B', 'C'];
+  // 4. Seed Classes and Sections
+  const classes = ['CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6', 'CLASS_7', 'CLASS_8', 'CLASS_9', 'CLASS_10'];
+  const sections = ['A', 'B'];
 
   for (const className of classes) {
-    await prisma.schoolClass.upsert({
-      where: { name: className },
-      update: {},
-      create: { name: className }
-    });
+    await prisma.schoolClass.upsert({ where: { name: className }, update: {}, create: { name: className } });
 
     for (const section of sections) {
-      const teacher = teachers[Math.floor(Math.random() * teachers.length)];
       await prisma.classSection.upsert({
         where: { className_section: { className, section } },
-        update: { teacherId: teacher.id },
-        create: {
-          className,
-          section,
-          teacherId: teacher.id
-        }
+        update: {},
+        create: { className, section }
       });
-      
-      // Add some sample students
-      for (let i = 1; i <= 5; i++) {
-        const rollNumber = i.toString().padStart(2, '0');
-        const studentId = `${className}-${section}-${rollNumber}`;
-        await prisma.student.upsert({
-          where: { studentId },
-          update: {},
-          create: {
-            studentId,
-            fullName: `Student ${className} ${section} ${rollNumber}`,
-            rollNumber,
-            className,
-            section,
-            gender: i % 2 === 0 ? 'MALE' : 'FEMALE'
-          }
-        });
-      }
     }
   }
+  console.log('Classes and Sections seeded.');
 
-  console.log('Seed completed successfully');
+  // 5. Seed 100 Students
+  const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
+  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+
+  for (let i = 1; i <= 100; i++) {
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const className = classes[Math.floor(Math.random() * classes.length)];
+    const section = sections[Math.floor(Math.random() * sections.length)];
+    
+    // Get current count for this class/section to generate roll number
+    const count = await prisma.student.count({ where: { className, section } });
+    const rollNumber = (count + 1).toString().padStart(2, '0');
+    const studentId = `STU-${new Date().getFullYear()}-${i.toString().padStart(4, '0')}`;
+
+    await prisma.student.create({
+      data: {
+        studentId,
+        fullName: `${firstName} ${lastName}`,
+        rollNumber,
+        className,
+        section,
+        gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+        phone: `017${Math.floor(10000000 + Math.random() * 90000000)}`,
+        admissionDate: new Date(),
+      }
+    });
+  }
+  console.log('100 dummy students seeded.');
+
+  // 6. Seed School Profile
+  await prisma.schoolProfile.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      name: 'EduTracker Enterprise Academy',
+      address: '123 Education Lane, Tech City',
+      phone: '+880123456789',
+      email: 'info@edutracker.com',
+      website: 'www.edutracker.com',
+      academicYear: '2026-2027'
+    }
+  });
+  console.log('School Profile seeded.');
+
+  console.log('Seed completed successfully!');
 }
 
 main()
@@ -121,4 +138,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

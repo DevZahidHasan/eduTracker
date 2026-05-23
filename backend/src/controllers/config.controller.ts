@@ -17,6 +17,10 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
     orderBy: { name: 'asc' }
   });
 
+  const roles = await prisma.role.findMany({
+    orderBy: { name: 'asc' }
+  });
+
   const teachers = await prisma.user.findMany({
     where: { role: 'TEACHER' },
     select: { id: true, name: true, email: true },
@@ -28,6 +32,7 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
     classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
     subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
     examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name), baseMark: e.baseMark })),
+    roles: roles.map(r => ({ value: r.name, label: formatLabel(r.name) })),
     teachers: teachers.map(t => ({ value: t.id.toString(), label: t.name || t.email }))
   };
 

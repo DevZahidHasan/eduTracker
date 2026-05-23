@@ -17,7 +17,6 @@ import {
 } from '../controllers/settings.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
-import { Role } from '@prisma/client';
 
 const router = Router();
 

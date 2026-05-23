@@ -3,7 +3,7 @@ import prisma from '../prisma';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/apiError';
 import { ApiResponse } from '../utils/apiResponse';
-import { AttendanceStatus, LeaveStatus, Role } from '@prisma/client';
+import { AttendanceStatus, LeaveStatus } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { generatePdfFromHtml } from '../utils/pdfGenerator';
 import { generateSalarySlipHtml } from '../utils/salarySlipHtmlGenerator';
@@ -16,7 +16,7 @@ export const getStaffMembers = asyncHandler(async (req: Request, res: Response) 
   const staff = await prisma.user.findMany({
     where: {
       role: {
-        in: [Role.TEACHER, Role.STAFF, Role.LIBRARIAN, Role.ACCOUNTANT, Role.CLERK, Role.SECURITY, Role.CLEANER]
+        in: ['TEACHER', 'STAFF', 'LIBRARIAN', 'ACCOUNTANT', 'CLERK', 'SECURITY', 'CLEANER']
       }
     },
     select: {
@@ -166,7 +166,7 @@ export const getLeaveRequests = asyncHandler(async (req: AuthRequest, res: Respo
 
   let where = {};
   // If not admin/principal/accountant, only see own requests
-  if (role !== Role.ADMIN && role !== Role.PRINCIPAL && role !== Role.ACCOUNTANT) {
+  if (role !== 'ADMIN' && role !== 'PRINCIPAL' && role !== 'ACCOUNTANT') {
     where = { userId };
   }
 
@@ -218,7 +218,7 @@ export const generatePayroll = asyncHandler(async (req: Request, res: Response) 
   const staffMembers = await prisma.user.findMany({
     where: {
       role: {
-        in: [Role.TEACHER, Role.STAFF, Role.LIBRARIAN, Role.ACCOUNTANT, Role.CLERK, Role.SECURITY, Role.CLEANER]
+        in: ['TEACHER', 'STAFF', 'LIBRARIAN', 'ACCOUNTANT', 'CLERK', 'SECURITY', 'CLEANER']
       },
       salary: {
         isNot: null

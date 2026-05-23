@@ -12,7 +12,8 @@ import {
   LayoutGrid,
   CalendarCheck,
   LayoutDashboard,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Package
 } from 'lucide-react';
 
 export const navItems = [
@@ -28,6 +29,7 @@ export const navItems = [
   { name: 'Transport', href: '/transport', icon: Bus, roles: ['ADMIN', 'ACCOUNTANT'] },
   { name: 'HR & Payroll', href: '/hr', icon: Briefcase, roles: ['ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'TEACHER', 'STAFF', 'LIBRARIAN', 'CLERK', 'SECURITY', 'CLEANER'] },
   { name: 'Library', href: '/library', icon: Library, roles: ['ADMIN', 'LIBRARIAN', 'PRINCIPAL'] },
+  { name: 'Inventory', href: '/inventory', icon: Package, roles: ['ADMIN', 'PRINCIPAL', 'STAFF'] },
   { name: 'Classes', href: '/classes', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Reports', href: '/reports', icon: PieChart, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: ['ADMIN'] },

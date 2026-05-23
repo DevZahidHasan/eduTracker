@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Lock, Mail, UserCheck } from 'lucide-react';
+import { ArrowRight, Lock, Mail, UserCheck, ShieldCheck, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -21,7 +22,7 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [portal, setPortal] = useState<'ADMIN' | 'STAFF' | 'OTHER'>('STAFF');
 
   const {
     register,
@@ -37,7 +38,6 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setServerError('');
 
     try {
       const response = await api.post('/auth/login', {
@@ -53,6 +53,21 @@ export default function LoginPage() {
 
       const { user, token } = result.data;
       const userRole = user.role.toUpperCase();
+
+      // Enforce Portal-based access control
+      if (portal === 'ADMIN' && userRole !== 'ADMIN') {
+        throw new Error('This account does not have permission to access the Administration Portal.');
+      }
+
+      const staffRoles = ['PRINCIPAL', 'TEACHER', 'STAFF', 'LIBRARIAN', 'ACCOUNTANT', 'CLERK', 'SECURITY', 'CLEANER'];
+      if (portal === 'STAFF' && !staffRoles.includes(userRole)) {
+        throw new Error('This account is not registered as academic or administrative staff.');
+      }
+
+      // Add 'OTHER' logic here later (e.g. Students/Parents) if needed.
+      if (portal === 'OTHER' && (userRole === 'ADMIN' || staffRoles.includes(userRole))) {
+        throw new Error('Please use the Staff or Admin portals for this account.');
+      }
 
       dispatch(
         login({
@@ -84,7 +99,8 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setServerError(err.response?.data?.message || err.message || 'An error occurred during login');
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -116,13 +132,6 @@ export default function LoginPage() {
         <CardContent className="px-4 sm:px-6 pb-8">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
-              {serverError && (
-                <div className="p-4 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
-                  <div className="h-5 w-5 bg-red-100 rounded-full flex items-center justify-center shrink-0">!</div>
-                  {serverError}
-                </div>
-              )}
-              
               <div className="relative group">
                 <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10">
                   <Mail size={18} />
@@ -154,23 +163,46 @@ export default function LoginPage() {
                 />
               </div>
               
-              <div className="relative group">
-                <div className="absolute left-3.5 top-[38px] text-slate-400 group-focus-within:text-primary transition-standard z-10 pointer-events-none">
-                  <UserCheck size={18} />
+              <div className="space-y-2 pt-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Select Access Portal</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPortal('ADMIN')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all gap-2 ${
+                      portal === 'ADMIN' 
+                        ? 'border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20' 
+                        : 'border-slate-100 hover:border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <ShieldCheck size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortal('STAFF')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all gap-2 ${
+                      portal === 'STAFF' 
+                        ? 'border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20' 
+                        : 'border-slate-100 hover:border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <UserCheck size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Staff</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortal('OTHER')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all gap-2 ${
+                      portal === 'OTHER' 
+                        ? 'border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20' 
+                        : 'border-slate-100 hover:border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <Users size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Other</span>
+                  </button>
                 </div>
-                <Select
-                  label="Access Role"
-                  placeholder="Select access level"
-                  {...register('role')}
-                  error={errors.role?.message}
-                  className="pl-11 h-12"
-                  disabled={isLoading}
-                  options={[
-                    { value: 'STUDENT', label: 'Student Portal' },
-                    { value: 'TEACHER', label: 'Staff / Teacher' },
-                    { value: 'ADMIN', label: 'System Administrator' },
-                  ]}
-                />
               </div>
             </div>
 

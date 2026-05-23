@@ -8,8 +8,8 @@ This file tracks the progress of the Enterprise-level features required for comm
 - [x] **Task 3: Library Management System** - `COMPLETED`
 - [x] **Task 4: Transport & Fleet Management** - `COMPLETED`
 - [x] **Task 5: Admissions & Lead CRM** - `COMPLETED`
-- [ ] **Task 6: Staff HR & Payroll** - `PENDING`
-- [ ] **Task 7: Inventory & Asset Management** - `PENDING`
+- [x] **Task 6: Staff HR & Payroll** - `COMPLETED`
+- [x] **Task 7: Inventory & Asset Management** - `COMPLETED`
 - [ ] **Task 8: ID Card & Certificate Designer** - `PENDING`
 
 ---
@@ -52,16 +52,17 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ### Task 6: Staff HR & Payroll
 *Goal: Automate staff salaries, attendance, and leave management.*
-- [ ] Define models for `Staff`, `Attendance`, `LeaveRequest`, and `SalarySlip`.
-- [ ] Build a payroll generator that calculates base salary + allowances - deductions (absent days).
-- [ ] Create a "Print Salary Slip" feature (PDF).
-- [ ] Implement a simple leave approval workflow for the Principal.
+- [x] Define models for `Staff`, `Attendance`, `LeaveRequest`, and `SalarySlip`.
+- [x] Build a payroll generator that calculates base salary + allowances - deductions (absent days).
+- [x] Create a "Print Salary Slip" feature (PDF).
+- [x] Implement a simple leave approval workflow for the Principal.
 
 ### Task 7: Inventory & Asset Management
 *Goal: Track school property like furniture, computers, and lab equipment.*
-- [ ] Create an `Asset` model (Name, Category, Purchase Date, Condition, Location).
-- [ ] Build a dashboard to log new assets and track "Maintenance Due" dates.
-- [ ] Add a "Scrap/Dispose" workflow for old inventory.
+- [x] Create an `Asset` model (Name, Category, Purchase Date, Condition, Location).
+- [x] Build a dashboard to log new assets and track "Maintenance Due" dates.
+- [x] Add a "Scrap/Dispose" workflow for old inventory.
+- [x] Implement maintenance logging and history for each asset.
 
 ### Task 8: ID Card & Certificate Designer
 *Goal: Eliminate the need for external designers for basic school documents.*
@@ -71,4 +72,5 @@ This file tracks the progress of the Enterprise-level features required for comm
 
 ---
 *Note: Update this file after completing each task to maintain synchronization.*
+
 

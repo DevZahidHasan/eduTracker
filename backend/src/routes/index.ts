@@ -18,15 +18,16 @@ import libraryRoutes from './library.routes';
 import transportRoutes from './transport.routes';
 import admissionsRoutes from './admissions.routes';
 import hrRoutes from './hr.routes';
+import inventoryRoutes from './inventory.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // Public routes
 router.use('/auth', authRoutes);
+router.use('/config', configRoutes);
 
 // Protected routes (require valid JWT)
-router.use('/config', authMiddleware, configRoutes);
 router.use('/students', authMiddleware, studentsRoutes);
 router.use('/marks', authMiddleware, marksRoutes);
 router.use('/attendance', authMiddleware, attendanceRoutes);
@@ -44,5 +45,6 @@ router.use('/library', authMiddleware, libraryRoutes);
 router.use('/transport', authMiddleware, transportRoutes);
 router.use('/admissions', authMiddleware, admissionsRoutes);
 router.use('/hr', authMiddleware, hrRoutes);
+router.use('/inventory', authMiddleware, inventoryRoutes);
 
 export default router;

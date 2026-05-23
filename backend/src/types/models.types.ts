@@ -1,10 +1,10 @@
-import { Role, Gender, DayOfWeek, AttendanceStatus } from '@prisma/client';
+import { Gender, DayOfWeek, AttendanceStatus } from '@prisma/client';
 
 export interface User {
   id: number;
   email: string;
   name: string | null;
-  role: Role;
+  role: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -18,7 +18,7 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['TEACHER', 'ADMIN']),
+  role: z.string().min(1, 'Role is required'),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -28,20 +28,40 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [roles, setRoles] = useState<{ value: string; label: string }[]>([]);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
       email: '',
       password: '',
-      role: 'TEACHER',
+      role: '',
     }
   });
+
+  React.useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await api.get('/config');
+        if (response.data.success && response.data.data.roles) {
+          setRoles(response.data.data.roles);
+          // Set default role if available
+          if (response.data.data.roles.length > 0) {
+            setValue('role', 'TEACHER'); // Prefer TEACHER as default
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch roles:', err);
+      }
+    };
+    fetchRoles();
+  }, [setValue]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -161,10 +181,7 @@ export default function RegisterPage() {
                   error={errors.role?.message}
                   className="pl-11 h-12"
                   disabled={isLoading}
-                  options={[
-                    { value: 'TEACHER', label: 'Academic Staff / Teacher' },
-                    { value: 'ADMIN', label: 'System Administrator' },
-                  ]}
+                  options={roles}
                 />
               </div>
             </div>

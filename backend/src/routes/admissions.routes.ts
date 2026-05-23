@@ -17,16 +17,16 @@ router.use(authMiddleware);
 // Routes for handling inquiries
 router
   .route('/inquiries')
-  .post(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK'), createInquiry)
-  .get(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'TEACHER', 'CLERK'), getInquiries);
+  .post(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK', 'ACCOUNTANT'), createInquiry)
+  .get(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'TEACHER', 'CLERK', 'ACCOUNTANT'), getInquiries);
 
 router
   .route('/inquiries/:id')
-  .get(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'TEACHER', 'CLERK'), getInquiryById)
-  .put(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK'), updateInquiry)
+  .get(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'TEACHER', 'CLERK', 'ACCOUNTANT'), getInquiryById)
+  .put(authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK', 'ACCOUNTANT'), updateInquiry)
   .delete(authorize('ADMIN', 'PRINCIPAL'), deleteInquiry);
 
 // Route for converting an inquiry to an admitted student
-router.post('/inquiries/:id/admit', authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK'), admitInquiry);
+router.post('/inquiries/:id/admit', authorize('ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK', 'ACCOUNTANT'), admitInquiry);
 
 export default router;

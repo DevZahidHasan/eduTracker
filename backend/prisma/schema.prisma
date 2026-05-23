@@ -7,32 +7,41 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String?
-  name         String?
-  role         Role     @default(TEACHER)
-  nid          String?  @unique
-  profileImage String?
-  phone        String?
-  address      String?
-  canLogin     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  classSections     ClassSection[]
-  periods           Period[]
+  id                Int               @id @default(autoincrement())
+  email             String            @unique
+  password          String?
+  name              String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  address           String?
+  canLogin          Boolean           @default(true)
+  nid               String?           @unique
+  phone             String?
+  profileImage      String?
+  role              String            @default("TEACHER")
+  roleRef           Role              @relation(fields: [role], references: [name])
   auditLogs         AuditLog[]
-  refreshTokens     RefreshToken[]
-  notifications     Notification[]
-  questionPapers    QuestionPaper[]
-  salary            StaffSalary?
-  payrollRecords    PayrollRecord[]
-  libraryMember     LibraryMember?
+  classSections     ClassSection[]
   driver            Driver?
   assignedInquiries Inquiry[]
-  staffAttendances  StaffAttendance[]
   leaveRequests     LeaveRequest[]
+  libraryMember     LibraryMember?
+  notifications     Notification[]
+  payrollRecords    PayrollRecord[]
+  periods           Period[]
+  questionPapers    QuestionPaper[]
+  refreshTokens     RefreshToken[]
+  staffAttendances  StaffAttendance[]
+  salary            StaffSalary?
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model Notification {
@@ -40,69 +49,37 @@ model Notification {
   userId    Int
   title     String
   message   String
-  type      String // INFO, SUCCESS, WARNING, ERROR
+  type      String
   isRead    Boolean  @default(false)
   link      String?
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
   id          Int      @id @default(autoincrement())
-  action      String // CREATE, UPDATE, DELETE
-  entityType  String // Student, Mark, Attendance, etc.
-  entityId    String // ID of the entity
-  oldValue    Json? // Previous state
-  newValue    Json? // New state
-  performedBy Int // User ID who performed the action
+  action      String
+  entityType  String
+  entityId    String
+  oldValue    Json?
+  newValue    Json?
+  performedBy Int
   timestamp   DateTime @default(now())
-
-  user User @relation(fields: [performedBy], references: [id])
-}
-
-enum Role {
-  ADMIN
-  PRINCIPAL
-  TEACHER
-  STAFF
-  LIBRARIAN
-  ACCOUNTANT
-  CLERK
-  SECURITY
-  CLEANER
-}
-
-enum InquiryStatus {
-  NEW
-  CONTACTED
-  INTERESTED
-  NOT_INTERESTED
-  ADMITTED
-  REJECTED
-}
-
-enum InquirySource {
-  WALK_IN
-  PHONE
-  WEBSITE
-  FACEBOOK
-  REFERENCE
-  OTHER
+  user        User     @relation(fields: [performedBy], references: [id])
 }
 
 model Inquiry {
   id              Int           @id @default(autoincrement())
-  inquiryNumber   String        @unique // Auto-generated like INQ-2026-001
+  inquiryNumber   String        @unique
   studentName     String
   parentName      String
   phone           String
@@ -111,130 +88,106 @@ model Inquiry {
   previousSchool  String?
   source          InquirySource @default(OTHER)
   status          InquiryStatus @default(NEW)
-  notes           String?       @db.Text
+  notes           String?
   nextFollowUp    DateTime?
-
-  assignedToId Int? // User ID handling this lead
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  assignedTo User? @relation(fields: [assignedToId], references: [id])
+  assignedToId    Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  assignedTo      User?         @relation(fields: [assignedToId], references: [id])
 }
 
 model Student {
-  id            Int       @id @default(autoincrement())
-  studentId     String    @unique
-  fullName      String
-  rollNumber    String
-  className     String
-  section       String
-  gender        Gender
-  email         String?   @unique
+  id            Int              @id @default(autoincrement())
+  studentId     String           @unique
+  email         String?          @unique
   dateOfBirth   DateTime?
-  bloodGroup    String?
-  phone         String?
-  parentName    String?
-  parentPhone   String?
-  address       String?
-  admissionDate DateTime  @default(now())
-  profileImage  String?
-
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
-  marks         Mark[]
-  attendances   Attendance[]
-  reports       AcademicReport[]
-  termResults   TermResult[]
-  vouchers      FeeVoucher[]
-  payments      FeePayment[]
-  class         SchoolClass      @relation(fields: [className], references: [name])
-  classSection  ClassSection?    @relation(fields: [className, section], references: [className, section])
-  libraryMember LibraryMember?
-  busRoute      BusRoute?        @relation(fields: [busRouteId], references: [id])
+  address       String?
+  admissionDate DateTime         @default(now())
+  bloodGroup    String?
+  fullName      String
+  gender        Gender
+  parentName    String?
+  parentPhone   String?
+  phone         String?
+  profileImage  String?
+  rollNumber    String
+  section       String
+  className     String
   busRouteId    Int?
-  busStop       BusStop?         @relation(fields: [busStopId], references: [id])
   busStopId     Int?
+  reports       AcademicReport[]
+  attendances   Attendance[]
+  payments      FeePayment[]
+  vouchers      FeeVoucher[]
+  libraryMember LibraryMember?
+  marks         Mark[]
+  busRoute      BusRoute?        @relation(fields: [busRouteId], references: [id])
+  busStop       BusStop?         @relation(fields: [busStopId], references: [id])
+  class         SchoolClass      @relation(fields: [className], references: [name])
+  classSection  ClassSection     @relation(fields: [className, section], references: [className, section])
+  termResults   TermResult[]
 
   @@unique([className, section, rollNumber])
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-}
-
 model SchoolClass {
   name          String         @id
-  students      Student[]
   sections      ClassSection[]
   feeStructures FeeStructure[]
+  students      Student[]
 }
 
 model ClassSection {
-  id        Int    @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   className String
-  section   String // A, B, C
-  teacherId Int? // Assigned class teacher for this section
-
-  class    SchoolClass @relation(fields: [className], references: [name])
-  teacher  User?       @relation(fields: [teacherId], references: [id])
-  students Student[]
-  routines Routine[]
+  section   String
+  teacherId Int?
+  class     SchoolClass @relation(fields: [className], references: [name])
+  teacher   User?       @relation(fields: [teacherId], references: [id])
+  routines  Routine[]
+  students  Student[]
 
   @@unique([className, section])
 }
 
 model Routine {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   classSectionId Int
   dayOfWeek      DayOfWeek
   periods        Period[]
-
-  classSection ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  classSection   ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
 
   @@unique([classSectionId, dayOfWeek])
 }
 
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
-
 model Period {
-  id           Int    @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   routineId    Int
   subjectId    String
   teacherId    Int
-  startTime    String // e.g. "08:00"
-  endTime      String // e.g. "09:00"
-  periodNumber Int? // e.g. 1, 2, 3
-
-  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [name])
-  teacher User    @relation(fields: [teacherId], references: [id])
+  startTime    String
+  endTime      String
+  periodNumber Int?
+  routine      Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  subject      Subject @relation(fields: [subjectId], references: [name])
+  teacher      User    @relation(fields: [teacherId], references: [id])
 }
 
 model Mark {
-  id        Int      @id @default(autoincrement())
-  studentId Int
-  subject   String
-  examType  String
-  score     Float
-  maxScore  Float    @default(100)
-  date      DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  subject     String
+  score       Float
+  maxScore    Float    @default(100)
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  examType    String
+  examTypeObj ExamType @relation(fields: [examType], references: [name])
   student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subjectObj  Subject  @relation(fields: [subject], references: [name])
-  examTypeObj ExamType @relation(fields: [examType], references: [name])
 
   @@unique([studentId, subject, examType, date])
 }
@@ -248,8 +201,8 @@ model Subject {
 model ExamType {
   name     String           @id
   baseMark Float            @default(100)
-  marks    Mark[]
   reports  AcademicReport[]
+  marks    Mark[]
 }
 
 model MarkLock {
@@ -257,9 +210,9 @@ model MarkLock {
   className String
   subject   String
   examType  String
-  date      DateTime @default(now())
   lockedAt  DateTime @default(now())
   lockedBy  Int
+  date      DateTime @default(now())
 
   @@unique([className, subject, examType, date])
 }
@@ -274,9 +227,8 @@ model AcademicReport {
   attendanceRate Float?
   generatedAt    DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examTypeObj ExamType @relation(fields: [examType], references: [name])
+  examTypeObj    ExamType @relation(fields: [examType], references: [name])
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, examType])
 }
@@ -288,17 +240,9 @@ model Attendance {
   status    AttendanceStatus
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, date])
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
 }
 
 model SchoolProfile {
@@ -307,10 +251,10 @@ model SchoolProfile {
   address      String?
   phone        String?
   email        String?
-  website      String?
   academicYear String   @default("2026-2027")
   logo         String?
   updatedAt    DateTime @updatedAt
+  website      String?
 }
 
 model SystemSetting {
@@ -318,51 +262,43 @@ model SystemSetting {
   value String
 }
 
-enum QuestionPaperStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 model QuestionPaper {
-  id           String              @id @default(uuid())
-  title        String
-  className    String
-  section      String?
-  subject      String
-  examType     String
-  totalMarks   Int
-  duration     Int
-  examDate     DateTime?
-  instructions String?
-  status       QuestionPaperStatus @default(DRAFT)
-  isTemplate   Boolean             @default(false)
-  templateId   String?
-  createdBy    Int
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-
-  user          User            @relation(fields: [createdBy], references: [id])
+  id            String              @id @default(uuid())
+  title         String
+  className     String
+  section       String?
+  subject       String
+  examType      String
+  totalMarks    Int
+  duration      Int
+  examDate      DateTime?
+  createdBy     Int
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  instructions  String?
+  status        QuestionPaperStatus @default(DRAFT)
+  isTemplate    Boolean             @default(false)
+  templateId    String?
   questions     Question[]
-  template      QuestionPaper?  @relation("TemplateToPaper", fields: [templateId], references: [id])
-  derivedPapers QuestionPaper[] @relation("TemplateToPaper")
+  user          User                @relation(fields: [createdBy], references: [id])
+  template      QuestionPaper?      @relation("TemplateToPaper", fields: [templateId], references: [id])
+  derivedPapers QuestionPaper[]     @relation("TemplateToPaper")
 
   @@index([className, subject])
   @@index([examDate])
 }
 
 model Question {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   questionPaperId String
   questionType    String
   questionText    String
   marks           Int
   order           Int
-  options         String[]
   correctAnswer   String?
   instructions    String?
-
-  questionPaper QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
+  options         String[]
+  questionPaper   QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
 
   @@index([questionPaperId])
 }
@@ -383,81 +319,71 @@ model BankQuestion {
   @@index([className, subject])
 }
 
-// --- Financial Models ---
-
 model FeeType {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique // Tuition, Exam, Transport, etc.
-  isMonthly Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id           Int              @id @default(autoincrement())
+  name         String           @unique
+  isMonthly    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   structures   FeeStructure[]
   voucherItems FeeVoucherItem[]
 }
 
 model FeeStructure {
-  id        Int    @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   className String
   feeTypeId Int
   amount    Float
-
-  class   SchoolClass @relation(fields: [className], references: [name])
-  feeType FeeType     @relation(fields: [feeTypeId], references: [id])
+  class     SchoolClass @relation(fields: [className], references: [name])
+  feeType   FeeType     @relation(fields: [feeTypeId], references: [id])
 
   @@unique([className, feeTypeId])
 }
 
 model FeeVoucher {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   studentId   Int
-  month       Int // 1-12
+  month       Int
   year        Int
   dueDate     DateTime
   totalAmount Float
-  paidAmount  Float    @default(0)
-  status      String   @default("UNPAID") // UNPAID, PARTIAL, PAID, OVERDUE
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  student  Student          @relation(fields: [studentId], references: [id])
-  items    FeeVoucherItem[]
-  payments FeePayment[]
+  paidAmount  Float            @default(0)
+  status      String           @default("UNPAID")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  payments    FeePayment[]
+  student     Student          @relation(fields: [studentId], references: [id])
+  items       FeeVoucherItem[]
 }
 
 model FeeVoucherItem {
-  id        Int    @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   voucherId String
   feeTypeId Int
   amount    Float
-
-  voucher FeeVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
-  feeType FeeType    @relation(fields: [feeTypeId], references: [id])
+  feeType   FeeType    @relation(fields: [feeTypeId], references: [id])
+  voucher   FeeVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 }
 
 model FeePayment {
-  id            String   @id @default(uuid())
+  id            String     @id @default(uuid())
   voucherId     String
   studentId     Int
   amount        Float
-  paymentDate   DateTime @default(now())
-  paymentMethod String // CASH, BANK_TRANSFER, ONLINE
+  paymentDate   DateTime   @default(now())
+  paymentMethod String
   transactionId String?
-  receivedBy    Int // User ID (Accountant/Admin)
-
-  voucher FeeVoucher @relation(fields: [voucherId], references: [id])
-  student Student    @relation(fields: [studentId], references: [id])
+  receivedBy    Int
+  student       Student    @relation(fields: [studentId], references: [id])
+  voucher       FeeVoucher @relation(fields: [voucherId], references: [id])
 }
-
-// --- HR & Payroll Models ---
 
 model StaffSalary {
   userId     Int   @id
   baseSalary Float
   allowances Float @default(0)
   deductions Float @default(0)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PayrollRecord {
@@ -465,15 +391,14 @@ model PayrollRecord {
   userId        Int
   month         Int
   year          Int
-  baseSalary    Float
+  paymentDate   DateTime @default(now())
+  status        String   @default("PAID")
   allowances    Float    @default(0)
+  baseSalary    Float
   deductions    Float    @default(0)
   netPay        Float
-  paymentDate   DateTime @default(now())
-  status        String   @default("PAID") // PAID, PENDING
   paymentMethod String?
-
-  user User @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, month, year])
 }
@@ -484,16 +409,9 @@ model StaffAttendance {
   date    DateTime
   status  AttendanceStatus
   remarks String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
-}
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 model LeaveRequest {
@@ -501,22 +419,19 @@ model LeaveRequest {
   userId    Int
   startDate DateTime
   endDate   DateTime
-  reason    String      @db.Text
+  reason    String
   status    LeaveStatus @default(PENDING)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-// --- Enhanced Academic Models ---
 
 model GradeScale {
   id       Int    @id @default(autoincrement())
-  grade    String // A+, A, B, etc.
+  grade    String
   minScore Float
   maxScore Float
-  points   Float // 4.0
+  points   Float
 }
 
 model TermResult {
@@ -530,121 +445,109 @@ model TermResult {
   gpa            Float?
   position       Int?
   teacherRemarks String?
-  status         String   @default("FINAL") // DRAFT, FINAL
+  status         String   @default("FINAL")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
-// --- Library Management Models ---
-
 model Book {
-  id              Int      @id @default(autoincrement())
-  isbn            String?  @unique
+  id              Int         @id @default(autoincrement())
+  isbn            String?     @unique
   title           String
   author          String
   publisher       String?
   category        String
-  totalCopies     Int      @default(1)
-  availableCopies Int      @default(1)
+  totalCopies     Int         @default(1)
+  availableCopies Int         @default(1)
   location        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  issues BookIssue[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  issues          BookIssue[]
 }
 
 model LibraryMember {
-  id        Int      @id @default(autoincrement())
-  memberId  String   @unique // System generated or manual barcode
-  studentId Int?     @unique
-  userId    Int?     @unique
-  status    String   @default("ACTIVE") // ACTIVE, SUSPENDED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  student Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  user    User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  issues  BookIssue[]
+  id        Int         @id @default(autoincrement())
+  memberId  String      @unique
+  studentId Int?        @unique
+  userId    Int?        @unique
+  status    String      @default("ACTIVE")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  issues    BookIssue[]
+  student   Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user      User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BookIssue {
-  id         Int       @id @default(autoincrement())
+  id         Int           @id @default(autoincrement())
   bookId     Int
   memberId   Int
-  issueDate  DateTime  @default(now())
+  issueDate  DateTime      @default(now())
   dueDate    DateTime
   returnDate DateTime?
-  status     String    @default("ISSUED") // ISSUED, RETURNED, OVERDUE
-  fineAmount Float     @default(0)
+  status     String        @default("ISSUED")
+  fineAmount Float         @default(0)
   notes      String?
-
-  book   Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  book       Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  member     LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
-// --- Transport & Fleet Management Models ---
-
 model Vehicle {
-  id                 Int       @id @default(autoincrement())
-  vehicleId          String    @unique // System generated unique ID (e.g. VH-1001)
-  registrationNumber String    @unique
+  id                 Int                  @id @default(autoincrement())
+  registrationNumber String               @unique
   make               String?
   model              String?
-  capacity           Int       @default(0)
-  status             String    @default("ACTIVE") // ACTIVE, MAINTENANCE, RETIRED
+  capacity           Int                  @default(0)
+  status             String               @default("ACTIVE")
   insuranceExpiry    DateTime?
   nextServiceDate    DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  routes          BusRoute[]
-  maintenanceLogs VehicleMaintenance[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  vehicleId          String               @unique
+  routes             BusRoute[]
+  maintenanceLogs    VehicleMaintenance[]
 }
 
 model Driver {
-  id            Int      @id @default(autoincrement())
-  driverId      String   @unique // System generated unique ID (e.g. DR-1001)
-  name          String
-  userId        Int?     @unique
-  licenseNumber String   @unique
+  id            Int        @id @default(autoincrement())
+  userId        Int?       @unique
+  licenseNumber String     @unique
   phone         String?
-  status        String   @default("ACTIVE") // ACTIVE, ON_LEAVE
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user   User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  routes BusRoute[]
+  status        String     @default("ACTIVE")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  driverId      String     @unique
+  name          String
+  routes        BusRoute[]
+  user          User?      @relation(fields: [userId], references: [id])
 }
 
 model BusRoute {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
   description String?
   vehicleId   Int?
   driverId    Int?
-  fare        Float    @default(0) // Default monthly fare
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
-  driver   Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  stops    BusStop[]
-  students Student[]
+  fare        Float     @default(0)
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  driver      Driver?   @relation(fields: [driverId], references: [id])
+  vehicle     Vehicle?  @relation(fields: [vehicleId], references: [id])
+  stops       BusStop[]
+  students    Student[]
 }
 
 model BusStop {
-  id         Int     @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   routeId    Int
   name       String
   pickupTime String?
   dropTime   String?
-  fare       Float? // Optional override for specific stop fare
-
-  route    BusRoute  @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  students Student[]
+  fare       Float?
+  route      BusRoute  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  students   Student[]
 }
 
 model VehicleMaintenance {
@@ -653,8 +556,105 @@ model VehicleMaintenance {
   date        DateTime @default(now())
   description String
   cost        Float    @default(0)
-  type        String   @default("SERVICE") // SERVICE, REPAIR, INSPECTION
+  type        String   @default("SERVICE")
   reportedBy  String?
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
 
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+model Asset {
+  id                  Int                @id @default(autoincrement())
+  assetId             String             @unique
+  name                String
+  category            String
+  purchaseDate        DateTime?
+  purchaseCost        Float?
+  condition           AssetCondition     @default(NEW)
+  location            String?
+  status              AssetStatus        @default(ACTIVE)
+  serialNumber        String?            @unique
+  warrantyExpiry      DateTime?
+  nextMaintenanceDate DateTime?
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  maintenanceLogs     AssetMaintenance[]
+}
+
+model AssetMaintenance {
+  id          Int      @id @default(autoincrement())
+  assetId     Int
+  date        DateTime @default(now())
+  description String
+  cost        Float    @default(0)
+  performedBy String?
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  ADMITTED
+  REJECTED
+}
+
+enum InquirySource {
+  WALK_IN
+  PHONE
+  WEBSITE
+  FACEBOOK
+  REFERENCE
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum QuestionPaperStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AssetCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  BROKEN
+}
+
+enum AssetStatus {
+  ACTIVE
+  IN_REPAIR
+  SCRAPPED
+  DISPOSED
+  LOST
 }
