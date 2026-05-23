@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Users, Plus, MoreVertical, Search, Camera, Upload, X, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +62,32 @@ export function StudentForm({
       profileImage: initialData?.profileImage || '',
     }
   });
+
+  const watchClass = watch('className');
+  const watchSection = watch('section');
+
+  useEffect(() => {
+    // Only auto-generate if we are not editing an existing student
+    // and both class and section are selected.
+    if (!isEditing && watchClass && watchSection) {
+      const fetchCredentials = async () => {
+        try {
+          const response = await api.get('/students/generate-credentials', {
+            params: { className: watchClass, section: watchSection }
+          });
+          const { studentId, rollNumber } = response.data.data;
+          
+          setValue('studentId', studentId, { shouldValidate: true });
+          setValue('rollNumber', rollNumber, { shouldValidate: true });
+        } catch (error) {
+          console.error('Failed to generate credentials:', error);
+          toast.error('Failed to auto-generate Student ID and Roll Number');
+        }
+      };
+
+      fetchCredentials();
+    }
+  }, [watchClass, watchSection, isEditing, setValue]);
 
   const onSubmitLocal = (data: StudentFormData) => {
     console.log('BROWSER DEBUG: Data to be sent:', data);

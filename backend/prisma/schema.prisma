@@ -20,16 +20,17 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  classSections  ClassSection[]
-  periods        Period[]
-  auditLogs      AuditLog[]
-  refreshTokens  RefreshToken[]
-  notifications  Notification[]
-  questionPapers QuestionPaper[]
-  salary         StaffSalary?
-  payrollRecords PayrollRecord[]
-  libraryMember  LibraryMember?
-  driver         Driver?
+  classSections     ClassSection[]
+  periods           Period[]
+  auditLogs         AuditLog[]
+  refreshTokens     RefreshToken[]
+  notifications     Notification[]
+  questionPapers    QuestionPaper[]
+  salary            StaffSalary?
+  payrollRecords    PayrollRecord[]
+  libraryMember     LibraryMember?
+  driver            Driver?
+  assignedInquiries Inquiry[]
 }
 
 model Notification {
@@ -77,6 +78,46 @@ enum Role {
   CLERK
   SECURITY
   CLEANER
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  ADMITTED
+  REJECTED
+}
+
+enum InquirySource {
+  WALK_IN
+  PHONE
+  WEBSITE
+  FACEBOOK
+  REFERENCE
+  OTHER
+}
+
+model Inquiry {
+  id              Int           @id @default(autoincrement())
+  inquiryNumber   String        @unique // Auto-generated like INQ-2026-001
+  studentName     String
+  parentName      String
+  phone           String
+  email           String?
+  interestedGrade String
+  previousSchool  String?
+  source          InquirySource @default(OTHER)
+  status          InquiryStatus @default(NEW)
+  notes           String?       @db.Text
+  nextFollowUp    DateTime?
+
+  assignedToId Int? // User ID handling this lead
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedTo User? @relation(fields: [assignedToId], references: [id])
 }
 
 model Student {

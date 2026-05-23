@@ -63,6 +63,74 @@ const toBool = (val: any) => {
   return undefined;
 };
 
+export const generateStudentCredentials = asyncHandler(async (req: Request, res: Response) => {
+  const { className, section } = req.query;
+
+  if (!className || !section) {
+    throw new ApiError(400, 'Class and Section are required to generate credentials');
+  }
+
+  // 1. Generate Next Roll Number for the specific Class and Section
+  const studentsInSection = await prisma.student.findMany({
+    where: {
+      className: className as string,
+      section: section as string,
+    },
+    select: { rollNumber: true },
+  });
+
+  let nextRollNumber = 1;
+  if (studentsInSection.length > 0) {
+    // Extract numeric parts of roll numbers to find the max
+    const rollNumbers = studentsInSection
+      .map(s => parseInt(s.rollNumber, 10))
+      .filter(n => !isNaN(n));
+      
+    if (rollNumbers.length > 0) {
+      nextRollNumber = Math.max(...rollNumbers) + 1;
+    } else {
+      // Fallback if roll numbers are purely strings (unlikely but possible)
+      nextRollNumber = studentsInSection.length + 1;
+    }
+  }
+
+  // 2. Generate Unique Student ID
+  // Format: STU-[Year]-[ClassCode]-[Section]-[NextRoll]
+  // Alternatively: STU-[Year]-[NextGlobalId]
+  const currentYear = new Date().getFullYear();
+  
+  const lastStudent = await prisma.student.findFirst({
+    where: {
+      studentId: {
+        startsWith: `STU-${currentYear}-`
+      }
+    },
+    orderBy: {
+      id: 'desc'
+    }
+  });
+
+  let nextStudentSeq = 1;
+  if (lastStudent) {
+    const parts = lastStudent.studentId.split('-');
+    if (parts.length >= 3) {
+      const lastSeq = parseInt(parts[2], 10);
+      if (!isNaN(lastSeq)) {
+        nextStudentSeq = lastSeq + 1;
+      }
+    }
+  }
+
+  const generatedStudentId = `STU-${currentYear}-${nextStudentSeq.toString().padStart(4, '0')}`;
+
+  return res.status(200).json(
+    new ApiResponse(200, { 
+      studentId: generatedStudentId, 
+      rollNumber: nextRollNumber.toString() 
+    }, 'Credentials generated successfully')
+  );
+});
+
 export const createStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     studentId, fullName, rollNumber, className, section, gender,

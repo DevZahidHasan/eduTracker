@@ -16,6 +16,7 @@ import questionBankRoutes from './questionBank.routes';
 import financeRoutes from './finance.routes';
 import libraryRoutes from './library.routes';
 import transportRoutes from './transport.routes';
+import admissionsRoutes from './admissions.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -40,5 +41,6 @@ router.use('/question-bank', authMiddleware, questionBankRoutes);
 router.use('/finance', authMiddleware, financeRoutes);
 router.use('/library', authMiddleware, libraryRoutes);
 router.use('/transport', authMiddleware, transportRoutes);
+router.use('/admissions', authMiddleware, admissionsRoutes);
 
 export default router;

@@ -20,7 +20,8 @@ import {
   BookOpen,
   Wallet,
   Library as LibraryIcon,
-  Bus as TransportIcon
+  Bus as TransportIcon,
+  UserPlus
 } from 'lucide-react';
 
 // ...
@@ -33,6 +34,7 @@ import { useAppDispatch } from '@/lib/hooks';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
+  { name: 'Admissions', href: '/admissions', icon: UserPlus, roles: ['ADMIN', 'PRINCIPAL', 'STAFF', 'CLERK'] },
   { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'ID Cards', href: '/id-cards', icon: LayoutGrid, roles: ['ADMIN', 'TEACHER', 'PRINCIPAL'] },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },

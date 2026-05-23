@@ -191,6 +191,40 @@ export default function StudentsPage() {
     } as Partial<StudentFormData>;
   }, [editingId, students]);
 
+  const handleExportCSV = () => {
+    if (filteredStudents.length === 0) {
+      toast.error('No students to export');
+      return;
+    }
+
+    const headers = ['Student ID', 'Roll No', 'Full Name', 'Email', 'Class', 'Section', 'Gender', 'Phone', 'Parent Name', 'Parent Phone'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredStudents.map(student => [
+        `"${student.studentId || ''}"`,
+        `"${student.rollNumber || ''}"`,
+        `"${student.fullName || ''}"`,
+        `"${student.email || ''}"`,
+        `"${student.className || ''}"`,
+        `"${student.section || ''}"`,
+        `"${student.gender || ''}"`,
+        `"${student.phone || ''}"`,
+        `"${student.parentName || ''}"`,
+        `"${student.parentPhone || ''}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Page Header */}
@@ -200,7 +234,7 @@ export default function StudentsPage() {
           <p className="text-slate-500 font-medium mt-1">Manage student profiles, academic status, and records.</p>
         </div>
         <div className="flex flex-col w-full sm:w-auto sm:flex-row items-stretch sm:items-center gap-3">
-          <Button variant="outline" className="hidden sm:flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} className="hidden sm:flex gap-2">
             <Download size={16} />
             Export CSV
           </Button>
