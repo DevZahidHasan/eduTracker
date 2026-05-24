@@ -34,8 +34,6 @@ export function StudentForm({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  console.log('StudentForm InitialData:', initialData);
-
   const {
     register,
     handleSubmit,
@@ -90,7 +88,6 @@ export function StudentForm({
   }, [watchClass, watchSection, isEditing, setValue]);
 
   const onSubmitLocal = (data: StudentFormData) => {
-    console.log('BROWSER DEBUG: Data to be sent:', data);
     onSubmit(data);
   };
 

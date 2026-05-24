@@ -5,7 +5,6 @@ import { authMiddleware } from '../middleware/auth.middleware';
 const router = Router();
 
 router.get('/', (req, res, next) => {
-  console.log('Public config route hit');
   next();
 }, getConfig);
 

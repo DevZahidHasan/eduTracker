@@ -21,7 +21,7 @@ export const sendWhatsAppMessage = async (to: string, message: string) => {
         to: `whatsapp:${to.replace(/\s+/g, '')}`, // Remove spaces for API
         body: message
       });
-      console.log(`[REAL WHATSAPP] Message sent to ${to}`);
+      // log removed
       return true;
     } catch (error) {
       console.error('[REAL WHATSAPP ERROR] Failed to send message:', error);
@@ -29,7 +29,6 @@ export const sendWhatsAppMessage = async (to: string, message: string) => {
     }
   } else {
     // FALLBACK TO MOCK FOR DEVELOPMENT
-    console.log(`[WHATSAPP MOCK] Sending message to ${to}: ${message}`);
     return true;
   }
 };

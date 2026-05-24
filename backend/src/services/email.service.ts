@@ -19,7 +19,6 @@ export const sendDailyAttendanceReport = async () => {
   });
 
   if (settings?.value !== 'true') {
-    console.log('Attendance alerts are disabled in settings. Skipping daily report.');
     return;
   }
 
@@ -55,7 +54,6 @@ export const sendDailyAttendanceReport = async () => {
   const adminEmails = admins.map(a => a.email).filter(Boolean);
 
   if (adminEmails.length === 0) {
-      console.log('No admins found to send report to.');
       return;
   }
 
@@ -66,12 +64,6 @@ export const sendDailyAttendanceReport = async () => {
       subject: `Daily Attendance Report - ${today.toLocaleDateString()}`,
       html,
     });
-    console.log('Daily report sent: %s', info.messageId);
-    
-    // Log preview URL if using ethereal email
-    if (info.messageId && process.env.SMTP_HOST === undefined) {
-        console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-    }
   } catch (error) {
     console.error('Error sending daily report:', error);
   }
@@ -126,7 +118,6 @@ export const sendParentAttendanceNotification = async (attendanceId: number) => 
       subject: `Attendance Notification: ${student.fullName} - ${status}`,
       html,
     });
-    console.log(`Parent notification sent for student ${student.fullName}`);
   } catch (error) {
     console.error('Error sending parent notification:', error);
   }
@@ -178,7 +169,6 @@ export const sendMarkFinalizationAlert = async (className: string, subject: stri
       subject: `[ALERT] Marks Finalized: ${className} - ${subject} - ${examType}`,
       html,
     });
-    console.log(`Mark finalization alert sent to ${admins.length} admins`);
   } catch (error) {
     console.error('Error sending mark finalization alert:', error);
   }
@@ -226,7 +216,6 @@ export const sendVoucherGenerationNotification = async (voucherId: string) => {
       subject: `Fee Voucher Issued: ${monthName} ${voucher.year} - ${voucher.student.fullName}`,
       html,
     });
-    console.log(`Voucher notification sent to ${voucher.student.email}`);
   } catch (error) {
     console.error('Error sending voucher notification:', error);
   }
@@ -276,9 +265,7 @@ export const sendPaymentConfirmationNotification = async (paymentId: string) => 
       subject: `Payment Confirmation: $${payment.amount} - ${payment.student.fullName}`,
       html,
     });
-    console.log(`Payment confirmation sent to ${payment.student.email}`);
   } catch (error) {
     console.error('Error sending payment confirmation:', error);
   }
 };
-

@@ -49,8 +49,6 @@ export const performDatabaseBackup = async (customPath?: string) => {
     // Use PGPASSWORD environment variable to avoid interactive prompt
     const command = `"${pgDumpBin}" -h ${host} -p ${port} -U ${user} -d ${dbname} -F p -f "${fullPath}"`;
     
-    console.log(`Starting backup to ${fullPath} using ${pgDumpBin}...`);
-    
     try {
       await execPromise(command, {
         env: { ...process.env, PGPASSWORD: password }
@@ -60,7 +58,6 @@ export const performDatabaseBackup = async (customPath?: string) => {
       
       // If the hardcoded path failed, try the simple command as a last resort
       if (pgDumpBin !== 'pg_dump') {
-          console.log('Retrying with system-wide "pg_dump" command...');
           const fallbackCommand = `pg_dump -h ${host} -p ${port} -U ${user} -d ${dbname} -F p -f "${fullPath}"`;
           try {
               await execPromise(fallbackCommand, { env: { ...process.env, PGPASSWORD: password } });
@@ -71,8 +68,6 @@ export const performDatabaseBackup = async (customPath?: string) => {
           throw execError;
       }
     }
-
-    console.log(`Backup completed successfully: ${filename}`);
     
     // Log in system settings
     await prisma.systemSetting.upsert({

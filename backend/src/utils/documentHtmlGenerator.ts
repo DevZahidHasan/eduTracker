@@ -1,3 +1,5 @@
+import path from 'path';
+
 export const generateIDCardHtml = (students: any[], schoolProfile: any, config: any) => {
   const { 
     primaryColor = '#1e40af', 
@@ -9,18 +11,22 @@ export const generateIDCardHtml = (students: any[], schoolProfile: any, config: 
     layout = 'portrait' // portrait or landscape
   } = config;
 
+  // Use the requested screenshot as fallback
+  const rootDir = path.join(__dirname, '../../../');
+  const fallbackPath = 'file://' + path.join(rootDir, 'Screenshot 2026-05-24 161811.png').replace(/\\/g, '/');
+
   const cardsHtml = students.map(student => `
     <div class="id-card ${layout}">
       <div class="header" style="background-color: ${primaryColor}; color: ${secondaryColor};">
-        ${schoolProfile.logo ? `<img src="file://${schoolProfile.logo}" class="school-logo" />` : ''}
+        ${schoolProfile.logo ? `<img src="${schoolProfile.logo.startsWith('http') ? schoolProfile.logo : 'file://' + schoolProfile.logo.replace(/\\/g, '/')}" class="school-logo" />` : ''}
         <div class="school-name">${schoolProfile.name}</div>
       </div>
       
       <div class="content">
         <div class="photo-container">
           ${student.profileImage 
-            ? `<img src="file://${student.profileImage}" class="student-photo" />` 
-            : `<div class="photo-placeholder">PHOTO</div>`}
+            ? `<img src="${student.profileImage.startsWith('http') ? student.profileImage : 'file://' + student.profileImage.replace(/\\/g, '/')}" class="student-photo" />` 
+            : `<img src="${fallbackPath}" class="student-photo" />`}
         </div>
         
         <div class="student-info">
@@ -179,7 +185,7 @@ export const generateCertificateHtml = (student: any, schoolProfile: any, config
       <body>
         <div class="certificate-border">
           <div class="header">
-            ${schoolProfile.logo ? `<img src="file://${schoolProfile.logo}" class="school-logo" />` : ''}
+            ${schoolProfile.logo ? `<img src="${schoolProfile.logo.startsWith('http') ? schoolProfile.logo : 'file://' + schoolProfile.logo.replace(/\\/g, '/')}" class="school-logo" />` : ''}
             <div class="school-name">${schoolProfile.name}</div>
             <div class="school-info">${schoolProfile.address || ''} | ${schoolProfile.phone || ''}</div>
           </div>
@@ -210,7 +216,7 @@ export const generateCertificateHtml = (student: any, schoolProfile: any, config
               <div class="sig-line">Class Teacher</div>
             </div>
             <div class="sig-box">
-              ${schoolProfile.signature ? `<img src="file://${schoolProfile.signature}" class="principal-sig" />` : ''}
+              ${schoolProfile?.signature ? `<img src="${schoolProfile.signature.startsWith('http') ? schoolProfile.signature : 'file://' + schoolProfile.signature.replace(/\\/g, '/')}" class="principal-sig" />` : ''}
               <div class="sig-line">Principal</div>
             </div>
           </div>

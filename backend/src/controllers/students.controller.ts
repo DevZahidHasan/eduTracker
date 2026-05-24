@@ -221,9 +221,6 @@ export const createStudent = asyncHandler(async (req: AuthRequest, res: Response
 
 export const updateStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  
-  // Log the incoming body to see what the frontend is sending
-  console.log(`[BACKEND DEBUG] Updating student ${id}. Body:`, req.body);
 
   const {
     fullName, rollNumber, className, section, gender,

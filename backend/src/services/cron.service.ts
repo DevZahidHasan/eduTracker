@@ -12,11 +12,8 @@ export const runEndOfDayTasks = async () => {
   });
 
   if (lastRunSetting?.value === todayDateString) {
-    console.log(`End of day tasks already ran for ${todayDateString}. Skipping.`);
     return { status: 'skipped', message: 'Already ran today' };
   }
-
-  console.log(`Running end of day tasks for ${todayDateString}...`);
   
   await sendDailyAttendanceReport();
 
@@ -34,19 +31,15 @@ export const initCronJobs = () => {
   // Run at 16:00 (4 PM) every day
   // You can customize the cron expression based on school hours
   cron.schedule('0 16 * * *', async () => {
-    console.log('Cron triggered: End of day tasks');
     await runEndOfDayTasks();
   });
 
   // Run at 02:00 (2 AM) every day for database backup
   cron.schedule('0 2 * * *', async () => {
-    console.log('Cron triggered: Automated Database Backup');
     try {
       await performDatabaseBackup();
     } catch (error) {
       console.error('Scheduled backup failed:', error);
     }
   });
-
-  console.log('Cron jobs initialized');
 };
