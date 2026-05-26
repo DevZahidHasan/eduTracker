@@ -21,7 +21,7 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 - [ ] **Dockerize Frontend:** Create a `Dockerfile` for the Next.js frontend.
 - [ ] **Docker Compose Setup:** Create a `docker-compose.yml` to orchestrate the PostgreSQL database, Backend, and Frontend as a single unit.
 - [ ] **Environment Configuration:** Standardize the `.env` template so clients only need to fill out a few variables (e.g., DB credentials, JWT secrets).
-- [ ] **Deployment Script:** Write a single script (e.g., `install.sh` or `install.bat`) that runs docker-compose and sets up initial data.
+- [x] **Deployment Script:** Write a single script (e.g., `install.sh` or `install.bat`) that runs docker-compose and sets up initial data. (Implemented via `install-iis-server.ps1` for IIS deployment)
 
 ## Phase 4: Automated Backup & Recovery
 - [ ] **Enhance Local Backups:** Ensure `backup.service.ts` reliably dumps the PostgreSQL database via a scheduled cron job.

@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   GraduationCap,
+  Key,
 } from 'lucide-react';
 import { selectRole } from '@/lib/features/authSlice';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
@@ -100,6 +101,14 @@ export default function DashboardPage() {
   const allMarks = useAppSelector(selectAllMarks);
   const allAttendance = useAppSelector(selectAllAttendanceRecords);
   const { result: aiResult, loading: aiLoading } = useAppSelector((state) => state.aiInsights);
+  
+  const licenseExpiryDate = useAppSelector((state) => state.license.expiryDate);
+
+  const daysRemaining = useMemo(() => {
+    if (!licenseExpiryDate) return null;
+    const diff = new Date(licenseExpiryDate).getTime() - new Date().getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }, [licenseExpiryDate]);
 
   const handleGenerateInsights = () => {
     dispatch(generateInsights({ marks: allMarks, attendance: allAttendance }));
@@ -681,6 +690,19 @@ export default function DashboardPage() {
               <p className="text-xs font-bold text-slate-900">1.2ms Latency</p>
             </div>
           </div>
+
+          {/* License Status Strip */}
+          {userRole === 'ADMIN' && daysRemaining !== null && (
+            <div className={`p-4 rounded-3xl flex items-center justify-between border ${daysRemaining <= 30 ? 'bg-red-50/50 border-red-100' : 'bg-amber-50/50 border-amber-100'}`}>
+              <div className="space-y-1">
+                <div className={`text-[10px] font-black uppercase tracking-widest leading-none ${daysRemaining <= 30 ? 'text-red-600' : 'text-amber-600'}`}>
+                  System License
+                </div>
+                <p className="text-xs font-bold text-slate-900">{daysRemaining} Days Remaining</p>
+              </div>
+              <Key className={daysRemaining <= 30 ? 'text-red-500' : 'text-amber-500'} size={24} />
+            </div>
+          )}
         </div>
       </div>
     </div>
