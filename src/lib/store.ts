@@ -14,6 +14,7 @@ import notificationsReducer from './features/notificationsSlice';
 import questionPaperReducer from './features/questionPaperSlice';
 import questionBankReducer from './features/questionBankSlice';
 import financeReducer from './features/financeSlice';
+import licenseReducer from './features/licenseSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -33,6 +34,7 @@ export const makeStore = () => {
       questionPaper: questionPaperReducer,
       questionBank: questionBankReducer,
       finance: financeReducer,
+      license: licenseReducer,
     },
   });
 };

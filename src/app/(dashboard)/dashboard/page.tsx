@@ -39,7 +39,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses } from '@/lib/features/configSlice';
 import { generateInsights } from '@/lib/features/aiInsightsSlice';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent, AnimatedCard } from '@/components/ui/Card';
 import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
 
 // Lazy load Recharts components

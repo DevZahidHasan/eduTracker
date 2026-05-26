@@ -20,15 +20,21 @@ import admissionsRoutes from './admissions.routes';
 import hrRoutes from './hr.routes';
 import inventoryRoutes from './inventory.routes';
 import documentRoutes from './document.routes';
+import licenseRoutes from './license.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
+import { licenseCheckMiddleware } from '../middleware/license.middleware';
 
 const router = Router();
 
 // Public routes
 router.use('/auth', authRoutes);
 router.use('/config', configRoutes);
+router.use('/license', licenseRoutes); // License checking and updating
 
-// Protected routes (require valid JWT)
+// Enforce valid license for all subsequent (protected) routes
+router.use(licenseCheckMiddleware);
+
+// Protected routes (require valid JWT and valid License)
 router.use('/students', authMiddleware, studentsRoutes);
 router.use('/marks', authMiddleware, marksRoutes);
 router.use('/attendance', authMiddleware, attendanceRoutes);

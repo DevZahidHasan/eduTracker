@@ -5,10 +5,12 @@ import { Sidebar } from './Sidebar';
 import { TopNavbar } from './TopNavbar';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchConfig, selectConfigInitialized } from '@/lib/features/configSlice';
+import { fetchLicenseStatus } from '@/lib/features/licenseSlice';
 import { usePathname } from 'next/navigation';
 import { selectRole } from '@/lib/features/authSlice';
 import { navItems } from '@/lib/navigation';
 import { AccessDeniedModal } from '../ui/AccessDeniedModal';
+import { LicenseLockout } from './LicenseLockout';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -18,12 +20,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const configInitialized = useAppSelector(selectConfigInitialized);
   const pathname = usePathname();
   const role = useAppSelector(selectRole);
+  
+  const licenseStatus = useAppSelector((state) => state.license.status);
 
   useEffect(() => {
     if (!configInitialized) {
       dispatch(fetchConfig());
     }
   }, [dispatch, configInitialized]);
+
+  // Fetch license on mount
+  useEffect(() => {
+    dispatch(fetchLicenseStatus());
+  }, [dispatch]);
 
   // Role-based Access Control for Routes
   useEffect(() => {
@@ -47,6 +56,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
+
+  if (licenseStatus === 'EXPIRED' || licenseStatus === 'MISSING') {
+    return <LicenseLockout status={licenseStatus} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans print:h-auto print:overflow-visible">
