@@ -6,7 +6,8 @@ import {
   exportClassReportCardsPdf,
   updateTeacherRemarks, 
   getClassPerformance, 
-  getAttendanceSummary 
+  getAttendanceSummary,
+  generateAnnualResult
 } from '../controllers/reports.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 
@@ -21,5 +22,6 @@ router.get('/export-bulk/:className/:examType', authorize('ADMIN', 'PRINCIPAL', 
 router.post('/remarks', authorize('ADMIN', 'TEACHER'), updateTeacherRemarks);
 router.get('/performance', authorize('ADMIN', 'PRINCIPAL', 'TEACHER', 'ACCOUNTANT'), getClassPerformance);
 router.get('/attendance', authorize('ADMIN', 'PRINCIPAL', 'TEACHER', 'ACCOUNTANT'), getAttendanceSummary);
+router.post('/annual-result/:studentId', authorize('ADMIN', 'PRINCIPAL'), generateAnnualResult);
 
 export default router;

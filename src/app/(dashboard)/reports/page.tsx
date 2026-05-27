@@ -28,6 +28,7 @@ import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
 
 export default function ReportsPage() {
   const dispatch = useAppDispatch();
@@ -41,6 +42,7 @@ export default function ReportsPage() {
   const loading = useAppSelector(selectReportsLoading);
 
   const [activeTab, setActiveTab] = useState<'report-card' | 'attendance' | 'performance'>('report-card');
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
   
   // Filters
   const [selectedClass, setSelectedClass] = useState('');
@@ -143,6 +145,35 @@ export default function ReportsPage() {
           <div className="flex flex-wrap items-center gap-2">
             {activeTab === 'report-card' && (
               <>
+                <Button 
+                  onClick={async () => {
+                    if (!selectedStudentId) {
+                      toast.error('Please select a student first');
+                      return;
+                    }
+                    try {
+                      setIsLoadingReport(true);
+                      await api.post(`/reports/annual-result/${selectedStudentId}`);
+                      toast.success('Annual Result calculated successfully');
+                      setSelectedExamType('Annual Result');
+                      // Use the Redux thunk instead of a non-existent local setter
+                      await dispatch(fetchStudentReport({ 
+                        studentId: Number(selectedStudentId), 
+                        examType: 'Annual Result' 
+                      })).unwrap();
+                    } catch (err: any) {
+                      toast.error(err.response?.data?.message || 'Failed to calculate Annual Result');
+                    } finally {
+                      setIsLoadingReport(false);
+                    }
+                  }} 
+                  variant="soft" 
+                  className="flex gap-2"
+                  disabled={!selectedStudentId || isLoadingReport}
+                >
+                  <TrendingUp size={16} />
+                  <span className="hidden sm:inline">Compile Annual Result</span>
+                </Button>
                 {studentReport && (
                   <Button onClick={handleDownloadPDF} variant="outline" className="flex gap-2 border-blue-200 hover:bg-blue-50 text-blue-700 shadow-sm">
                     <Download size={16} />
@@ -319,8 +350,18 @@ export default function ReportsPage() {
                   <thead>
                     <tr className="bg-slate-100">
                       <th className="border border-slate-800 p-2 text-left font-bold text-slate-900">Subject</th>
-                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Full Marks</th>
-                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Marks Obtained</th>
+                      
+                      {/* Dynamic Term Columns for Annual Report */}
+                      {selectedExamType === 'Annual Result' && (studentReport as any).contributingTerms?.map((term: any) => (
+                        <th key={term.value} className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">
+                          {term.label}
+                        </th>
+                      ))}
+
+                      {selectedExamType !== 'Annual Result' && <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Full Marks</th>}
+                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">
+                        {selectedExamType === 'Annual Result' ? 'Annual Average' : 'Marks Obtained'}
+                      </th>
                       <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Grade</th>
                     </tr>
                   </thead>
@@ -328,16 +369,24 @@ export default function ReportsPage() {
                     {studentReport.marks.map((mark) => (
                       <tr key={mark.id}>
                         <td className="border border-slate-800 p-2 font-semibold text-slate-800">{mark.subject}</td>
-                        <td className="border border-slate-800 p-2 text-center text-slate-600">{mark.maxScore}</td>
+                        
+                        {/* Dynamic Score Cells for Annual Report */}
+                        {selectedExamType === 'Annual Result' && (studentReport as any).contributingTerms?.map((term: any) => (
+                          <td key={term.value} className="border border-slate-800 p-2 text-center text-slate-600 font-medium">
+                            {(mark as any).termScores?.[term.value] ?? '-'}
+                          </td>
+                        ))}
+
+                        {selectedExamType !== 'Annual Result' && <td className="border border-slate-800 p-2 text-center text-slate-600">{mark.maxScore}</td>}
                         <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">{mark.score}</td>
                         <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">
-                          {getGradeLetter(mark.score, mark.maxScore)}
+                          {mark.grade}
                         </td>
                       </tr>
                     ))}
                     {studentReport.marks.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="border border-slate-800 p-4 text-center text-slate-500 italic">
+                        <td colSpan={selectedExamType === 'Annual Result' ? 3 + ((studentReport as any).contributingTerms?.length || 0) : 4} className="border border-slate-800 p-4 text-center text-slate-500 italic">
                           No marks recorded for this exam type.
                         </td>
                       </tr>
@@ -345,7 +394,7 @@ export default function ReportsPage() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-50">
-                      <th colSpan={2} className="border border-slate-800 p-2 text-right font-black text-slate-900 uppercase">Grade Point Average (GPA)</th>
+                      <th colSpan={selectedExamType === 'Annual Result' ? 1 + ((studentReport as any).contributingTerms?.length || 0) : 2} className="border border-slate-800 p-2 text-right font-black text-slate-900 uppercase">Grade Point Average (GPA)</th>
                       <th colSpan={2} className="border border-slate-800 p-2 text-center font-black text-slate-900 text-lg">
                         {studentReport.gpa.toFixed(2)}
                       </th>

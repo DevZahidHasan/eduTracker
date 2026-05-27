@@ -1,5 +1,6 @@
 import prisma from '../prisma';
 import { generatePerformanceInsights } from './ai.service';
+import { formatLabel } from '../controllers/config.controller';
 
 /**
  * Calculate GPA based on marks and GradeScale table.
@@ -116,16 +117,80 @@ export const getStudentReportData = async (studentId: number, examType: string) 
     return 'F';
   };
 
+  const attendanceRate = await getAttendanceStats(studentId);
+  const existingReport = student.reports[0];
+
+  // --- Handle 'Annual Result' specially ---
+  if (examType === 'Annual Result') {
+    const annualResult = await prisma.termResult.findFirst({
+      where: { studentId, examType: 'Annual Result' }
+    });
+
+    if (!annualResult) return null;
+
+    // 1. Fetch all marks for this student (all terms)
+    const allMarks = await prisma.mark.findMany({
+      where: { studentId }
+    });
+
+    // 2. Fetch weightages for calculation
+    const examTypes = await prisma.examType.findMany();
+    const weightageMap: Record<string, number> = {};
+    examTypes.forEach(e => {
+      weightageMap[e.name] = e.weightage;
+    });
+
+    // 3. Group marks by Subject
+    const subjectGroups: Record<string, { totalWeightedScore: number; totalWeight: number; termScores: Record<string, number> }> = {};
+    const contributingTerms = new Set<string>();
+    
+    allMarks.forEach(m => {
+      if (m.examType === 'Annual Result') return;
+      contributingTerms.add(m.examType);
+
+      const weight = weightageMap[m.examType] || 100;
+      if (!subjectGroups[m.subject]) {
+        subjectGroups[m.subject] = { totalWeightedScore: 0, totalWeight: 0, termScores: {} };
+      }
+      
+      const percentage = (m.score / m.maxScore) * 100;
+      subjectGroups[m.subject].totalWeightedScore += (percentage * weight);
+      subjectGroups[m.subject].totalWeight += weight;
+      subjectGroups[m.subject].termScores[m.examType] = m.score;
+    });
+
+    // 4. Format into marks array
+    const marksWithGrades = Object.entries(subjectGroups).map(([subject, data], index) => {
+      const finalPercentage = data.totalWeight > 0 ? (data.totalWeightedScore / data.totalWeight) : 0;
+      return {
+        id: index + 1000,
+        subject: formatLabel(subject),
+        termScores: data.termScores,
+        score: Math.round(finalPercentage * 100) / 100, 
+        maxScore: 100,
+        grade: getGrade(finalPercentage)
+      };
+    });
+
+    return {
+      student,
+      marks: marksWithGrades,
+      contributingTerms: Array.from(contributingTerms).map(t => ({ value: t, label: formatLabel(t) })),
+      gpa: annualResult.gpa,
+      grade: annualResult.grade,
+      attendanceRate,
+      teacherRemarks: existingReport?.teacherRemarks || '',
+      aiInsights: existingReport?.aiInsights || ''
+    };
+  }
+
+  // --- Standard Exam Type Logic ---
   const marksWithGrades = student.marks.map(m => ({
     ...m,
     grade: getGrade((m.score / m.maxScore) * 100)
   }));
 
-  const attendanceRate = await getAttendanceStats(studentId);
   const { gpa, grade } = await calculateGPA(student.marks);
-  
-  // existing report if any
-  const existingReport = student.reports[0];
 
   return {
     student,
@@ -243,4 +308,85 @@ export const getClassPerformance = async (className: string, examType: string, s
     classAverageGPA: Math.round(classAvg * 100) / 100,
     totalStudents: students.length
   };
+};
+
+/**
+ * Calculates a blended Annual Result based on the defined weightages of different ExamTypes.
+ */
+export const calculateAnnualResult = async (studentId: number) => {
+  // 1. Fetch all TermResults for this student
+  const termResults = await prisma.termResult.findMany({
+    where: { studentId }
+  });
+
+  if (termResults.length === 0) return null;
+
+  // 2. Fetch ExamTypes to get weightages
+  const examTypes = await prisma.examType.findMany();
+  const weightageMap: Record<string, number> = {};
+  examTypes.forEach(e => {
+    weightageMap[e.name] = e.weightage;
+  });
+
+  // 3. Calculate weighted average percentage
+  let totalWeightedPercentage = 0;
+  let totalWeightageUsed = 0;
+
+  for (const tr of termResults) {
+    // Ignore any existing Annual Results to prevent recursive calculation
+    if (tr.examType === 'Annual Result' || tr.examType === 'Final Result') continue;
+
+    const weight = weightageMap[tr.examType] || 100; // Default to 100% if not found
+    totalWeightedPercentage += tr.percentage * weight;
+    totalWeightageUsed += weight;
+  }
+
+  if (totalWeightageUsed === 0) return null;
+
+  const finalPercentage = totalWeightedPercentage / totalWeightageUsed;
+
+  // 4. Convert final percentage back to Grade and GPA
+  const scales = await prisma.gradeScale.findMany({
+    orderBy: { minScore: 'desc' }
+  });
+
+  let finalGrade = 'F';
+  let finalGpa = 0;
+
+  if (scales.length > 0) {
+    for (const scale of scales) {
+      if (finalPercentage >= scale.minScore) {
+        finalGrade = scale.grade;
+        finalGpa = scale.points;
+        break;
+      }
+    }
+  }
+
+  // 5. Upsert the "Annual Result" into TermResult
+  const annualResult = await prisma.termResult.upsert({
+    where: {
+      id: (await prisma.termResult.findFirst({ where: { studentId, examType: 'Annual Result' } }))?.id || -1
+    },
+    update: {
+      percentage: finalPercentage,
+      grade: finalGrade,
+      gpa: finalGpa,
+      obtainedMarks: finalPercentage, // Symbolic representation
+      totalMarks: 100, // Symbolic representation
+      updatedAt: new Date()
+    },
+    create: {
+      studentId,
+      examType: 'Annual Result',
+      percentage: finalPercentage,
+      grade: finalGrade,
+      gpa: finalGpa,
+      obtainedMarks: finalPercentage,
+      totalMarks: 100,
+      status: 'FINAL'
+    }
+  });
+
+  return annualResult;
 };

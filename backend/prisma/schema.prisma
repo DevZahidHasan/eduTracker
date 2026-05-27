@@ -199,10 +199,12 @@ model Subject {
 }
 
 model ExamType {
-  name     String           @id
-  baseMark Float            @default(100)
-  reports  AcademicReport[]
-  marks    Mark[]
+  name      String           @id
+  baseMark  Float            @default(100)
+  weightage Float            @default(100)
+  isFinal   Boolean          @default(false)
+  reports   AcademicReport[]
+  marks     Mark[]
 }
 
 model MarkLock {

@@ -112,7 +112,7 @@ export const updateExamType = asyncHandler(async (req: Request, res: Response) =
   return res.status(200).json(new ApiResponse(200, examType, 'Exam type updated successfully'));
 });
 
-function formatLabel(str: string): string {
+export function formatLabel(str: string): string {
   // Convert UPPER_CASE to Title Case (e.g. CLASS_1 -> Class 1)
   return str
     .split('_')

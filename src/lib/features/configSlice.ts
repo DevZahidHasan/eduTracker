@@ -10,6 +10,8 @@ export interface ConfigOption {
 
 export interface ExamTypeOption extends ConfigOption {
   baseMark: number;
+  weightage: number;
+  isFinal: boolean;
 }
 
 export interface AppConfig {
@@ -94,9 +96,9 @@ export const addSubjectThunk = createAsyncThunk(
 
 export const addExamTypeThunk = createAsyncThunk(
   'config/addExamType',
-  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue }) => {
+  async ({ name, baseMark, weightage, isFinal }: { name: string, baseMark: number, weightage: number, isFinal: boolean }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/config/exam-types', { name, baseMark });
+      const response = await api.post('/config/exam-types', { name, baseMark, weightage, isFinal });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add exam type');
@@ -106,9 +108,9 @@ export const addExamTypeThunk = createAsyncThunk(
 
 export const updateExamTypeThunk = createAsyncThunk(
   'config/updateExamType',
-  async ({ name, baseMark }: { name: string, baseMark: number }, { rejectWithValue }) => {
+  async ({ name, baseMark, weightage, isFinal }: { name: string, baseMark: number, weightage: number, isFinal: boolean }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/config/exam-types/${name}`, { baseMark });
+      const response = await api.patch(`/config/exam-types/${name}`, { baseMark, weightage, isFinal });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update exam type');

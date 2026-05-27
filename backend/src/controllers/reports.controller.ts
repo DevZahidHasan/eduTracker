@@ -179,3 +179,20 @@ export const getAttendanceSummary = asyncHandler(async (req: Request, res: Respo
 
   return res.status(200).json(new ApiResponse(200, summary, 'Attendance summary fetched successfully'));
 });
+
+export const generateAnnualResult = asyncHandler(async (req: Request, res: Response) => {
+  const { studentId } = req.params;
+
+  if (!studentId) {
+    throw new ApiError(400, 'Student ID is required');
+  }
+
+  const result = await reportsService.calculateAnnualResult(Number(studentId));
+
+  if (!result) {
+    throw new ApiError(400, 'Not enough data to calculate an annual result for this student.');
+  }
+
+  return res.status(200).json(new ApiResponse(200, result, 'Annual Result calculated successfully'));
+});
+

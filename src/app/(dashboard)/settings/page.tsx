@@ -150,12 +150,16 @@ export default function SettingsPage() {
     type: 'class' | 'subject' | 'examType'; 
     value: string;
     baseMark?: number;
+    weightage?: number;
+    isFinal?: boolean;
     isEditing?: boolean;
   }>({
     isOpen: false,
     type: 'class',
     value: '',
-    baseMark: 100
+    baseMark: 100,
+    weightage: 100,
+    isFinal: false
   });
 
   useEffect(() => {
@@ -360,7 +364,7 @@ export default function SettingsPage() {
 
   const submitAcademic = (e: React.FormEvent) => {
     e.preventDefault();
-    const { type, value, baseMark, isEditing } = academicModal;
+    const { type, value, baseMark, weightage, isFinal, isEditing } = academicModal;
     if (!value.trim()) return;
 
     let thunk: any;
@@ -371,10 +375,20 @@ export default function SettingsPage() {
     else {
       if (isEditing) {
         thunk = updateExamTypeThunk;
-        payload = { name: value.toUpperCase().replace(/\s+/g, '_'), baseMark: baseMark || 100 };
+        payload = { 
+          name: value.toUpperCase().replace(/\s+/g, '_'), 
+          baseMark: baseMark || 100,
+          weightage: weightage || 100,
+          isFinal: isFinal || false
+        };
       } else {
         thunk = addExamTypeThunk;
-        payload = { name: value, baseMark: baseMark || 100 };
+        payload = { 
+          name: value, 
+          baseMark: baseMark || 100,
+          weightage: weightage || 100,
+          isFinal: isFinal || false
+        };
       }
     }
 
@@ -1153,13 +1167,37 @@ export default function SettingsPage() {
             autoFocus
           />
           {academicModal.type === 'examType' && (
-            <Input 
-              label="Base Mark (Maximum Score)"
-              type="number"
-              placeholder="e.g. 100"
-              value={academicModal.baseMark ?? ''}
-              onChange={(e) => setAcademicModal({ ...academicModal, baseMark: Number(e.target.value) })}
-            />
+            <div className="space-y-4">
+              <Input 
+                label="Base Mark (Maximum Score)"
+                type="number"
+                placeholder="e.g. 100"
+                value={academicModal.baseMark ?? ''}
+                onChange={(e) => setAcademicModal({ ...academicModal, baseMark: Number(e.target.value) })}
+              />
+              <Input 
+                label="Weightage (%)"
+                type="number"
+                placeholder="e.g. 30"
+                value={academicModal.weightage ?? ''}
+                onChange={(e) => setAcademicModal({ ...academicModal, weightage: Number(e.target.value) })}
+              />
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div>
+                  <h4 className="font-bold text-foreground text-sm">Is Final Exam?</h4>
+                  <p className="text-muted-foreground text-[10px] mt-1">If true, this exam type will not be included in combined annual calculations.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={academicModal.isFinal === true} 
+                    onChange={(e) => setAcademicModal({ ...academicModal, isFinal: e.target.checked })}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            </div>
           )}
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setAcademicModal({ ...academicModal, isOpen: false })}>Cancel</Button>
