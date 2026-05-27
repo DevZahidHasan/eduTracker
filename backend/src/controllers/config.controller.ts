@@ -4,8 +4,10 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/apiResponse';
 import { ApiError } from '../utils/apiError';
 
+// Trigger nodemon restart
 export const getConfig = asyncHandler(async (req: Request, res: Response) => {
   const classes = await prisma.schoolClass.findMany({
+    include: { sections: true },
     orderBy: { name: 'asc' }
   });
   
@@ -29,7 +31,11 @@ export const getConfig = asyncHandler(async (req: Request, res: Response) => {
 
   // Map to the format the frontend expects (value/label)
   const config = {
-    classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
+    classes: classes.map(c => ({ 
+      value: c.name, 
+      label: formatLabel(c.name),
+      sections: c.sections.map(s => ({ value: s.section, label: s.section }))
+    })),
     subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
     examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name), baseMark: e.baseMark })),
     roles: roles.map(r => ({ value: r.name, label: formatLabel(r.name) })),

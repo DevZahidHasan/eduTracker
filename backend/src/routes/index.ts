@@ -21,6 +21,7 @@ import hrRoutes from './hr.routes';
 import inventoryRoutes from './inventory.routes';
 import documentRoutes from './document.routes';
 import licenseRoutes from './license.routes';
+import importRoutes from './import.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { licenseCheckMiddleware } from '../middleware/license.middleware';
 
@@ -35,6 +36,7 @@ router.use('/license', licenseRoutes); // License checking and updating
 router.use(licenseCheckMiddleware);
 
 // Protected routes (require valid JWT and valid License)
+router.use('/import', importRoutes);
 router.use('/students', authMiddleware, studentsRoutes);
 router.use('/marks', authMiddleware, marksRoutes);
 router.use('/attendance', authMiddleware, attendanceRoutes);

@@ -64,6 +64,17 @@ export function StudentForm({
   const watchClass = watch('className');
   const watchSection = watch('section');
 
+  // Reset section when class changes
+  useEffect(() => {
+    if (watchClass && watchSection) {
+      const classObj = CLASSES.find(c => c.value === watchClass);
+      const isValidSection = classObj?.sections?.some(s => s.value === watchSection);
+      if (!isValidSection) {
+        setValue('section', '', { shouldValidate: true });
+      }
+    }
+  }, [watchClass, CLASSES, setValue, watchSection]);
+
   useEffect(() => {
     // Only auto-generate if we are not editing an existing student
     // and both class and section are selected.
@@ -250,11 +261,13 @@ export function StudentForm({
                 error={errors.className?.message}
                 options={CLASSES}
               />
-              <Input 
+              <Select
                 label="Section/Group *"
-                placeholder="e.g. A"
+                placeholder="Choose a section"
                 {...register('section')}
                 error={errors.section?.message}
+                options={CLASSES.find(c => c.value === watchClass)?.sections || []}
+                disabled={!watchClass}
               />
             </>
           )}

@@ -100,20 +100,12 @@ export default function AdmissionsPage() {
     });
   }, [inquiries, searchTerm, filterStatus]);
 
-  // Options mapped from backend classes
   const classOptions = useMemo(() => {
     return [
       { value: '', label: 'Select Class' },
       ...classesOverview.map(c => ({ value: c.className, label: c.className }))
     ];
   }, [classesOverview]);
-
-  const selectedAdmitClass = admitForm.watch('className');
-  const sectionOptions = useMemo(() => {
-    const classData = classesOverview.find(c => c.className === selectedAdmitClass);
-    const options = classData ? classData.sections.map(s => ({ value: s.section, label: `Section ${s.section}` })) : [];
-    return [{ value: '', label: 'Select Section' }, ...options];
-  }, [classesOverview, selectedAdmitClass]);
 
   const openAddModal = () => {
     reset({

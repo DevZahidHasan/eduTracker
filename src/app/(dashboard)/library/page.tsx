@@ -5,9 +5,11 @@ import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Book, Users, ClipboardList, Trash2, CheckCircle } from 'lucide-react';
+import { Book, Users, ClipboardList, Trash2, CheckCircle, FileUp } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { Modal } from '@/components/ui/Modal';
+import { CSVImporter } from '@/components/ui/CSVImporter';
 import { Select } from '@/components/ui/Select';
 
 export default function LibraryPage() {
@@ -16,6 +18,7 @@ export default function LibraryPage() {
   const [members, setMembers] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Dropdown States
   const [classesList, setClassesList] = useState<any[]>([]);
@@ -204,38 +207,50 @@ export default function LibraryPage() {
       {activeTab === 'books' && (
         <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Add New Book</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-4 flex-wrap">
-              <Input 
-                placeholder="Title" 
-                value={newBook.title} 
-                onChange={e => setNewBook({...newBook, title: e.target.value})} 
-                className="w-48"
-              />
-              <Input 
-                placeholder="Author" 
-                value={newBook.author} 
-                onChange={e => setNewBook({...newBook, author: e.target.value})} 
-                className="w-48"
-              />
-              <Input 
-                placeholder="Category" 
-                value={newBook.category} 
-                onChange={e => setNewBook({...newBook, category: e.target.value})} 
-                className="w-48"
-              />
-              <Input 
-                type="number"
-                placeholder="Copies" 
-                value={newBook.totalCopies} 
-                onChange={e => setNewBook({...newBook, totalCopies: parseInt(e.target.value) || 1})} 
-                className="w-24"
-              />
-              <Button onClick={handleAddBook} disabled={!newBook.title || !newBook.author || !newBook.category}>
-                Add Book
+            <CardHeader className="flex flex-row justify-between items-center">
+              <CardTitle>Inventory Management</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)}>
+                <FileUp size={16} className="mr-2" /> Import Books (CSV)
               </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4 flex-wrap items-end border-t pt-6">
+                <div className="flex-1 min-w-[200px]">
+                  <Input 
+                    label="Book Title"
+                    placeholder="Enter title" 
+                    value={newBook.title} 
+                    onChange={e => setNewBook({...newBook, title: e.target.value})} 
+                  />
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <Input 
+                    label="Author"
+                    placeholder="Enter author" 
+                    value={newBook.author} 
+                    onChange={e => setNewBook({...newBook, author: e.target.value})} 
+                  />
+                </div>
+                <div className="w-48">
+                  <Input 
+                    label="Category"
+                    placeholder="e.g. Science" 
+                    value={newBook.category} 
+                    onChange={e => setNewBook({...newBook, category: e.target.value})} 
+                  />
+                </div>
+                <div className="w-24">
+                  <Input 
+                    label="Copies"
+                    type="number"
+                    value={newBook.totalCopies} 
+                    onChange={e => setNewBook({...newBook, totalCopies: parseInt(e.target.value) || 1})} 
+                  />
+                </div>
+                <Button onClick={handleAddBook} disabled={!newBook.title || !newBook.author || !newBook.category} className="mb-0.5">
+                  Add Book
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -462,6 +477,22 @@ export default function LibraryPage() {
         destructive={confirmModal.title.includes('Delete')}
         confirmText={confirmModal.title.includes('Delete') ? 'Delete' : 'Confirm'}
       />
+
+      {/* Import CSV Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Books"
+        className="max-w-xl"
+      >
+        <CSVImporter 
+          type="books" 
+          onSuccess={() => {
+            fetchData();
+          }}
+          onClose={() => setIsImportModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

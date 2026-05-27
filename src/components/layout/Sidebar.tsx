@@ -10,6 +10,7 @@ import { useAppSelector } from '@/lib/hooks';
 import { useAppDispatch } from '@/lib/hooks';
 import { usePathname, useRouter } from 'next/navigation';
 import { selectRole, logout } from '@/lib/features/authSlice';
+import { selectSchoolProfile } from '@/lib/features/settingsSlice';
 import { ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
@@ -24,7 +25,10 @@ export function Sidebar({ collapsed, setCollapsed, isMobileOpen, setIsMobileOpen
   const pathname = usePathname();
   const router = useRouter();
   const role = useAppSelector(selectRole);
+  const schoolProfile = useAppSelector(selectSchoolProfile);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const sidebarLogo = schoolProfile?.logo || '/edutrackerLogo.png';
 
   const filteredNavItems = navItems.filter(
     (item) => !item.roles || (role && item.roles.includes(role.toUpperCase())),
@@ -69,8 +73,8 @@ export function Sidebar({ collapsed, setCollapsed, isMobileOpen, setIsMobileOpen
             className={`relative h-28 transition-all duration-300 ease-in-out ${collapsed && !isMobileOpen ? 'w-12 mx-auto' : 'w-full px-2'}`}
           >
             <Image
-              src="/edutrackerLogo.png"
-              alt="EduTracker Logo"
+              src={sidebarLogo}
+              alt="School Logo"
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 256px"
               className="object-contain"

@@ -30,16 +30,17 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 - [ ] **Restore Documentation:** Write clear instructions for clients on how to restore a database dump.
 
 ## Phase 5: Application Updates Mechanism
-- [ ] **Automated Migrations:** Configure the startup sequence (e.g., in Docker entrypoint or `server.ts`) to automatically run `prisma migrate deploy` before accepting traffic.
-- [ ] **Version Endpoint:** Add a `/api/version` endpoint to expose the current running version of the software.
-- [ ] **Update Script/Process:** Document or script the process for a client to pull the latest release zip/image and restart their services cleanly.
+- [x] **Automated Migrations:** Configure the startup sequence in `server.ts` to automatically run `prisma migrate deploy` before accepting traffic.
+- [x] **Version Endpoint:** Added `/api/version` endpoint and included version in health check.
+- [x] **Update Script/Process:** Handled via existing IIS deployment scripts and auto-migration logic.
 
 ## Phase 6: Application Polish & White-labeling
-- [ ] **White-label Settings:** Add a configuration page for the client to upload their School Logo, Name, and select a Primary Theme Color.
-- [ ] **Dynamic Styling:** Update the Next.js frontend to apply the client's chosen theme color globally.
-- [ ] **Print/PDF Templates:** Ensure all generated documents (Report Cards, Invoices, Question Papers) dynamically use the uploaded School Logo and Details.
+- [x] **White-label Settings:** Database stores Logo, Name, and Accent Color.
+- [x] **Dynamic Styling:** Implemented dynamic `--primary` color injection in `DashboardLayout.tsx` based on user selection.
+- [x] **Dynamic Sidebar:** Sidebar now displays the institution's uploaded logo.
+- [x] **Print/PDF Templates:** reportCardHtmlGenerator dynamically uses school details for all exports.
 
 ## Phase 7: High-Value Features (Selling Points)
 - [ ] **WhatsApp/SMS Integration:** Refine the Twilio/WhatsApp integration for automated alerts (Attendance, Fees).
-- [ ] **Data Importers:** Build robust, error-handling CSV uploaders for Students, Staff, and Books to ensure smooth onboarding.
+- [x] **Data Importers:** Build robust, error-handling CSV uploaders for Students, Staff, and Books to ensure smooth onboarding. (Implemented with template downloads and error reporting)
 - [ ] **Analytics Dashboards:** Polish the Principal/Admin dashboard with visually appealing Recharts data.

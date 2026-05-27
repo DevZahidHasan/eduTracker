@@ -5,6 +5,7 @@ import api from '@/lib/api';
 export interface ConfigOption {
   value: string;
   label: string;
+  sections?: { value: string; label: string }[];
 }
 
 export interface ExamTypeOption extends ConfigOption {

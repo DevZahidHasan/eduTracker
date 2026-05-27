@@ -61,12 +61,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
 import BackupManager from '@/components/settings/BackupManager';
+import { CSVImporter } from '@/components/ui/CSVImporter';
 
 type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security' | 'database';
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<TabId>('profile');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Selectors
   const schoolProfile = useAppSelector(selectSchoolProfile);
@@ -608,7 +610,12 @@ export default function SettingsPage() {
                   <CardTitle className="text-xl">Platform Users</CardTitle>
                   <CardDescription>Manage administrators and teachers.</CardDescription>
                 </div>
-                <Button><Plus size={16} className="mr-2" /> Invite User</Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+                    <FileUp size={16} className="mr-2" /> Import Staff
+                  </Button>
+                  <Button><Plus size={16} className="mr-2" /> Invite User</Button>
+                </div>
               </CardHeader>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -1165,6 +1172,22 @@ export default function SettingsPage() {
         {...confirmModal} 
         onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
       />
+
+      {/* Import CSV Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Staff Members"
+        className="max-w-xl"
+      >
+        <CSVImporter 
+          type="staff" 
+          onSuccess={() => {
+            dispatch(fetchUsers());
+          }}
+          onClose={() => setIsImportModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

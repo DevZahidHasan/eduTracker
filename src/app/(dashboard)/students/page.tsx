@@ -19,7 +19,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses } from '@/lib/features/configSlice';
 import { StudentFormData } from '@/lib/validations';
 import { StudentForm } from '@/components/students/StudentForm';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, FileUp } from 'lucide-react';
+import { CSVImporter } from '@/components/ui/CSVImporter';
 
 export default function StudentsPage() {
   const dispatch = useAppDispatch();
@@ -35,6 +36,7 @@ export default function StudentsPage() {
   const [classFilter, setClassFilter] = useState('');
   const [sectionFilter, setSectionFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -232,9 +234,13 @@ export default function StudentsPage() {
           <p className="text-slate-500 font-medium mt-1">Manage student profiles, academic status, and records.</p>
         </div>
         <div className="flex flex-col w-full sm:w-auto sm:flex-row items-stretch sm:items-center gap-3">
-          <Button variant="outline" onClick={handleExportCSV} className="hidden sm:flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} className="hidden sm:flex gap-2 min-h-[44px]">
             <Download size={16} />
             Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => setIsImportModalOpen(true)} className="flex items-center justify-center gap-2 min-h-[44px]">
+            <FileUp size={16} />
+            Import CSV
           </Button>
           <Button onClick={handleAddClick} className="flex items-center justify-center gap-2 shadow-lg shadow-blue-200 min-h-[44px]">
             <Plus size={18} />
@@ -629,7 +635,7 @@ export default function StudentsPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         title={isEditing ? 'Update Student Profile' : 'Register New Student'}
-        className="max-w-3xl"
+        size="4xl"
       >
         <StudentForm 
           key={isModalOpen ? (editingId || 'new') : 'closed'}
@@ -709,6 +715,21 @@ export default function StudentsPage() {
         {...confirmModal} 
         onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
       />
+
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Bulk Import Students"
+        className="max-w-xl"
+      >
+        <CSVImporter 
+          type="students" 
+          onSuccess={() => {
+            dispatch(fetchStudents());
+          }}
+          onClose={() => setIsImportModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

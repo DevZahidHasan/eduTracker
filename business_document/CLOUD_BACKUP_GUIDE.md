@@ -40,21 +40,28 @@ To allow eduTracker to "talk" to Google Drive, you must create a digital identit
 
 ---
 
-## 3. Phase 2: Google Drive Setup
+## 3. Phase 2: Google Drive Setup (Shared Drive Required)
 
-Now you must give your new "Backup Bot" permission to save files in your Drive.
+**CRITICAL NOTE:** Google does not allow Service Accounts to upload to a standard "My Drive" folder because they have a 0MB storage quota. To make this work, you **MUST** use a Google Workspace **Shared Drive**.
 
-1.  **Create a Folder:** Open your Google Drive and create a new folder (e.g., `eduTracker_Database_Backups`).
-2.  **Share the Folder:** 
-    *   Right-click the folder and select **Share**.
-    *   Go back to your Google Cloud tab and copy the **Service Account Email** (e.g., `bot@project-id.iam.gserviceaccount.com`).
-    *   Paste that email into the Share box in Google Drive.
-    *   **Crucial:** Set the permission to **Editor**.
-3.  **Get the Folder ID:** 
-    *   Double-click to open your new folder.
-    *   Look at the URL in your browser. It will look like this:
-        `https://drive.google.com/drive/folders/1XyZ_ABC_123456789...`
-    *   Copy the string of letters and numbers **after the last slash**. This is your **Folder ID**.
+1.  **Create a Shared Drive:** 
+    *   Login to your Google Workspace account (Business/Education).
+    *   Go to Drive and click **Shared Drives** on the left.
+    *   Click **New** and create a drive named `eduTracker Backups`.
+2.  **Add the Service Account:** 
+    *   Click **Manage members** on your new Shared Drive.
+    *   Paste the **Service Account Email** (e.g., `edutracker-backup-bot@...`).
+    *   Set the permission to **Contributor** or **Content Manager**.
+3.  **Get the ID:** 
+    *   Open the Shared Drive. The ID is the long string in the URL after `folders/`.
+
+---
+
+## 4. Why Personal (@gmail.com) accounts don't work
+If you try to use a personal Gmail account, you will see an error: *"Service Accounts do not have storage quota."* 
+*   Personal accounts do not support "Shared Drives."
+*   Service accounts cannot use the 15GB space of a personal account.
+*   **Solution:** Institutions should use their Google Workspace account to provide a Shared Drive.
 
 ---
 

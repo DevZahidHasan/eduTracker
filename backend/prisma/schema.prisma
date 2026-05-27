@@ -99,7 +99,7 @@ model Inquiry {
 model Student {
   id            Int              @id @default(autoincrement())
   studentId     String           @unique
-  email         String?          @unique
+  email         String?
   dateOfBirth   DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt

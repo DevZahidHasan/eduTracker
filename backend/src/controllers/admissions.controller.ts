@@ -204,9 +204,11 @@ export const deleteInquiry = asyncHandler(async (req: Request, res: Response) =>
  */
 export const admitInquiry = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { studentId, rollNumber, className, section, gender, dateOfBirth, bloodGroup, address } = req.body;
+  const { studentId, rollNumber, className, section, gender, dateOfBirth, bloodGroup, address, email, phone, parentName, parentPhone } = req.body;
 
-  // Validation
+  console.log('Admitting Inquiry:', id, { studentId, rollNumber, className, section, gender });
+
+  // 1. Validation
   if (!studentId || !rollNumber || !className || !section || !gender) {
     throw new ApiError(400, 'Student ID, Roll Number, Class, Section, and Gender are required for admission');
   }
@@ -223,45 +225,67 @@ export const admitInquiry = asyncHandler(async (req: Request, res: Response) => 
     throw new ApiError(400, 'This inquiry has already been converted to a student');
   }
 
-  // Check if student ID exists
-  const existingStudent = await prisma.student.findUnique({
-    where: { studentId }
-  });
+  // 2. Check for unique constraints before transaction
+  const existingId = await prisma.student.findUnique({ where: { studentId } });
+  if (existingId) throw new ApiError(400, `A student with ID ${studentId} already exists`);
 
-  if (existingStudent) {
-    throw new ApiError(400, `A student with ID ${studentId} already exists`);
-  }
+  const studentEmail = (email || inquiry.email)?.trim() || null;
 
-  // Use a transaction to create the student and update the inquiry status
-  const result = await prisma.$transaction(async (prismaClient) => {
-    // 1. Create the Student
-    const newStudent = await prismaClient.student.create({
-      data: {
-        studentId,
-        fullName: inquiry.studentName,
-        rollNumber,
+  const existingRoll = await prisma.student.findUnique({
+    where: {
+      className_section_rollNumber: {
         className,
         section,
-        gender,
-        email: inquiry.email,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        bloodGroup,
-        phone: inquiry.phone, // using inquiry phone for student if separate not provided
-        parentName: inquiry.parentName,
-        parentPhone: inquiry.phone,
-        address,
-        admissionDate: new Date()
+        rollNumber: String(rollNumber)
       }
-    });
-
-    // 2. Update Inquiry Status
-    await prismaClient.inquiry.update({
-      where: { id: inquiry.id },
-      data: { status: InquiryStatus.ADMITTED }
-    });
-
-    return newStudent;
+    }
   });
+  if (existingRoll) throw new ApiError(400, `Roll number ${rollNumber} already exists in ${className} Section ${section}`);
 
-  res.status(201).json(new ApiResponse(201, result, 'Student admitted successfully from inquiry'));
+  // 3. Verify Class and Section exist
+  const classSection = await prisma.classSection.findUnique({
+    where: { className_section: { className, section } }
+  });
+  if (!classSection) throw new ApiError(400, `The class ${className} with section ${section} does not exist. Please create it first.`);
+
+  // 4. Conversion and Transaction
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the Student
+      const newStudent = await tx.student.create({
+        data: {
+          studentId,
+          fullName: req.body.fullName || inquiry.studentName,
+          rollNumber: String(rollNumber),
+          className,
+          section,
+          gender: gender as any,
+          email: studentEmail,
+          dateOfBirth: (dateOfBirth && dateOfBirth !== "") ? new Date(dateOfBirth) : null,
+          bloodGroup: bloodGroup || null,
+          phone: phone || inquiry.phone || null,
+          parentName: parentName || inquiry.parentName || null,
+          parentPhone: parentPhone || inquiry.phone || null,
+          address: address || inquiry.previousSchool || null, // fallback to previous school if address empty
+          admissionDate: new Date()
+        }
+      });
+
+      // Update Inquiry Status
+      await tx.inquiry.update({
+        where: { id: inquiry.id },
+        data: { status: InquiryStatus.ADMITTED }
+      });
+
+      return newStudent;
+    });
+
+    res.status(201).json(new ApiResponse(201, result, 'Student admitted successfully from inquiry'));
+  } catch (error: any) {
+    console.error('Admission Transaction Error:', error);
+    if (error.code === 'P2002') {
+      throw new ApiError(400, 'A unique constraint was violated (ID, Email, or Roll Number already exists)');
+    }
+    throw new ApiError(500, error.message || 'An unexpected error occurred during admission');
+  }
 });

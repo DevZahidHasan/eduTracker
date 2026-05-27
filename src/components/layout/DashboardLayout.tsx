@@ -6,11 +6,13 @@ import { TopNavbar } from './TopNavbar';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchConfig, selectConfigInitialized } from '@/lib/features/configSlice';
 import { fetchLicenseStatus } from '@/lib/features/licenseSlice';
+import { fetchSchoolProfile, selectSchoolProfile, fetchSystemSettings, selectSystemSettings } from '@/lib/features/settingsSlice';
 import { usePathname } from 'next/navigation';
 import { selectRole } from '@/lib/features/authSlice';
 import { navItems } from '@/lib/navigation';
 import { AccessDeniedModal } from '../ui/AccessDeniedModal';
 import { LicenseLockout } from './LicenseLockout';
+import Image from 'next/image';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -18,6 +20,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isAccessDeniedOpen, setIsAccessDeniedOpen] = useState(false);
   const dispatch = useAppDispatch();
   const configInitialized = useAppSelector(selectConfigInitialized);
+  const schoolProfile = useAppSelector(selectSchoolProfile);
+  const systemSettings = useAppSelector(selectSystemSettings);
   const pathname = usePathname();
   const role = useAppSelector(selectRole);
   
@@ -29,12 +33,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }, [dispatch, configInitialized]);
 
-  // Fetch license on mount
+  // Fetch license, school profile, and system settings on mount
   useEffect(() => {
     dispatch(fetchLicenseStatus());
+    dispatch(fetchSchoolProfile());
+    dispatch(fetchSystemSettings());
   }, [dispatch]);
 
-  // Role-based Access Control for Routes
+  // ... (RBAC useEffect) ...
   useEffect(() => {
     const currentNavItem = navItems.find(item => 
       pathname === item.href || pathname.startsWith(item.href + '/')
@@ -51,6 +57,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       setIsAccessDeniedOpen(false);
     }
   }, [pathname, role]);
+
+  // Apply accent color to document root
+  useEffect(() => {
+    const accentColor = systemSettings?.accentColor || '#2563eb';
+    document.documentElement.style.setProperty('--primary', accentColor);
+    
+    // Also update primary-hover for buttons (approximate darkening)
+    const hoverColor = accentColor === '#2563eb' ? '#1d4ed8' : accentColor + 'ee';
+    document.documentElement.style.setProperty('--primary-foreground', '#ffffff');
+  }, [systemSettings.accentColor]);
 
   // Close mobile sidebar on navigation
   useEffect(() => {
@@ -83,6 +99,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+
+        {/* Global Branding Footer (Always Visible) */}
+        <footer className="h-14 px-6 border-t border-border bg-card flex flex-row justify-between items-center text-muted-foreground print:hidden shrink-0 z-10">
+          <div className="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
+             <span className="text-[10px] font-bold uppercase tracking-widest">Powered by</span>
+             <div className="flex items-center gap-2 grayscale contrast-125">
+               <Image src="/edutrackerLogo.png" alt="EduTracker AI" width={22} height={22} className="object-contain" />
+               <span className="text-sm font-black tracking-tight text-foreground/80">EduTracker AI</span>
+             </div>
+          </div>
+          <div className="flex items-center gap-5">
+             <span className="hidden sm:inline text-[10px] font-medium tracking-wide uppercase opacity-60">© 2026 All Rights Reserved</span>
+             <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black tracking-tighter uppercase shadow-sm">
+                v1.0.0
+             </div>
+          </div>
+        </footer>
 
         <AccessDeniedModal 
           isOpen={isAccessDeniedOpen} 

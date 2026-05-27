@@ -78,9 +78,13 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Routes
 app.use('/api', apiRoutes);
 
-// Health check
+// Health check & Version
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Backend is running' });
+  res.status(200).json({ status: 'ok', message: 'Backend is running', version: '1.0.0' });
+});
+
+app.get('/api/version', (req, res) => {
+  res.status(200).json({ version: '1.0.0', buildDate: new Date().toISOString() });
 });
 
 // Error Handling Middleware (must be after routes)
