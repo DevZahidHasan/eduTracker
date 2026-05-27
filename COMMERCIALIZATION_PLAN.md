@@ -41,6 +41,8 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 - [x] **Print/PDF Templates:** reportCardHtmlGenerator dynamically uses school details for all exports.
 
 ## Phase 7: High-Value Features (Selling Points)
+- [ ] **Exam Weightage Engine:** Build a system to calculate "Annual Results" by allowing admins to assign percentage weights to different Assessment Types (e.g., Mid-Term 30%, Final 70%).
 - [ ] **WhatsApp/SMS Integration:** Refine the Twilio/WhatsApp integration for automated alerts (Attendance, Fees).
+- [ ] **Fee Management Pro:** Add a "Fine Management" system for late returns in the Library and automated "Invoicing" (PDF generation for School Fees).
 - [x] **Data Importers:** Build robust, error-handling CSV uploaders for Students, Staff, and Books to ensure smooth onboarding. (Implemented with template downloads and error reporting)
-- [ ] **Analytics Dashboards:** Polish the Principal/Admin dashboard with visually appealing Recharts data.
+- [x] **Analytics Dashboards:** Polish the Principal/Admin dashboard with visually appealing Recharts data.

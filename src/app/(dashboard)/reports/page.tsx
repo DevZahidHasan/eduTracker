@@ -131,18 +131,6 @@ export default function ReportsPage() {
     document.body.removeChild(link);
   };
 
-  // Grade helper based on backend calculateGPA logic
-  const getGradeLetter = (score: number, maxScore: number) => {
-    const pct = (score / maxScore) * 100;
-    if (pct >= 80) return 'A+';
-    if (pct >= 70) return 'A';
-    if (pct >= 60) return 'A-';
-    if (pct >= 50) return 'B';
-    if (pct >= 40) return 'C';
-    if (pct >= 33) return 'D';
-    return 'F';
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Hide controls when printing */}
