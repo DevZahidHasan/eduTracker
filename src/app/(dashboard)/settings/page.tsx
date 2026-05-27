@@ -16,7 +16,8 @@ import {
   Loader2,
   Image as ImageIcon,
   Database,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  Cloud as CloudIcon
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
@@ -59,6 +60,7 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
+import BackupManager from '@/components/settings/BackupManager';
 
 type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security' | 'database';
 
@@ -926,7 +928,7 @@ export default function SettingsPage() {
           {/* DATABASE TAB */}
           {activeTab === 'database' && (
             <Card className="border-border shadow-sm">
-              <CardHeader className="border-b border-border bg-muted/50 pb-6">
+              <CardHeader className="border-b border-border pb-6">
                 <CardTitle className="text-xl">Database & Data Safeguard</CardTitle>
                 <CardDescription>Configure automated backups and manage institutional data integrity.</CardDescription>
               </CardHeader>
@@ -970,9 +972,63 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="pt-6 border-t border-border">
-                       <h4 className="font-bold text-foreground text-sm mb-2">Backup History</h4>
-                       <div className="text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-border">
-                          Last successful backup: <span className="font-bold text-foreground">{settingsData.lastBackupRun ? new Date(settingsData.lastBackupRun).toLocaleString() : 'Never'}</span>
+                       <BackupManager />
+                    </div>
+
+                    <div className="pt-8 border-t border-border space-y-6">
+                       <div>
+                          <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                             <CloudIcon size={18} className="text-blue-500" />
+                             Cloud Backup (Google Drive)
+                          </h4>
+                          <p className="text-muted-foreground text-xs mt-1">Automatically sync your daily backups to Google Drive for off-site protection.</p>
+                       </div>
+
+                       <div className="space-y-4 max-w-xl">
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-foreground/80">Enable Cloud Sync</label>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={settingsData.googleDriveEnabled === 'true'} 
+                                onChange={(e) => handleSettingChange('googleDriveEnabled', e.target.checked ? 'true' : 'false')}
+                                className="sr-only peer" 
+                              />
+                              <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-foreground/80">Google Drive Folder ID</label>
+                            <Input 
+                              value={settingsData.googleDriveFolderId || ''} 
+                              onChange={(e) => handleSettingChange('googleDriveFolderId', e.target.value)} 
+                              placeholder="Paste the Folder ID from the Drive URL" 
+                            />
+                            <p className="text-[10px] text-muted-foreground italic">Share the folder with your service account email as an Editor.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-foreground/80">Service Account Credentials (JSON)</label>
+                            <textarea
+                              value={settingsData.googleDriveCredentials || ''}
+                              onChange={(e) => handleSettingChange('googleDriveCredentials', e.target.value)}
+                              placeholder="Paste the contents of your credentials.json file here"
+                              className="w-full h-32 p-3 text-xs font-mono rounded-lg border border-border bg-muted/30 focus:ring-2 focus:ring-primary/20 outline-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-start">
+                             <Button onClick={handleSettingsSave} className="shadow-lg shadow-blue-200">
+                                <Save size={16} className="mr-2" /> Save Cloud Configuration
+                             </Button>
+                          </div>
+                          
+                          {settingsData.lastCloudBackupRun && (
+                            <p className="text-[10px] text-muted-foreground font-medium italic">
+                               Last successful cloud sync: <span className="font-bold text-foreground">{new Date(settingsData.lastCloudBackupRun).toLocaleString()}</span>
+                            </p>
+                          )}
                        </div>
                     </div>
                   </div>

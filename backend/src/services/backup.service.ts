@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import prisma from '../prisma';
+import { uploadToGoogleDrive } from './googleDrive.service';
 
 const execPromise = promisify(exec);
 
@@ -76,11 +77,21 @@ export const performDatabaseBackup = async (customPath?: string) => {
       create: { key: 'lastBackupRun', value: new Date().toISOString() }
     });
 
+    // --- OPTIONAL: Cloud Sync (Wrapped in try-catch to be non-blocking) ---
+    let cloudSynced = false;
+    try {
+      const cloudFileId = await uploadToGoogleDrive(filename, fullPath);
+      cloudSynced = !!cloudFileId;
+    } catch (err) {
+      console.error('Non-blocking cloud sync failure:', err);
+    }
+
     return { 
       success: true, 
       filename, 
       path: fullPath, 
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString(),
+      cloudSynced
     };
   } catch (error: any) {
     console.error('Backup failed:', error);

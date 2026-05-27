@@ -13,7 +13,10 @@ import {
   getGradeScales,
   createGradeScale,
   updateGradeScale,
-  deleteGradeScale
+  deleteGradeScale,
+  getBackups,
+  downloadBackup,
+  deleteBackup
 } from '../controllers/settings.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
@@ -40,6 +43,11 @@ router.put('/grade-scale/:id', authorize('ADMIN'), updateGradeScale);
 router.delete('/grade-scale/:id', authorize('ADMIN'), deleteGradeScale);
 
 router.post('/end-of-day', authorize('ADMIN'), triggerEndOfDay);
+
+// Backup Management
 router.post('/backup', authorize('ADMIN'), triggerBackup);
+router.get('/backups', authorize('ADMIN'), getBackups);
+router.get('/backups/download/:filename', authorize('ADMIN'), downloadBackup);
+router.delete('/backups/:filename', authorize('ADMIN'), deleteBackup);
 
 export default router;

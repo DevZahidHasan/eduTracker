@@ -6,6 +6,8 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../prisma';
 import { runEndOfDayTasks } from '../services/cron.service';
 import { performDatabaseBackup } from '../services/backup.service';
+import fs from 'fs';
+import path from 'path';
 
 export const getSchoolProfile = asyncHandler(async (req: Request, res: Response) => {
   let profile = await prisma.schoolProfile.findUnique({ where: { id: 1 } });
@@ -117,8 +119,22 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const triggerBackup = asyncHandler(async (req: Request, res: Response) => {
-  const result = await performDatabaseBackup();
-  return res.status(200).json(new ApiResponse(200, result, 'Database backup completed successfully.'));
+  try {
+    const result = await performDatabaseBackup();
+
+    // Check if cloud sync was attempted and if it failed
+    const cloudEnabled = await prisma.systemSetting.findUnique({ where: { key: 'googleDriveEnabled' } });
+    const lastCloud = await prisma.systemSetting.findUnique({ where: { key: 'lastCloudBackupRun' } });
+
+    return res.status(200).json(new ApiResponse(200, {
+      ...result,
+      cloudSyncMessage: cloudEnabled?.value === 'true' && !result.cloudSynced 
+        ? 'Local backup OK, but Cloud Sync failed. Check your Folder ID and Permissions.' 
+        : 'Backup completed successfully.'
+    }, 'Backup triggered successfully'));
+  } catch (error: any) {
+    return res.status(500).json(new ApiResponse(500, null, error.message || 'Failed to trigger backup'));
+  }
 });
 
 // --- Grade Scale ---
@@ -164,4 +180,63 @@ export const deleteGradeScale = asyncHandler(async (req: Request, res: Response)
   const { id } = req.params;
   await prisma.gradeScale.delete({ where: { id: Number(id) } });
   return res.status(200).json(new ApiResponse(200, null, 'Grade scale deleted successfully'));
+});
+
+// --- Backup Management ---
+
+const getBackupDirectory = async () => {
+  const pathSetting = await prisma.systemSetting.findUnique({
+    where: { key: 'backupPath' }
+  });
+  return pathSetting?.value || path.join(process.cwd(), 'backups');
+};
+
+export const getBackups = asyncHandler(async (req: Request, res: Response) => {
+  const backupDir = await getBackupDirectory();
+  
+  if (!fs.existsSync(backupDir)) {
+    return res.status(200).json(new ApiResponse(200, [], 'Backups directory not found'));
+  }
+
+  const files = fs.readdirSync(backupDir);
+  const backups = files
+    .filter(f => f.endsWith('.sql'))
+    .map(file => {
+      const stats = fs.statSync(path.join(backupDir, file));
+      return {
+        filename: file,
+        size: stats.size,
+        createdAt: stats.birthtime,
+      };
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  return res.status(200).json(new ApiResponse(200, backups, 'Backups fetched successfully'));
+});
+
+export const downloadBackup = asyncHandler(async (req: Request, res: Response) => {
+  const { filename } = req.params;
+  const backupDir = await getBackupDirectory();
+  const filePath = path.join(backupDir, filename);
+
+  // Security check to prevent path traversal
+  if (!filePath.startsWith(backupDir) || !fs.existsSync(filePath)) {
+    throw new ApiError(404, 'Backup file not found');
+  }
+
+  res.download(filePath);
+});
+
+export const deleteBackup = asyncHandler(async (req: Request, res: Response) => {
+  const { filename } = req.params;
+  const backupDir = await getBackupDirectory();
+  const filePath = path.join(backupDir, filename);
+
+  // Security check to prevent path traversal
+  if (!filePath.startsWith(backupDir) || !fs.existsSync(filePath)) {
+    throw new ApiError(404, 'Backup file not found');
+  }
+
+  fs.unlinkSync(filePath);
+  return res.status(200).json(new ApiResponse(200, null, 'Backup deleted successfully'));
 });

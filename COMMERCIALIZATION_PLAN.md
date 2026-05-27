@@ -17,16 +17,16 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 - [x] **(Optional) Master Server:** Build a simple external service to generate and track issued licenses.
 
 ## Phase 3: Bulletproof Deployment (Infrastructure)
-- [ ] **Dockerize Backend:** Create a `Dockerfile` for the Node.js/Express backend.
-- [ ] **Dockerize Frontend:** Create a `Dockerfile` for the Next.js frontend.
-- [ ] **Docker Compose Setup:** Create a `docker-compose.yml` to orchestrate the PostgreSQL database, Backend, and Frontend as a single unit.
-- [ ] **Environment Configuration:** Standardize the `.env` template so clients only need to fill out a few variables (e.g., DB credentials, JWT secrets).
+- [x] **Dockerize Backend:** (Skipped - Using native IIS deployment via iisnode)
+- [x] **Dockerize Frontend:** (Skipped - Using native IIS deployment with standalone Next.js server)
+- [x] **Docker Compose Setup:** (Skipped - Handled via `install-iis-server.ps1`)
+- [x] **Environment Configuration:** Standardize the `.env` template so clients only need to fill out a few variables. (Handled during IIS setup)
 - [x] **Deployment Script:** Write a single script (e.g., `install.sh` or `install.bat`) that runs docker-compose and sets up initial data. (Implemented via `install-iis-server.ps1` for IIS deployment)
 
 ## Phase 4: Automated Backup & Recovery
-- [ ] **Enhance Local Backups:** Ensure `backup.service.ts` reliably dumps the PostgreSQL database via a scheduled cron job.
-- [ ] **Backup Management UI:** Create a dashboard for admins to view, download, and delete local backup files.
-- [ ] **Cloud Sync Option:** Integrate AWS S3 or Google Drive APIs to allow clients to optionally sync their local backups off-site.
+- [x] **Enhance Local Backups:** Ensure `backup.service.ts` reliably dumps the PostgreSQL database via a scheduled cron job.
+- [x] **Backup Management UI:** Create a dashboard for admins to view, download, and delete local backup files.
+- [x] **Cloud Sync Option:** Integrate AWS S3 or Google Drive APIs to allow clients to optionally sync their local backups off-site. (Optional - Configurable via Settings)
 - [ ] **Restore Documentation:** Write clear instructions for clients on how to restore a database dump.
 
 ## Phase 5: Application Updates Mechanism
