@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   Database,
   Download as DownloadIcon,
-  Cloud as CloudIcon
+  Cloud as CloudIcon,
+  Zap
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
@@ -48,7 +49,10 @@ import {
   addClassThunk,
   addSubjectThunk,
   addExamTypeThunk,
-  updateExamTypeThunk
+  updateExamTypeThunk,
+  deleteClassThunk,
+  deleteSubjectThunk,
+  deleteExamTypeThunk
 } from '@/lib/features/configSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -69,6 +73,7 @@ export default function SettingsPage() {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<TabId>('profile');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [testWhatsAppPhone, setTestWhatsAppPhone] = useState('');
 
   // Selectors
   const schoolProfile = useAppSelector(selectSchoolProfile);
@@ -152,6 +157,8 @@ export default function SettingsPage() {
     baseMark?: number;
     weightage?: number;
     isFinal?: boolean;
+    category?: 'TUTORIAL' | 'FINAL';
+    termNumber?: number;
     isEditing?: boolean;
   }>({
     isOpen: false,
@@ -159,7 +166,9 @@ export default function SettingsPage() {
     value: '',
     baseMark: 100,
     weightage: 100,
-    isFinal: false
+    isFinal: false,
+    category: 'FINAL',
+    termNumber: 1
   });
 
   useEffect(() => {
@@ -240,6 +249,22 @@ export default function SettingsPage() {
       .finally(() => setIsTriggering(false));
   };
 
+  const handleTestWhatsApp = async () => {
+    if (!testWhatsAppPhone) {
+      toast.error('Enter a phone number to test');
+      return;
+    }
+    setIsTriggering(true);
+    try {
+      await api.post('/settings/whatsapp-test', { phone: testWhatsAppPhone });
+      toast.success('Test WhatsApp message sent!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to send test message');
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
   // User Handlers
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -313,7 +338,11 @@ export default function SettingsPage() {
       onConfirm: () => {
         dispatch(deleteGradeScaleThunk(id))
           .unwrap()
-          .then(() => toast.success('Grade scale deleted'))
+          .then(() => {
+             toast.success('Grade scale deleted');
+             dispatch(fetchGradeScales());
+             setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          })
           .catch(err => toast.error(err));
       }
     });
@@ -347,24 +376,63 @@ export default function SettingsPage() {
     }
   };
 
-  // Academic Handlers
-  const handleAddAcademic = (type: 'class' | 'subject' | 'examType') => {
-    setAcademicModal({ isOpen: true, type, value: '', baseMark: 100, isEditing: false });
+  const handleDeleteAcademic = (type: 'class' | 'subject' | 'examType', name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `Delete ${type}`,
+      message: `Are you sure you want to delete this ${type}? This will remove all associated data.`,
+      confirmText: 'Delete',
+      destructive: true,
+      onConfirm: () => {
+        let thunk: any;
+        if (type === 'class') thunk = deleteClassThunk;
+        else if (type === 'subject') thunk = deleteSubjectThunk;
+        else thunk = deleteExamTypeThunk;
+
+        dispatch(thunk(name))
+          .unwrap()
+          .then(() => {
+            toast.success(`${type} deleted successfully`);
+            dispatch(fetchConfig());
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          })
+          .catch((err: any) => toast.error(err || `Failed to delete ${type}`));
+      }
+    });
   };
 
-  const handleEditExamType = (exam: { value: string, label: string, baseMark: number }) => {
+  // Academic Handlers
+  const handleAddAcademic = (type: 'class' | 'subject' | 'examType') => {
+    setAcademicModal({ 
+      isOpen: true, 
+      type, 
+      value: '', 
+      baseMark: 100, 
+      weightage: 100, 
+      isFinal: false, 
+      category: 'FINAL', 
+      termNumber: 1, 
+      isEditing: false 
+    });
+  };
+
+  const handleEditExamType = (exam: any) => {
     setAcademicModal({ 
       isOpen: true, 
       type: 'examType', 
       value: exam.label, 
       baseMark: exam.baseMark,
+      weightage: exam.weightage || 100,
+      isFinal: exam.isFinal || false,
+      category: exam.category || 'FINAL',
+      termNumber: exam.termNumber || 1,
       isEditing: true 
     });
   };
 
   const submitAcademic = (e: React.FormEvent) => {
     e.preventDefault();
-    const { type, value, baseMark, weightage, isFinal, isEditing } = academicModal;
+    const { type, value, baseMark, weightage, isFinal, category, termNumber, isEditing } = academicModal;
     if (!value.trim()) return;
 
     let thunk: any;
@@ -379,7 +447,9 @@ export default function SettingsPage() {
           name: value.toUpperCase().replace(/\s+/g, '_'), 
           baseMark: baseMark || 100,
           weightage: weightage || 100,
-          isFinal: isFinal || false
+          isFinal: isFinal || false,
+          category: category || 'FINAL',
+          termNumber: termNumber || 1
         };
       } else {
         thunk = addExamTypeThunk;
@@ -387,7 +457,9 @@ export default function SettingsPage() {
           name: value, 
           baseMark: baseMark || 100,
           weightage: weightage || 100,
-          isFinal: isFinal || false
+          isFinal: isFinal || false,
+          category: category || 'FINAL',
+          termNumber: termNumber || 1
         };
       }
     }
@@ -543,6 +615,40 @@ export default function SettingsPage() {
           {activeTab === 'academic' && (
             <div className="space-y-6">
               <Card className="border-border shadow-sm">
+                <CardHeader className="border-b border-border bg-muted/50 pb-6">
+                  <CardTitle className="text-xl font-black">Academic Structure</CardTitle>
+                  <CardDescription>Define how the academic year is divided.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 max-w-xl">
+                    <div>
+                      <h4 className="font-bold text-foreground text-sm">Terms per Year</h4>
+                      <p className="text-muted-foreground text-xs mt-1">Select 2 (Bi-annual) or 3 (Trimester) terms.</p>
+                    </div>
+                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                      <button 
+                        onClick={() => handleSettingChange('academicStructure', '2_TERMS')}
+                        className={`px-6 py-2 rounded-md text-xs font-black transition-all ${settingsData.academicStructure === '2_TERMS' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
+                      >
+                        2 TERMS
+                      </button>
+                      <button 
+                        onClick={() => handleSettingChange('academicStructure', '3_TERMS')}
+                        className={`px-6 py-2 rounded-md text-xs font-black transition-all ${settingsData.academicStructure === '3_TERMS' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
+                      >
+                        3 TERMS
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-start">
+                    <Button onClick={handleSettingsSave} size="sm" className="gap-2">
+                       <Save size={14} /> Save Structure
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border shadow-sm">
                 <CardHeader className="border-b border-border bg-muted/50 pb-4">
                   <div className="flex justify-between items-center">
                     <div>
@@ -555,9 +661,17 @@ export default function SettingsPage() {
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {classes.map(c => (
-                      <span key={c.value} className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 font-bold border border-blue-100 dark:border-blue-800">
-                        {c.label}
-                      </span>
+                      <div key={c.value} className="group relative flex items-center">
+                        <span className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 font-bold border border-blue-100 dark:border-blue-800 pr-10">
+                          {c.label}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteAcademic('class', c.value)}
+                          className="absolute right-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </CardContent>
@@ -576,9 +690,17 @@ export default function SettingsPage() {
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-3">
                     {subjects.map(s => (
-                      <span key={s.value} className="px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 font-bold border border-emerald-100 dark:border-emerald-800">
-                        {s.label}
-                      </span>
+                      <div key={s.value} className="group relative flex items-center">
+                        <span className="px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 font-bold border border-emerald-100 dark:border-emerald-800 pr-10">
+                          {s.label}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteAcademic('subject', s.value)}
+                          className="absolute right-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </CardContent>
@@ -600,14 +722,22 @@ export default function SettingsPage() {
                       <div key={e.value} className="flex items-center gap-2 group">
                         <div className="flex flex-col px-4 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 font-bold border border-purple-100 dark:border-purple-800">
                           <span className="text-sm">{e.label}</span>
-                          <span className="text-[10px] opacity-60 uppercase tracking-tighter font-black">Base: {e.baseMark}</span>
+                          <span className="text-[10px] opacity-60 uppercase tracking-tighter font-black">Weight: {e.weightage}%</span>
                         </div>
-                        <button 
-                          onClick={() => handleEditExamType(e)}
-                          className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 size={14} />
-                        </button>
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEditExamType(e)}
+                            className="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteAcademic('examType', e.value)}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -825,6 +955,96 @@ export default function SettingsPage() {
                         />
                         <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
+                    </div>
+
+                    {/* WhatsApp Configuration */}
+                    <div className="pt-8 border-t border-border space-y-6">
+                       <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-green-500/10 text-green-600">
+                             <Zap size={18} />
+                          </div>
+                          <div>
+                             <h4 className="font-bold text-foreground text-sm">WhatsApp Integration (Twilio)</h4>
+                             <p className="text-muted-foreground text-xs mt-1">Configure your Twilio WhatsApp API for automated parent alerts.</p>
+                          </div>
+                       </div>
+
+                       <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-border">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Twilio Account SID</label>
+                                <Input 
+                                   value={settingsData.twilioSid || ''} 
+                                   onChange={(e) => handleSettingChange('twilioSid', e.target.value)} 
+                                   placeholder="ACxxxxxxxxxxxxxxxx" 
+                                />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Twilio Auth Token</label>
+                                <Input 
+                                   type="password"
+                                   value={settingsData.twilioToken || ''} 
+                                   onChange={(e) => handleSettingChange('twilioToken', e.target.value)} 
+                                   placeholder="••••••••••••••••" 
+                                />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Twilio WhatsApp Number</label>
+                                <Input 
+                                   value={settingsData.twilioNumber || ''} 
+                                   onChange={(e) => handleSettingChange('twilioNumber', e.target.value)} 
+                                   placeholder="whatsapp:+14155238886" 
+                                />
+                             </div>
+                             <div className="flex flex-col justify-end">
+                                <div className="flex items-center justify-between h-10 px-2">
+                                   <span className="text-xs font-bold text-slate-700">Attendance via WhatsApp</span>
+                                   <label className="relative inline-flex items-center cursor-pointer">
+                                      <input 
+                                         type="checkbox" 
+                                         checked={settingsData.parentNotificationsWhatsApp === 'true'} 
+                                         onChange={(e) => handleSettingChange('parentNotificationsWhatsApp', e.target.checked ? 'true' : 'false')}
+                                         className="sr-only peer" 
+                                      />
+                                      <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                   </label>
+                                </div>
+                                <div className="flex items-center justify-between h-10 px-2 border-t border-slate-200/50 mt-1">
+                                   <span className="text-xs font-bold text-slate-700">Fee Alerts via WhatsApp</span>
+                                   <label className="relative inline-flex items-center cursor-pointer">
+                                      <input 
+                                         type="checkbox" 
+                                         checked={settingsData.feeNotificationsWhatsApp === 'true'} 
+                                         onChange={(e) => handleSettingChange('feeNotificationsWhatsApp', e.target.checked ? 'true' : 'false')}
+                                         className="sr-only peer" 
+                                      />
+                                      <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                   </label>
+                                </div>
+                             </div>
+                          </div>
+
+                          <div className="pt-4 border-t border-border flex flex-col sm:flex-row gap-3 items-end">
+                             <div className="flex-1 w-full">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2 block">Test WhatsApp Message</label>
+                                <Input 
+                                   value={testWhatsAppPhone} 
+                                   onChange={(e) => setTestWhatsAppPhone(e.target.value)} 
+                                   placeholder="Enter phone with country code (e.g. +88017...)" 
+                                />
+                             </div>
+                             <Button 
+                                type="button" 
+                                variant="soft" 
+                                onClick={handleTestWhatsApp}
+                                disabled={isTriggering}
+                                className="min-w-[140px]"
+                             >
+                                {isTriggering ? <Loader2 size={16} className="animate-spin mr-2" /> : <Zap size={16} className="mr-2" />}
+                                Send Test
+                             </Button>
+                          </div>
+                       </div>
                     </div>
 
                   </div>
@@ -1182,6 +1402,33 @@ export default function SettingsPage() {
                 value={academicModal.weightage ?? ''}
                 onChange={(e) => setAcademicModal({ ...academicModal, weightage: Number(e.target.value) })}
               />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-bold text-slate-700">Exam Category</label>
+                  <select
+                    value={academicModal.category}
+                    onChange={(e) => setAcademicModal({ ...academicModal, category: e.target.value as any })}
+                    className="w-full h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="FINAL">Final/Term Exam</option>
+                    <option value="TUTORIAL">Class Test / Tutorial</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-bold text-slate-700">Term Number</label>
+                  <select
+                    value={academicModal.termNumber}
+                    onChange={(e) => setAcademicModal({ ...academicModal, termNumber: Number(e.target.value) })}
+                    className="w-full h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value={1}>Term 1</option>
+                    <option value={2}>Term 2</option>
+                    <option value={3}>Term 3</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between border-t border-border pt-4">
                 <div>
                   <h4 className="font-bold text-foreground text-sm">Is Final Exam?</h4>

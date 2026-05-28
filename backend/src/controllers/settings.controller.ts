@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../prisma';
 import { runEndOfDayTasks } from '../services/cron.service';
 import { performDatabaseBackup } from '../services/backup.service';
+import { sendWhatsAppMessage } from '../services/whatsapp.service';
 import fs from 'fs';
 import path from 'path';
 
@@ -239,4 +240,17 @@ export const deleteBackup = asyncHandler(async (req: Request, res: Response) => 
 
   fs.unlinkSync(filePath);
   return res.status(200).json(new ApiResponse(200, null, 'Backup deleted successfully'));
+});
+
+export const sendTestWhatsApp = asyncHandler(async (req: Request, res: Response) => {
+  const { phone } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone number is required');
+
+  const success = await sendWhatsAppMessage(phone, 'EduTrack Academy: This is a test message from your system configuration.');
+  
+  if (success) {
+    return res.status(200).json(new ApiResponse(200, null, 'Test message sent successfully'));
+  } else {
+    throw new ApiError(500, 'Failed to send test message. Check your Twilio settings.');
+  }
 });

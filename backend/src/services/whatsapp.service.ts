@@ -6,22 +6,36 @@ import twilio from 'twilio';
  * Dynamically switches between Real Twilio API and Mock Logging
  */
 
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER; // e.g., 'whatsapp:+14155238886'
+const getTwilioConfig = async () => {
+  const settings = await prisma.systemSetting.findMany({
+    where: {
+      key: { in: ['twilioSid', 'twilioToken', 'twilioNumber'] }
+    }
+  });
 
-const isTwilioConfigured = TWILIO_SID && TWILIO_TOKEN && TWILIO_NUMBER;
+  const config = settings.reduce((acc, curr) => {
+    acc[curr.key] = curr.value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  return {
+    sid: config.twilioSid || process.env.TWILIO_ACCOUNT_SID,
+    token: config.twilioToken || process.env.TWILIO_AUTH_TOKEN,
+    number: config.twilioNumber || process.env.TWILIO_WHATSAPP_NUMBER
+  };
+};
 
 export const sendWhatsAppMessage = async (to: string, message: string) => {
-  if (isTwilioConfigured) {
+  const config = await getTwilioConfig();
+  
+  if (config.sid && config.token && config.number) {
     try {
-      const client = twilio(TWILIO_SID, TWILIO_TOKEN);
+      const client = twilio(config.sid, config.token);
       await client.messages.create({
-        from: TWILIO_NUMBER,
+        from: config.number.startsWith('whatsapp:') ? config.number : `whatsapp:${config.number}`,
         to: `whatsapp:${to.replace(/\s+/g, '')}`, // Remove spaces for API
         body: message
       });
-      // log removed
       return true;
     } catch (error) {
       console.error('[REAL WHATSAPP ERROR] Failed to send message:', error);
@@ -29,6 +43,7 @@ export const sendWhatsAppMessage = async (to: string, message: string) => {
     }
   } else {
     // FALLBACK TO MOCK FOR DEVELOPMENT
+    console.log(`[MOCK WHATSAPP] To: ${to}, Message: ${message}`);
     return true;
   }
 };

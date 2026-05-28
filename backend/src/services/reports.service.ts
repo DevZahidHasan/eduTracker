@@ -120,7 +120,7 @@ export const getStudentReportData = async (studentId: number, examType: string) 
   const attendanceRate = await getAttendanceStats(studentId);
   const existingReport = student.reports[0];
 
-  // --- Handle 'Annual Result' specially ---
+  // --- Handle 'Annual Result' (Master Aggregation) specially ---
   if (examType === 'Annual Result') {
     const annualResult = await prisma.termResult.findFirst({
       where: { studentId, examType: 'Annual Result' }
@@ -128,46 +128,48 @@ export const getStudentReportData = async (studentId: number, examType: string) 
 
     if (!annualResult) return null;
 
-    // 1. Fetch all marks for this student (all terms)
-    const allMarks = await prisma.mark.findMany({
-      where: { studentId }
-    });
-
-    // 2. Fetch weightages for calculation
+    const allMarks = await prisma.mark.findMany({ where: { studentId } });
     const examTypes = await prisma.examType.findMany();
     const weightageMap: Record<string, number> = {};
-    examTypes.forEach(e => {
-      weightageMap[e.name] = e.weightage;
-    });
+    examTypes.forEach(e => { weightageMap[e.name] = e.weightage; });
 
-    // 3. Group marks by Subject
     const subjectGroups: Record<string, { totalWeightedScore: number; totalWeight: number; termScores: Record<string, number> }> = {};
     const contributingTerms = new Set<string>();
     
     allMarks.forEach(m => {
       if (m.examType === 'Annual Result') return;
       contributingTerms.add(m.examType);
-
       const weight = weightageMap[m.examType] || 100;
       if (!subjectGroups[m.subject]) {
         subjectGroups[m.subject] = { totalWeightedScore: 0, totalWeight: 0, termScores: {} };
       }
-      
       const percentage = (m.score / m.maxScore) * 100;
       subjectGroups[m.subject].totalWeightedScore += (percentage * weight);
       subjectGroups[m.subject].totalWeight += weight;
       subjectGroups[m.subject].termScores[m.examType] = m.score;
     });
 
-    // 4. Format into marks array
     const marksWithGrades = Object.entries(subjectGroups).map(([subject, data], index) => {
       const finalPercentage = data.totalWeight > 0 ? (data.totalWeightedScore / data.totalWeight) : 0;
+      
+      // Calculate subject-level GPA from scales
+      let subjectGpa = 0;
+      if (scales.length > 0) {
+        for (const scale of scales) {
+          if (finalPercentage >= scale.minScore) {
+            subjectGpa = scale.points;
+            break;
+          }
+        }
+      }
+
       return {
         id: index + 1000,
         subject: formatLabel(subject),
         termScores: data.termScores,
         score: Math.round(finalPercentage * 100) / 100, 
         maxScore: 100,
+        gpa: subjectGpa,
         grade: getGrade(finalPercentage)
       };
     });
@@ -176,8 +178,88 @@ export const getStudentReportData = async (studentId: number, examType: string) 
       student,
       marks: marksWithGrades,
       contributingTerms: Array.from(contributingTerms).map(t => ({ value: t, label: formatLabel(t) })),
+      isAnnual: true,
       gpa: annualResult.gpa,
       grade: annualResult.grade,
+      attendanceRate,
+      teacherRemarks: existingReport?.teacherRemarks || '',
+      aiInsights: existingReport?.aiInsights || ''
+    };
+  }
+
+  // --- Handle 'Bangladesh Standard' (Tutorial + Final Exam) specially ---
+  // Triggered if the examType includes "TERM_" (e.g., TERM_1, TERM_2)
+  if (examType.startsWith('TERM_')) {
+    const termNum = parseInt(examType.split('_')[1]);
+    
+    // Find all exam types belonging to this term number
+    const termExamTypes = await prisma.examType.findMany({
+      where: { termNumber: termNum }
+    });
+
+    const examTypeNames = termExamTypes.map(e => e.name);
+
+    const allTermMarks = await prisma.mark.findMany({
+      where: { 
+        studentId,
+        examType: { in: examTypeNames }
+      }
+    });
+
+    // Group by subject
+    const subjectMap: Record<string, { tutorial: number; final: number; total: number; max: number }> = {};
+    
+    allTermMarks.forEach(m => {
+      const type = termExamTypes.find(t => t.name === m.examType);
+      if (!subjectMap[m.subject]) {
+        subjectMap[m.subject] = { tutorial: 0, final: 0, total: 0, max: 0 };
+      }
+      
+      if (type?.category === 'TUTORIAL') {
+        subjectMap[m.subject].tutorial += m.score;
+      } else {
+        subjectMap[m.subject].final += m.score;
+      }
+      subjectMap[m.subject].total += m.score;
+      subjectMap[m.subject].max += m.maxScore;
+    });
+
+    const marksWithBreakdown = Object.entries(subjectMap).map(([subject, data], index) => {
+      const percentage = (data.total / (data.max || 100)) * 100;
+      
+      // Calculate individual subject GPA from scales
+      let subjectGpa = 0;
+      if (scales.length > 0) {
+        for (const scale of scales) {
+          if (percentage >= scale.minScore) {
+            subjectGpa = scale.points;
+            break;
+          }
+        }
+      }
+
+      return {
+        id: index + 5000,
+        subject: formatLabel(subject),
+        tutorial: data.tutorial,
+        final: data.final,
+        score: data.total,
+        maxScore: data.max || 100,
+        gpa: subjectGpa,
+        grade: getGrade(percentage)
+      };
+    });
+
+    const termSummaryMarks = marksWithBreakdown.map(m => ({ score: m.score, maxScore: m.maxScore }));
+    const { gpa, grade } = await calculateGPA(termSummaryMarks);
+
+    return {
+      student,
+      marks: marksWithBreakdown,
+      isBDStandard: true,
+      termNumber: termNum,
+      gpa,
+      grade,
       attendanceRate,
       teacherRemarks: existingReport?.teacherRemarks || '',
       aiInsights: existingReport?.aiInsights || ''

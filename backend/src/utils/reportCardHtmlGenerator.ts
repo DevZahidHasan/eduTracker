@@ -280,25 +280,47 @@ export const generateReportCardHtml = (data: any, schoolProfile: any) => {
             </div>
         </div>
 
-        <table>
+        <table style="width:100%; table-layout: fixed; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th>Subject</th>
-                    <th>Max Marks</th>
-                    <th>Obtained</th>
-                    <th>Grade</th>
+                    <th style="width: 25%; text-align:left;">Subject</th>
+                    ${data.isBDStandard ? `
+                        <th style="width: 15%; text-align:center;">Tutorial</th>
+                        <th style="width: 15%; text-align:center;">Final Exam</th>
+                    ` : ''}
+                    ${data.isAnnual && data.contributingTerms ? `
+                        ${data.contributingTerms.map((t: any) => `<th style="text-align:center; font-size:10px;">${t.label}</th>`).join('')}
+                    ` : ''}
+                    <th style="width: 15%; text-align:center;">${data.isAnnual ? 'Average' : 'Total'}</th>
+                    <th style="width: 10%; text-align:center;">GP</th>
+                    <th style="width: 10%; text-align:center;">Grade</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody style="font-size: 12px;">
                 ${marks.map((m: any) => `
                     <tr>
-                        <td>${m.subject.replace(/_/g, ' ')}</td>
-                        <td>${m.maxScore}</td>
-                        <td>${m.score}</td>
-                        <td>${m.grade || '-'}</td>
+                        <td style="font-weight:600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.subject.replace(/_/g, ' ')}</td>
+                        ${data.isBDStandard ? `
+                            <td style="text-align:center;">${m.tutorial ?? '-'}</td>
+                            <td style="text-align:center;">${m.final ?? '-'}</td>
+                        ` : ''}
+                        ${data.isAnnual && data.contributingTerms ? `
+                            ${data.contributingTerms.map((t: any) => `<td style="text-align:center;">${m.termScores?.[t.value] ?? '-'}</td>`).join('')}
+                        ` : ''}
+                        <td style="text-align:center; font-weight:700;">${m.score}</td>
+                        <td style="text-align:center; font-weight:700;">${m.gpa?.toFixed(2) || '0.00'}</td>
+                        <td style="text-align:center; font-weight:700;">${m.grade || '-'}</td>
                     </tr>
                 `).join('')}
             </tbody>
+            ${(data.isAnnual || data.isBDStandard) ? `
+            <tfoot style="background-color: #f8fafc; font-weight: bold;">
+                <tr>
+                    <td colspan="${data.isAnnual ? (1 + (data.contributingTerms?.length || 0)) : 3}" style="text-align:right; text-transform:uppercase; font-size:10px;">Grade Point Average (GPA)</td>
+                    <td colspan="3" style="text-align:center; font-size:16px; color:#1e3a8a;">${gpa.toFixed(2)}</td>
+                </tr>
+            </tfoot>
+            ` : ''}
         </table>
 
         <div class="summary-box">

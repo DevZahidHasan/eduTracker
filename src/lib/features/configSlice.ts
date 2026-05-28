@@ -12,6 +12,8 @@ export interface ExamTypeOption extends ConfigOption {
   baseMark: number;
   weightage: number;
   isFinal: boolean;
+  category: 'TUTORIAL' | 'FINAL';
+  termNumber: number;
 }
 
 export interface AppConfig {
@@ -96,9 +98,9 @@ export const addSubjectThunk = createAsyncThunk(
 
 export const addExamTypeThunk = createAsyncThunk(
   'config/addExamType',
-  async ({ name, baseMark, weightage, isFinal }: { name: string, baseMark: number, weightage: number, isFinal: boolean }, { rejectWithValue }) => {
+  async ({ name, baseMark, weightage, isFinal, category, termNumber }: { name: string, baseMark: number, weightage: number, isFinal: boolean, category: string, termNumber: number }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/config/exam-types', { name, baseMark, weightage, isFinal });
+      const response = await api.post('/config/exam-types', { name, baseMark, weightage, isFinal, category, termNumber });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add exam type');
@@ -108,12 +110,60 @@ export const addExamTypeThunk = createAsyncThunk(
 
 export const updateExamTypeThunk = createAsyncThunk(
   'config/updateExamType',
-  async ({ name, baseMark, weightage, isFinal }: { name: string, baseMark: number, weightage: number, isFinal: boolean }, { rejectWithValue }) => {
+  async ({ name, baseMark, weightage, isFinal, category, termNumber }: { name: string, baseMark: number, weightage: number, isFinal: boolean, category: string, termNumber: number }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/config/exam-types/${name}`, { baseMark, weightage, isFinal });
+      const response = await api.patch(`/config/exam-types/${name}`, { baseMark, weightage, isFinal, category, termNumber });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update exam type');
+    }
+  }
+);
+
+export const deleteClassThunk = createAsyncThunk(
+  'config/deleteClass',
+  async (name: string, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/config/classes/${name}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete class');
+    }
+  }
+);
+
+export const deleteSectionThunk = createAsyncThunk(
+  'config/deleteSection',
+  async ({ className, section }: { className: string, section: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/config/sections/${className}/${section}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete section');
+    }
+  }
+);
+
+export const deleteSubjectThunk = createAsyncThunk(
+  'config/deleteSubject',
+  async (name: string, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/config/subjects/${name}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete subject');
+    }
+  }
+);
+
+export const deleteExamTypeThunk = createAsyncThunk(
+  'config/deleteExamType',
+  async (name: string, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/config/exam-types/${name}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete exam type');
     }
   }
 );

@@ -16,7 +16,8 @@ import {
   deleteGradeScale,
   getBackups,
   downloadBackup,
-  deleteBackup
+  deleteBackup,
+  sendTestWhatsApp
 } from '../controllers/settings.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
@@ -49,5 +50,8 @@ router.post('/backup', authorize('ADMIN'), triggerBackup);
 router.get('/backups', authorize('ADMIN'), getBackups);
 router.get('/backups/download/:filename', authorize('ADMIN'), downloadBackup);
 router.delete('/backups/:filename', authorize('ADMIN'), deleteBackup);
+
+// WhatsApp Testing
+router.post('/whatsapp-test', authorize('ADMIN'), sendTestWhatsApp);
 
 export default router;

@@ -22,7 +22,7 @@ import {
   updateRemarks,
   clearAllReports
 } from '@/lib/features/reportsSlice';
-import { selectSchoolProfile, fetchSchoolProfile } from '@/lib/features/settingsSlice';
+import { selectSchoolProfile, fetchSchoolProfile, selectSystemSettings, fetchSystemSettings } from '@/lib/features/settingsSlice';
 import { selectClasses, selectExamTypes, fetchConfig } from '@/lib/features/configSlice';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -34,6 +34,7 @@ export default function ReportsPage() {
   const dispatch = useAppDispatch();
   const CLASSES = useAppSelector(selectClasses);
   const EXAM_TYPES = useAppSelector(selectExamTypes);
+  const systemSettings = useAppSelector(selectSystemSettings);
   const students = useAppSelector(selectAllStudents);
   const schoolProfile = useAppSelector(selectSchoolProfile);
   const studentReport = useAppSelector(selectStudentReport);
@@ -54,6 +55,7 @@ export default function ReportsPage() {
     dispatch(fetchConfig());
     dispatch(fetchStudents());
     dispatch(fetchSchoolProfile());
+    dispatch(fetchSystemSettings());
 
     return () => {
       dispatch(clearAllReports()); // Clear on unmount
@@ -70,9 +72,24 @@ export default function ReportsPage() {
     return students.filter(s => s.className === selectedClass);
   }, [students, selectedClass]);
 
+  const reportOptions = useMemo(() => {
+    const baseOptions = EXAM_TYPES.map(e => ({ value: e.value, label: e.label }));
+    
+    const specials = [
+      { value: 'Annual Result', label: 'Annual Master Report' }
+    ];
+
+    const termsPerYear = parseInt(systemSettings.academicStructure?.split('_')[0] || '2');
+    for (let i = 1; i <= termsPerYear; i++) {
+      specials.push({ value: `TERM_${i}`, label: `Term ${i} Report (BD Standard)` });
+    }
+
+    return [...baseOptions, ...specials];
+  }, [EXAM_TYPES, systemSettings.academicStructure]);
+
   const handleFetchReport = () => {
     if (!selectedStudentId || !selectedExamType) {
-      toast.error('Please select both a student and an exam type');
+      toast.error('Please select both a student and an assessment type');
       return;
     }
     dispatch(fetchStudentReport({ studentId: Number(selectedStudentId), examType: selectedExamType }));
@@ -344,41 +361,61 @@ export default function ReportsPage() {
               </div>
 
               {/* Academic Performance Table */}
-              <div className="mb-8 overflow-x-auto custom-scrollbar">
+              <div className="mb-8 overflow-hidden">
                 <h3 className="font-black text-slate-900 uppercase tracking-widest text-sm mb-3">Academic Performance</h3>
-                <table className="w-full text-sm border-collapse border border-slate-800 whitespace-nowrap">
+                <table className="w-full text-[12px] border-collapse border border-slate-800">
                   <thead>
                     <tr className="bg-slate-100">
                       <th className="border border-slate-800 p-2 text-left font-bold text-slate-900">Subject</th>
                       
                       {/* Dynamic Term Columns for Annual Report */}
                       {selectedExamType === 'Annual Result' && (studentReport as any).contributingTerms?.map((term: any) => (
-                        <th key={term.value} className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">
+                        <th key={term.value} className="border border-slate-800 p-1 text-center font-bold text-slate-900 w-16">
                           {term.label}
                         </th>
                       ))}
 
-                      {selectedExamType !== 'Annual Result' && <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Full Marks</th>}
-                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">
-                        {selectedExamType === 'Annual Result' ? 'Annual Average' : 'Marks Obtained'}
+                      {/* Dynamic Columns for BD Standard Term Report */}
+                      {(studentReport as any).isBDStandard && (
+                        <>
+                          <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-20">Tutorial</th>
+                          <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-20">Final Exam</th>
+                        </>
+                      )}
+
+                      {selectedExamType !== 'Annual Result' && !(studentReport as any).isBDStandard && <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-20">Full Marks</th>}
+                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-20">
+                        {selectedExamType === 'Annual Result' ? 'Annual Avg' : 'Total Marks'}
                       </th>
-                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-24">Grade</th>
+                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-12">GP</th>
+                      <th className="border border-slate-800 p-2 text-center font-bold text-slate-900 w-12">Grade</th>
                     </tr>
                   </thead>
                   <tbody>
                     {studentReport.marks.map((mark) => (
                       <tr key={mark.id}>
-                        <td className="border border-slate-800 p-2 font-semibold text-slate-800">{mark.subject}</td>
+                        <td className="border border-slate-800 p-2 font-semibold text-slate-800 truncate max-w-[120px]">{mark.subject}</td>
                         
                         {/* Dynamic Score Cells for Annual Report */}
-                        {selectedExamType === 'Annual Result' && (studentReport as any).contributingTerms?.map((term: any) => (
-                          <td key={term.value} className="border border-slate-800 p-2 text-center text-slate-600 font-medium">
-                            {(mark as any).termScores?.[term.value] ?? '-'}
+                        {selectedExamType === 'Annual Result' && (mark as any).termScores && (studentReport as any).contributingTerms?.map((term: any) => (
+                          <td key={term.value} className="border border-slate-800 p-1 text-center text-slate-600 font-medium">
+                            {(mark as any).termScores[term.value] ?? '-'}
                           </td>
                         ))}
 
-                        {selectedExamType !== 'Annual Result' && <td className="border border-slate-800 p-2 text-center text-slate-600">{mark.maxScore}</td>}
+                        {/* Dynamic Cells for BD Standard Term Report */}
+                        {(studentReport as any).isBDStandard && (
+                          <>
+                            <td className="border border-slate-800 p-2 text-center text-slate-600">{(mark as any).tutorial ?? '-'}</td>
+                            <td className="border border-slate-800 p-2 text-center text-slate-600">{(mark as any).final ?? '-'}</td>
+                          </>
+                        )}
+
+                        {selectedExamType !== 'Annual Result' && !(studentReport as any).isBDStandard && <td className="border border-slate-800 p-2 text-center text-slate-600">{mark.maxScore}</td>}
                         <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">{mark.score}</td>
+                        <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">
+                          {(mark as any).gpa?.toFixed(2) || '0.00'}
+                        </td>
                         <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">
                           {mark.grade}
                         </td>
@@ -386,20 +423,30 @@ export default function ReportsPage() {
                     ))}
                     {studentReport.marks.length === 0 && (
                       <tr>
-                        <td colSpan={selectedExamType === 'Annual Result' ? 3 + ((studentReport as any).contributingTerms?.length || 0) : 4} className="border border-slate-800 p-4 text-center text-slate-500 italic">
+                        <td colSpan={
+                          selectedExamType === 'Annual Result' 
+                            ? 4 + ((studentReport as any).contributingTerms?.length || 0) 
+                            : (studentReport as any).isBDStandard ? 6 : 5
+                        } className="border border-slate-800 p-4 text-center text-slate-500 italic text-sm">
                           No marks recorded for this exam type.
                         </td>
                       </tr>
                     )}
                   </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-50">
-                      <th colSpan={selectedExamType === 'Annual Result' ? 1 + ((studentReport as any).contributingTerms?.length || 0) : 2} className="border border-slate-800 p-2 text-right font-black text-slate-900 uppercase">Grade Point Average (GPA)</th>
-                      <th colSpan={2} className="border border-slate-800 p-2 text-center font-black text-slate-900 text-lg">
-                        {studentReport.gpa.toFixed(2)}
-                      </th>
-                    </tr>
-                  </tfoot>
+                  {(selectedExamType === 'Annual Result' || (studentReport as any).isBDStandard) && (
+                    <tfoot>
+                      <tr className="bg-slate-50">
+                        <th colSpan={
+                          selectedExamType === 'Annual Result' 
+                            ? 1 + ((studentReport as any).contributingTerms?.length || 0) 
+                            : (studentReport as any).isBDStandard ? 3 : 2
+                        } className="border border-slate-800 p-2 text-right font-black text-slate-900 uppercase text-[10px]">Grade Point Average (GPA)</th>
+                        <th colSpan={3} className="border border-slate-800 p-2 text-center font-black text-slate-900 text-base">
+                          {studentReport.gpa.toFixed(2)}
+                        </th>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
 

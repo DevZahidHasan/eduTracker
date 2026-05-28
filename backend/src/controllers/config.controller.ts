@@ -90,11 +90,15 @@ export const createSubject = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const createExamType = asyncHandler(async (req: Request, res: Response) => {
-  const { name, baseMark } = req.body;
+  const { name, baseMark, weightage, isFinal, category, termNumber } = req.body;
   const examType = await prisma.examType.create({
     data: { 
       name: name.toUpperCase().replace(/\s+/g, '_'),
-      baseMark: baseMark ? Number(baseMark) : 100
+      baseMark: baseMark ? Number(baseMark) : 100,
+      weightage: weightage ? Number(weightage) : 100,
+      isFinal: isFinal === true,
+      category: category || 'FINAL',
+      termNumber: termNumber ? Number(termNumber) : 1
     }
   });
   return res.status(201).json(new ApiResponse(201, examType, 'Exam type created successfully'));
@@ -102,14 +106,85 @@ export const createExamType = asyncHandler(async (req: Request, res: Response) =
 
 export const updateExamType = asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.params;
-  const { baseMark } = req.body;
+  const { baseMark, weightage, isFinal, category, termNumber } = req.body;
   
   const examType = await prisma.examType.update({
     where: { name },
-    data: { baseMark: Number(baseMark) }
+    data: { 
+      baseMark: baseMark !== undefined ? Number(baseMark) : undefined,
+      weightage: weightage !== undefined ? Number(weightage) : undefined,
+      isFinal: isFinal !== undefined ? isFinal : undefined,
+      category: category !== undefined ? category : undefined,
+      termNumber: termNumber !== undefined ? Number(termNumber) : undefined
+    }
   });
   
   return res.status(200).json(new ApiResponse(200, examType, 'Exam type updated successfully'));
+});
+
+export const deleteClass = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.params;
+  
+  // Safe Delete: Check if students exist in this class
+  const studentCount = await prisma.student.count({ where: { className: name } });
+  if (studentCount > 0) {
+    throw new ApiError(400, `Cannot delete class '${name}' because it contains ${studentCount} students. Please reassign or delete the students first.`);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Clean up empty sections and fee structures
+    await tx.classSection.deleteMany({ where: { className: name } });
+    await tx.feeStructure.deleteMany({ where: { className: name } });
+    await tx.schoolClass.delete({ where: { name } });
+  });
+
+  return res.status(200).json(new ApiResponse(200, null, 'Class deleted successfully'));
+});
+
+export const deleteSection = asyncHandler(async (req: Request, res: Response) => {
+  const { className, section } = req.params;
+  
+  // Safe Delete: Check if students exist in this section
+  const studentCount = await prisma.student.count({ where: { className, section } });
+  if (studentCount > 0) {
+    throw new ApiError(400, `Cannot delete Section '${section}' because it contains ${studentCount} students.`);
+  }
+  
+  await prisma.classSection.delete({
+    where: {
+      className_section: { className, section }
+    }
+  });
+
+  return res.status(200).json(new ApiResponse(200, null, 'Section deleted successfully'));
+});
+
+export const deleteSubject = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.params;
+  
+  // Safe Delete: Check if marks exist for this subject
+  const markCount = await prisma.mark.count({ where: { subject: name } });
+  if (markCount > 0) {
+    throw new ApiError(400, `Cannot delete subject '${name}' because it has ${markCount} recorded marks. Delete the marks first.`);
+  }
+
+  await prisma.subject.delete({ where: { name } });
+
+  return res.status(200).json(new ApiResponse(200, null, 'Subject deleted successfully'));
+});
+
+export const deleteExamType = asyncHandler(async (req: Request, res: Response) => {
+  const { name } = req.params;
+  
+  // Safe Delete: Check if marks or results exist
+  const markCount = await prisma.mark.count({ where: { examType: name } });
+  if (markCount > 0) {
+    throw new ApiError(400, `Cannot delete '${name}' because it has ${markCount} recorded marks.`);
+  }
+
+  await prisma.examType.delete({ where: { name } });
+
+  return res.status(200).json(new ApiResponse(200, null, 'Exam type deleted successfully'));
 });
 
 export function formatLabel(str: string): string {
