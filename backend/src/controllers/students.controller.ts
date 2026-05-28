@@ -150,40 +150,21 @@ export const createStudent = asyncHandler(async (req: AuthRequest, res: Response
     throw new ApiError(400, `Student ID '${studentId}' is already assigned to another student.`);
   }
 
-  // Check if email already exists
-  if (email) {
-    const existingEmail = await prisma.student.findUnique({
-      where: { email }
-    });
-    if (existingEmail) {
-      throw new ApiError(400, `Email address '${email}' is already in use.`);
-    }
-  }
-
-  // Check if phone already exists
-  if (phone) {
-    const existingPhone = await prisma.student.findFirst({
-      where: { phone }
-    });
-    if (existingPhone) {
-      throw new ApiError(400, `Phone number '${phone}' is already in use.`);
-    }
-  }
-
-  // Check if Roll Number already exists in the same Class and Section
+  // Check if roll number already exists in that class/section
   const existingRoll = await prisma.student.findUnique({
     where: {
       className_section_rollNumber: {
         className,
         section,
-        rollNumber
+        rollNumber: String(rollNumber)
       }
     }
   });
-
   if (existingRoll) {
-    throw new ApiError(400, `Roll Number '${rollNumber}' is already taken in ${className} Section ${section}.`);
+    throw new ApiError(400, `Roll number '${rollNumber}' already exists in ${className} Section ${section}.`);
   }
+
+  // Note: Email and Phone uniqueness checks were removed to allow siblings to share parent contact info.
 
   try {
     const student = await prisma.student.create({

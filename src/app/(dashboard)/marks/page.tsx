@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
 import { selectAllMarks, addMarksBulkThunk, fetchMarks, finalizeMarksThunk, unlockMarksThunk } from '@/lib/features/marksSlice';
+import { selectGradeScales, fetchGradeScales } from '@/lib/features/settingsSlice';
 import { Mark } from '@/types/models';
 import { selectClasses, selectSubjects, selectExamTypes, fetchConfig } from '@/lib/features/configSlice';
 import { selectClassesOverview, fetchClassesOverview } from '@/lib/features/classesSlice';
@@ -86,13 +87,37 @@ export default function MarksPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const gradeScales = useAppSelector(selectGradeScales);
+
   useEffect(() => {
     dispatch(fetchStudents());
     dispatch(fetchMarks());
     dispatch(fetchClassesOverview());
-    // Ensure config is loaded for EXAM_TYPES, SUBJECTS, etc.
     dispatch(fetchConfig());
+    dispatch(fetchGradeScales());
   }, [dispatch]);
+
+  const getGradeInfo = (percentage: number) => {
+    if (!gradeScales || gradeScales.length === 0) {
+      if (percentage >= 80) return { label: 'EXCELLENT', grade: 'A+', color: 'emerald' };
+      if (percentage >= 60) return { label: 'GOOD', grade: 'B', color: 'blue' };
+      if (percentage >= 33) return { label: 'AVERAGE', grade: 'C', color: 'amber' };
+      return { label: 'FAILED', grade: 'F', color: 'red' };
+    }
+    
+    // Sort descending to check highest minimums first
+    const sorted = [...gradeScales].sort((a, b) => b.minScore - a.minScore);
+    for (const scale of sorted) {
+      if (percentage >= scale.minScore) {
+        let color = 'emerald';
+        if (scale.points < 2.0) color = 'red';
+        else if (scale.points < 3.0) color = 'amber';
+        else if (scale.points < 4.0) color = 'blue';
+        return { label: scale.grade, grade: scale.grade, color };
+      }
+    }
+    return { label: 'FAILED', grade: 'F', color: 'red' };
+  };
 
   // Get available sections for the selected class
   const availableSections = useMemo(() => {
@@ -495,15 +520,8 @@ export default function MarksPage() {
                           <td className="px-6 py-4 text-right">
                             {percentage !== null ? (
                               <div className="flex flex-col items-end gap-1">
-                                <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${
-                                  percentage >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                  percentage >= 60 ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                  percentage >= 33 ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                  'bg-red-50 text-red-700 border-red-100'
-                                }`}>
-                                  {percentage >= 80 ? 'EXCELLENT' : 
-                                   percentage >= 60 ? 'GOOD' : 
-                                   percentage >= 33 ? 'AVERAGE' : 'FAILED'}
+                                <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black tracking-widest border bg-${getGradeInfo(percentage).color}-50 text-${getGradeInfo(percentage).color}-700 border-${getGradeInfo(percentage).color}-100`}>
+                                  {getGradeInfo(percentage).label}
                                 </span>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">{percentage}% Achieved</span>
                               </div>
@@ -562,15 +580,8 @@ export default function MarksPage() {
                           <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</label>
                           {percentage !== null ? (
                             <div className="flex flex-col items-end gap-1">
-                              <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${
-                                percentage >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                percentage >= 60 ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                percentage >= 33 ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                'bg-red-50 text-red-700 border-red-100'
-                              }`}>
-                                {percentage >= 80 ? 'EXCELLENT' : 
-                                 percentage >= 60 ? 'GOOD' : 
-                                 percentage >= 33 ? 'AVERAGE' : 'FAILED'}
+                              <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black tracking-widest border bg-${getGradeInfo(percentage).color}-50 text-${getGradeInfo(percentage).color}-700 border-${getGradeInfo(percentage).color}-100`}>
+                                {getGradeInfo(percentage).label}
                               </span>
                               <span className="text-[10px] font-bold text-slate-400 uppercase">{percentage}% Achieved</span>
                             </div>
