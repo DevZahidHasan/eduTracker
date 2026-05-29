@@ -44,18 +44,62 @@ export const getAttendance = asyncHandler(async (req: Request, res: Response) =>
 export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { records } = req.body as { records: { studentId: number | string, date: string, status: AttendanceStatus }[] };
 
-  if (!records || !Array.isArray(records)) {
-    throw new ApiError(400, 'Attendance records array is required');
+  if (!records || !Array.isArray(records) || records.length === 0) {
+    throw new ApiError(400, 'Attendance records array is required and cannot be empty');
+  }
+
+  // Get the first student to find class and section
+  const firstStudentId = Number(records[0].studentId);
+  const studentInfo = await prisma.student.findUnique({
+    where: { id: firstStudentId },
+    select: { className: true, section: true }
+  });
+
+  if (!studentInfo) {
+    throw new ApiError(404, 'Student not found');
+  }
+  
+  const attendanceDate = new Date(records[0].date);
+  // Reset time to midnight for consistency
+  attendanceDate.setHours(0, 0, 0, 0);
+
+  // Check if attendance is locked for this class/section/date
+  const existingLock = await prisma.attendanceLock.findUnique({
+    where: {
+      className_section_date: {
+        className: studentInfo.className,
+        section: studentInfo.section,
+        date: attendanceDate
+      }
+    }
+  });
+
+  const userRole = req.user?.role;
+  if (existingLock && userRole !== 'ADMIN' && userRole !== 'PRINCIPAL') {
+    throw new ApiError(403, 'Attendance for this section is locked and can only be updated by Admin or Principal');
+  }
+
+  // Check if all students in this section are included
+  const sectionStudents = await prisma.student.findMany({
+    where: {
+      className: studentInfo.className,
+      section: studentInfo.section
+    },
+    select: { id: true }
+  });
+
+  // Verify that every student in the section is in the records
+  const recordStudentIds = new Set(records.map(r => Number(r.studentId)));
+  const missingStudents = sectionStudents.filter(s => !recordStudentIds.has(s.id));
+
+  if (missingStudents.length > 0) {
+    throw new ApiError(400, `All students in the section must be marked. Missing ${missingStudents.length} student(s).`);
   }
 
   // Use a transaction to ensure all or nothing
   const results = await prisma.$transaction(
     records.map((record) => {
-      const { studentId, date, status } = record;
-      const attendanceDate = new Date(date);
-      
-      // Reset time to midnight for consistency
-      attendanceDate.setHours(0, 0, 0, 0);
+      const { studentId, status } = record;
 
       return prisma.attendance.upsert({
         where: {
@@ -75,6 +119,18 @@ export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: R
       });
     })
   );
+
+  // Lock the attendance for this section/date if not already locked
+  if (!existingLock && req.user) {
+    await prisma.attendanceLock.create({
+      data: {
+        className: studentInfo.className,
+        section: studentInfo.section,
+        date: attendanceDate,
+        lockedBy: req.user.id
+      }
+    });
+  }
 
   if (req.user) {
     await AuditService.logChange('UPDATE', 'Attendance', 'BULK', req.user.id, null, { count: results.length, records });
@@ -120,93 +176,71 @@ export const getAttendanceById = asyncHandler(async (req: Request, res: Response
   );
 });
 
-export const createAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { studentId, date, status } = req.body;
-  
-  if (!studentId || !status) {
-    throw new ApiError(400, 'Student ID and status are required');
+export const getAttendanceLockStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { className, section, date } = req.query;
+
+  if (!className || !section || !date) {
+    throw new ApiError(400, 'className, section, and date are required');
   }
 
-  const attendance = await prisma.attendance.create({
-    data: {
-      studentId: Number(studentId),
-      date: date ? new Date(date) : undefined,
-      status,
-    },
+  const attendanceDate = new Date(date as string);
+  attendanceDate.setHours(0, 0, 0, 0);
+
+  const lock = await prisma.attendanceLock.findUnique({
+    where: {
+      className_section_date: {
+        className: className as string,
+        section: section as string,
+        date: attendanceDate
+      }
+    }
   });
 
-  if (req.user) {
-    await AuditService.logChange('CREATE', 'Attendance', attendance.id, req.user.id, null, attendance);
-  }
-
-  sendParentAttendanceNotification(attendance.id).catch(err => 
-    console.error(`Failed to send email for attendance ${attendance.id}:`, err)
-  );
-  sendParentAttendanceWhatsApp(attendance.id).catch(err => 
-    console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err)
-  );
-
-  return res.status(201).json(
-    new ApiResponse(201, attendance, 'Attendance record created successfully')
+  return res.status(200).json(
+    new ApiResponse(200, { isLocked: !!lock, lockData: lock }, 'Lock status fetched successfully')
   );
 });
 
-export const updateAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  const { status, date } = req.body;
+export const unlockAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { className, section, date } = req.body;
 
-  const oldAttendance = await prisma.attendance.findUnique({
-    where: { id: Number(id) }
-  });
-
-  if (!oldAttendance) {
-    throw new ApiError(404, 'Attendance record not found');
+  if (!className || !section || !date) {
+    throw new ApiError(400, 'className, section, and date are required');
   }
 
-  const attendance = await prisma.attendance.update({
-    where: { id: Number(id) },
-    data: {
-      status,
-      date: date ? new Date(date) : undefined,
-    },
-  });
-
-  if (req.user) {
-    await AuditService.logChange('UPDATE', 'Attendance', id, req.user.id, oldAttendance, attendance);
+  const userRole = req.user?.role;
+  if (userRole !== 'ADMIN' && userRole !== 'PRINCIPAL') {
+    throw new ApiError(403, 'Only Admins and Principals can unlock attendance');
   }
 
-  sendParentAttendanceNotification(attendance.id).catch(err => 
-    console.error(`Failed to send email for attendance ${attendance.id}:`, err)
-  );
-  sendParentAttendanceWhatsApp(attendance.id).catch(err => 
-    console.error(`Failed to send WhatsApp for attendance ${attendance.id}:`, err)
-  );
+  const attendanceDate = new Date(date as string);
+  attendanceDate.setHours(0, 0, 0, 0);
 
-  return res.status(200).json(
-    new ApiResponse(200, attendance, 'Attendance record updated successfully')
-  );
-});
-
-export const deleteAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  
-  const oldAttendance = await prisma.attendance.findUnique({
-    where: { id: Number(id) }
+  const lock = await prisma.attendanceLock.findUnique({
+    where: {
+      className_section_date: {
+        className: className as string,
+        section: section as string,
+        date: attendanceDate
+      }
+    }
   });
 
-  if (!oldAttendance) {
-    throw new ApiError(404, 'Attendance record not found');
+  if (!lock) {
+    throw new ApiError(404, 'Attendance is not locked for this section on this date');
   }
 
-  await prisma.attendance.delete({
-    where: { id: Number(id) },
+  await prisma.attendanceLock.delete({
+    where: {
+      id: lock.id
+    }
   });
 
   if (req.user) {
-    await AuditService.logChange('DELETE', 'Attendance', id, req.user.id, oldAttendance, null);
+    await AuditService.logChange('DELETE', 'AttendanceLock', lock.id.toString(), req.user.id, lock, null);
   }
 
   return res.status(200).json(
-    new ApiResponse(200, null, 'Attendance record deleted successfully')
+    new ApiResponse(200, null, 'Attendance unlocked successfully')
   );
 });

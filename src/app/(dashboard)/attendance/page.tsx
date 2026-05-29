@@ -1,14 +1,18 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon, Save, CheckCircle, XCircle, Users, LayoutList, CheckSquare } from 'lucide-react';
+import { Calendar as CalendarIcon, Save, CheckCircle, XCircle, Users, LayoutList, CheckSquare, Lock, Unlock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { selectAllStudents, fetchStudents } from '@/lib/features/studentsSlice';
+import { selectUser } from '@/lib/features/authSlice';
 import { 
   selectAllAttendanceRecords, 
   addDailyRecordsBulkThunk,
   fetchAttendance,
+  fetchAttendanceLockStatus,
+  unlockAttendanceThunk,
+  selectIsAttendanceLocked,
   AttendanceSummary
 } from '@/lib/features/attendanceSlice';
 import { fetchClassesOverview, selectClassesOverview } from '@/lib/features/classesSlice';
@@ -25,6 +29,8 @@ export default function AttendancePage() {
   const classesOverview = useAppSelector(selectClassesOverview);
   
   const loadingAttendance = useAppSelector((state) => state.attendance.loading);
+  const currentUser = useAppSelector(selectUser);
+  const isLocked = useAppSelector(selectIsAttendanceLocked);
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -39,6 +45,16 @@ export default function AttendancePage() {
     dispatch(fetchAttendance());
     dispatch(fetchClassesOverview());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (selectedClass && selectedSection && selectedDate) {
+      dispatch(fetchAttendanceLockStatus({
+        className: selectedClass,
+        section: selectedSection,
+        date: selectedDate
+      }));
+    }
+  }, [dispatch, selectedClass, selectedSection, selectedDate]);
 
   const availableSections = useMemo(() => {
     const classData = classesOverview.find(c => c.className === selectedClass);
@@ -112,20 +128,31 @@ export default function AttendancePage() {
     setIsDirty(true);
   };
 
+  const isAllMarked = useMemo(() => {
+    return classStudents.length > 0 && classStudents.every(student => !!localAttendance[student.id]);
+  }, [classStudents, localAttendance]);
+
   const handleSave = () => {
+    if (!isAllMarked) {
+      toast.error('All students in the section must be marked before saving.');
+      return;
+    }
+
     const recordsToSave: Partial<Attendance>[] = classStudents.map(student => {
       const existingRecord = storeRecords.find(r => r.studentId === student.id);
       return {
         id: existingRecord?.id,
         studentId: student.id,
         date: selectedDate,
-        status: localAttendance[student.id] || 'ABSENT',
+        status: localAttendance[student.id],
       };
     });
 
     dispatch(addDailyRecordsBulkThunk(recordsToSave))
       .unwrap()
-      .then(() => toast.success('Attendance records updated'))
+      .then(() => {
+        toast.success('Attendance records updated and locked for this date');
+      })
       .catch((err) => toast.error(typeof err === 'string' ? err : 'Failed to save attendance'));
     setIsDirty(false);
   };
@@ -181,23 +208,46 @@ export default function AttendancePage() {
           <CardTitle className="text-slate-900 flex items-center gap-2">
             <Users size={20} className="text-primary" />
             {selectedClass && selectedSection ? `${CLASSES.find(c => c.value === selectedClass)?.label} - Sec ${selectedSection} Students` : 'Class Roster'}
+            {isLocked && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                <Lock size={12} /> Locked
+              </span>
+            )}
           </CardTitle>
           
           {selectedClass && selectedSection && classStudents.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {isLocked && (currentUser?.role === 'ADMIN' || currentUser?.role === 'PRINCIPAL') && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-white hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 text-[11px] font-bold text-amber-600 border-amber-200"
+                  onClick={() => {
+                    dispatch(unlockAttendanceThunk({
+                      className: selectedClass,
+                      section: selectedSection,
+                      date: selectedDate
+                    })).unwrap().then(() => toast.success('Attendance unlocked successfully'));
+                  }}
+                >
+                  <Unlock size={14} className="mr-1.5" /> Unlock
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="bg-white hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 text-[11px] font-bold"
+                className="bg-white hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 text-[11px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleMarkAll('PRESENT')}
+                disabled={isLocked}
               >
                 <CheckCircle size={14} className="mr-1.5" /> Mark All Present
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-[11px] font-bold"
+                className="bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-[11px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleMarkAll('ABSENT')}
+                disabled={isLocked}
               >
                 <XCircle size={14} className="mr-1.5" /> Mark All Absent
               </Button>
@@ -263,22 +313,24 @@ export default function AttendancePage() {
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleStatusChange(student.id, 'PRESENT')}
+                                disabled={isLocked}
                                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg border text-xs font-bold transition-all duration-200 ${
                                   currentStatus === 'PRESENT'
                                     ? 'bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-100'
                                     : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
-                                }`}
+                                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
                                 <CheckCircle size={14} />
                                 Present
                               </button>
                               <button
                                 onClick={() => handleStatusChange(student.id, 'ABSENT')}
+                                disabled={isLocked}
                                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg border text-xs font-bold transition-all duration-200 ${
                                   currentStatus === 'ABSENT'
                                     ? 'bg-red-500 border-red-600 text-white shadow-md shadow-red-100'
                                     : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
-                                }`}
+                                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
                                 <XCircle size={14} />
                                 Absent
@@ -344,8 +396,8 @@ export default function AttendancePage() {
                 </div>
                 <Button 
                   onClick={handleSave} 
-                  disabled={!isDirty}
-                  className={`w-full sm:w-auto px-8 py-2.5 min-h-[44px] shadow-lg transition-all ${isDirty ? 'shadow-blue-200 scale-100' : 'shadow-none scale-95'}`}
+                  disabled={!isDirty || !isAllMarked || isLocked}
+                  className={`w-full sm:w-auto px-8 py-2.5 min-h-[44px] shadow-lg transition-all ${isDirty && isAllMarked && !isLocked ? 'shadow-blue-200 scale-100' : 'shadow-none scale-95 opacity-80 cursor-not-allowed'}`}
                 >
                   <Save size={18} className="mr-2" />
                   Save Class Records

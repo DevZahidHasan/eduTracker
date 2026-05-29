@@ -17,6 +17,7 @@ export interface AttendanceState {
   summary: Record<number, AttendanceSummary>; // Keyed by studentId
   loading: boolean;
   error: string | null;
+  isLocked: boolean;
 }
 
 const initialState: AttendanceState = {
@@ -24,7 +25,34 @@ const initialState: AttendanceState = {
   summary: {},
   loading: false,
   error: null,
+  isLocked: false,
 };
+
+export const fetchAttendanceLockStatus = createAsyncThunk(
+  'attendance/fetchLockStatus',
+  async ({ className, section, date }: { className: string; section: string; date: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/attendance/lock', {
+        params: { className, section, date }
+      });
+      return response.data.data.isLocked as boolean;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch lock status');
+    }
+  }
+);
+
+export const unlockAttendanceThunk = createAsyncThunk(
+  'attendance/unlock',
+  async ({ className, section, date }: { className: string; section: string; date: string }, { rejectWithValue }) => {
+    try {
+      await api.post('/attendance/unlock', { className, section, date });
+      return false; // isLocked becomes false
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to unlock attendance');
+    }
+  }
+);
 
 export const fetchAttendance = createAsyncThunk(
   'attendance/fetchAttendance',
@@ -118,12 +146,20 @@ const attendanceSlice = createSlice({
         studentIds.forEach(id => {
           state.summary[id] = calculateStudentSummary(state.dailyRecords, id);
         });
+        state.isLocked = true; // Automatically lock after bulk update
+      })
+      .addCase(fetchAttendanceLockStatus.fulfilled, (state, action) => {
+        state.isLocked = action.payload;
+      })
+      .addCase(unlockAttendanceThunk.fulfilled, (state, action) => {
+        state.isLocked = action.payload; // will be false
       });
   },
 });
 
 // Selectors
 export const selectAllAttendanceRecords = (state: RootState) => state.attendance.dailyRecords;
+export const selectIsAttendanceLocked = (state: RootState) => state.attendance.isLocked;
 export const selectOverallAttendanceRate = createSelector(
   [selectAllAttendanceRecords],
   (records) => {
