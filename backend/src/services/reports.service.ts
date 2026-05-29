@@ -396,12 +396,16 @@ export const getClassPerformance = async (className: string, examType: string, s
  * Calculates a blended Annual Result based on the defined weightages of different ExamTypes.
  */
 export const calculateAnnualResult = async (studentId: number) => {
-  // 1. Fetch all TermResults for this student
+  // 1. Fetch all TermResults and Marks to handle cases where TermReports aren't generated yet
   const termResults = await prisma.termResult.findMany({
     where: { studentId }
   });
+  
+  const marks = await prisma.mark.findMany({
+    where: { studentId }
+  });
 
-  if (termResults.length === 0) return null;
+  if (termResults.length === 0 && marks.length === 0) return null;
 
   // 2. Fetch ExamTypes to get weightages
   const examTypes = await prisma.examType.findMany();
@@ -410,16 +414,40 @@ export const calculateAnnualResult = async (studentId: number) => {
     weightageMap[e.name] = e.weightage;
   });
 
+  // Group raw marks if TermResult is missing
+  const termResultMap = new Map(termResults.map(tr => [tr.examType, tr]));
+  const marksByExamType: Record<string, { obtained: number, total: number }> = {};
+  
+  marks.forEach(m => {
+    if (m.examType === 'Annual Result' || m.examType === 'Final Result') return;
+    if (!termResultMap.has(m.examType)) {
+      if (!marksByExamType[m.examType]) {
+        marksByExamType[m.examType] = { obtained: 0, total: 0 };
+      }
+      marksByExamType[m.examType].obtained += m.score;
+      marksByExamType[m.examType].total += m.maxScore;
+    }
+  });
+
   // 3. Calculate weighted average percentage
   let totalWeightedPercentage = 0;
   let totalWeightageUsed = 0;
 
+  // Process existing TermResults
   for (const tr of termResults) {
     // Ignore any existing Annual Results to prevent recursive calculation
     if (tr.examType === 'Annual Result' || tr.examType === 'Final Result') continue;
 
     const weight = weightageMap[tr.examType] || 100; // Default to 100% if not found
     totalWeightedPercentage += tr.percentage * weight;
+    totalWeightageUsed += weight;
+  }
+
+  // Process raw Marks
+  for (const [examType, data] of Object.entries(marksByExamType)) {
+    const percentage = data.total > 0 ? (data.obtained / data.total) * 100 : 0;
+    const weight = weightageMap[examType] || 100;
+    totalWeightedPercentage += percentage * weight;
     totalWeightageUsed += weight;
   }
 

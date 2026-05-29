@@ -14,6 +14,29 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('Starting seed...');
 
+  console.log('Seeding Exam Types...');
+  const examTypes = [
+    { name: 'T1 Tutorial', baseMark: 20, weightage: 20, isFinal: false, category: 'TUTORIAL', termNumber: 1 },
+    { name: 'Term 1', baseMark: 100, weightage: 80, isFinal: true, category: 'FINAL', termNumber: 1 },
+    { name: 'T2 Tutorial', baseMark: 20, weightage: 20, isFinal: false, category: 'TUTORIAL', termNumber: 2 },
+    { name: 'Term 2', baseMark: 100, weightage: 80, isFinal: true, category: 'FINAL', termNumber: 2 },
+    { name: 'T3 Tutorial', baseMark: 20, weightage: 20, isFinal: false, category: 'TUTORIAL', termNumber: 3 },
+    { name: 'Term 3', baseMark: 100, weightage: 80, isFinal: true, category: 'FINAL', termNumber: 3 },
+  ];
+  for (const et of examTypes) {
+    await prisma.examType.upsert({
+      where: { name: et.name },
+      update: {
+        baseMark: et.baseMark,
+        weightage: et.weightage,
+        isFinal: et.isFinal,
+        category: et.category,
+        termNumber: et.termNumber,
+      },
+      create: et,
+    });
+  }
+
   // 0. Seed Document Templates (Moving to top to ensure it runs)
   await prisma.documentTemplate.deleteMany({});
   
