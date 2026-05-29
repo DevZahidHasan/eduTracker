@@ -178,7 +178,7 @@ export function CSVImporter({ type, onSuccess, onClose }: CSVImporterProps) {
 
           <Button 
             variant="ghost" 
-            fullWidth 
+            className="w-full"
             onClick={() => {
               setResult(null);
               setFile(null);

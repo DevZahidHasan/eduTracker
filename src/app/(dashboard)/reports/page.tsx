@@ -417,7 +417,7 @@ export default function ReportsPage() {
                           {(mark as any).gpa?.toFixed(2) || '0.00'}
                         </td>
                         <td className="border border-slate-800 p-2 text-center font-bold text-slate-900">
-                          {mark.grade}
+                          {(mark as any).grade}
                         </td>
                       </tr>
                     ))}

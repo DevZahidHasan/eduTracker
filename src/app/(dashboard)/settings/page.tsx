@@ -18,8 +18,11 @@ import {
   Database,
   Download as DownloadIcon,
   Cloud as CloudIcon,
-  Zap
+  Zap,
+  FileUp,
+  Info
 } from 'lucide-react';
+import api from '@/lib/api';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { 
   fetchSchoolProfile, 
