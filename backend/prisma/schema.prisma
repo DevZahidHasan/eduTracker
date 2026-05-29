@@ -249,6 +249,17 @@ model Attendance {
   @@unique([studentId, date])
 }
 
+model AttendanceLock {
+  id        Int      @id @default(autoincrement())
+  className String
+  section   String
+  date      DateTime
+  lockedAt  DateTime @default(now())
+  lockedBy  Int
+
+  @@unique([className, section, date])
+}
+
 model SchoolProfile {
   id           Int      @id @default(1)
   name         String   @default("EduTrack Academy")
