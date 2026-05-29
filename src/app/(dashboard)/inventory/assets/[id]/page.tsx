@@ -20,7 +20,8 @@ import {
   Barcode,
   Save,
   ShieldCheck,
-  Package
+  Package,
+  Info
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
