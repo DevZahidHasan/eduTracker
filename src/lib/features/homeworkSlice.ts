@@ -10,6 +10,10 @@ export interface HomeworkSubmission {
   status: 'SUBMITTED' | 'REVIEWED';
   teacherNotes?: string;
   submittedAt: string;
+  student?: {
+    fullName: string;
+    rollNumber: string;
+  };
 }
 
 export interface Homework {

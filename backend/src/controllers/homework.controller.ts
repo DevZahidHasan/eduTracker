@@ -53,7 +53,7 @@ export const createHomework = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 /**
- * Get homeworks for a specific class section
+ * Get homeworks for a specific class section (includes submission counts for teachers)
  */
 export const getHomeworks = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { className, section } = req.query;
@@ -67,6 +67,13 @@ export const getHomeworks = asyncHandler(async (req: AuthRequest, res: Response)
     include: {
       teacher: {
         select: { name: true }
+      },
+      submissions: {
+        include: {
+          student: {
+            select: { fullName: true, rollNumber: true }
+          }
+        }
       }
     },
     orderBy: { createdAt: 'desc' }

@@ -14,7 +14,8 @@ import {
   selectParentHomeworks, 
   selectHomeworkLoading,
   selectHomeworkSubmitting,
-  HomeworkSubmission
+  HomeworkSubmission,
+  Homework
 } from '@/lib/features/homeworkSlice';
 import { selectClasses, selectSubjects, fetchConfig } from '@/lib/features/configSlice';
 import { fetchParentDashboard, selectParentDashboardData } from '@/lib/features/parentSlice';
@@ -38,7 +39,8 @@ import {
   Check,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -57,6 +59,7 @@ export default function HomeworkPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<HomeworkSubmission | null>(null);
+  const [reviewingHomework, setReviewingHomework] = useState<Homework | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const [formData, setFormData] = useState({
@@ -115,7 +118,6 @@ export default function HomeworkPage() {
 
   const getFileUrl = (path: string) => {
     if (!path) return '';
-    // If path starts with /uploads, remove the /api prefix from base if it exists
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const cleanBase = baseUrl.endsWith('/api') ? baseUrl.slice(0, -4) : baseUrl;
     return `${cleanBase}${path}`;
@@ -253,15 +255,33 @@ export default function HomeworkPage() {
               <h3 className="text-lg font-bold text-slate-900 mb-2">{h.title}</h3>
               <p className="text-sm text-slate-500 line-clamp-3 mb-4">{h.description}</p>
               
-              <div className="space-y-2 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                  <Calendar size={14} />
-                  <span>Due: {format(new Date(h.dueDate), 'PPP')}</span>
+              <div className="space-y-4 pt-4 border-t border-slate-50">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                      <Calendar size={14} />
+                      <span>Due: {format(new Date(h.dueDate), 'PPP')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                      <User size={14} />
+                      <span>Class: {h.className}-{h.section}</span>
+                    </div>
+                  </div>
+                  {h.submissions && h.submissions.length > 0 && (
+                    <div className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center gap-1">
+                      <span className="text-xs font-black">{h.submissions.length}</span>
+                      <span className="text-[10px] font-bold uppercase">Submitted</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                  <User size={14} />
-                  <span>Class: {h.className}-{h.section}</span>
-                </div>
+
+                <Button 
+                  variant="soft" 
+                  className="w-full text-xs font-bold gap-2 py-2.5 h-auto"
+                  onClick={() => setReviewingHomework(h)}
+                >
+                  <Eye size={14} /> Review Submissions
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -288,13 +308,10 @@ export default function HomeworkPage() {
 
       <div className="grid grid-cols-1 gap-6">
         {parentHomeworks.map((h) => {
-          // Find which child this homework belongs to (needed for studentId during submission)
           const studentForHw = dashboardData.find(d => 
             d.student.className === h.className && d.student.section === h.section
           );
           const studentId = studentForHw?.student.id;
-          
-          // Check if already submitted
           const submission = studentId ? h.submissions?.find(s => s.studentId === studentId) : null;
 
           return (
@@ -413,54 +430,117 @@ export default function HomeworkPage() {
           </div>
         )}
       </div>
-
-      {/* Carousel Modal */}
-      {viewingSubmission && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <button 
-            onClick={() => setViewingSubmission(null)}
-            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
-          >
-            <X size={32} />
-          </button>
-          
-          <div className="relative max-w-4xl w-full h-full flex items-center justify-center">
-            {viewingSubmission.filePaths.length > 1 && (
-              <>
-                <button 
-                  onClick={() => setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : viewingSubmission.filePaths.length - 1))}
-                  className="absolute left-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all"
-                >
-                  <ChevronLeft size={32} />
-                </button>
-                <button 
-                  onClick={() => setCurrentImageIndex(prev => (prev < viewingSubmission.filePaths.length - 1 ? prev + 1 : 0))}
-                  className="absolute right-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all"
-                >
-                  <ChevronRight size={32} />
-                </button>
-              </>
-            )}
-            
-            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
-              <img 
-                src={getFileUrl(viewingSubmission.filePaths[currentImageIndex])} 
-                alt="Homework Work" 
-                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border-4 border-white/10"
-              />
-              <div className="px-6 py-2 bg-white/10 rounded-full text-white font-black text-xs uppercase tracking-widest">
-                Page {currentImageIndex + 1} of {viewingSubmission.filePaths.length}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
   return (
     <div className="container mx-auto pb-12">
       {user?.role === 'PARENT' ? renderParentView() : renderTeacherView()}
+
+      {/* Review Submissions Modal (Teacher) */}
+      {reviewingHomework && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <Card className="max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
+            <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Submissions Review</CardTitle>
+                <CardDescription>{reviewingHomework.title} • {reviewingHomework.className}-{reviewingHomework.section}</CardDescription>
+              </div>
+              <button onClick={() => setReviewingHomework(null)} className="text-slate-400 hover:text-slate-900 transition-colors">
+                <X size={24} />
+              </button>
+            </CardHeader>
+            <CardContent className="p-0 overflow-y-auto flex-1 custom-scrollbar">
+              {reviewingHomework.submissions && reviewingHomework.submissions.length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {reviewingHomework.submissions.map((s) => (
+                    <div key={s.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
+                          {s.student?.rollNumber || '#'}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{s.student?.fullName || 'Student'}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Submitted {format(new Date(s.submittedAt), 'MMM dd, p')}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="soft" 
+                        size="sm" 
+                        className="text-xs font-bold"
+                        onClick={() => {
+                          setViewingSubmission(s);
+                          setCurrentImageIndex(0);
+                        }}
+                      >
+                        View Work ({s.filePaths.length})
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center">
+                  <div className="inline-flex p-4 bg-slate-50 rounded-full text-slate-200 mb-4">
+                    <User size={48} />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Submissions Yet</h3>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Carousel Modal (Shared) */}
+      {viewingSubmission && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-in fade-in zoom-in-95 duration-200">
+          <button 
+            onClick={() => setViewingSubmission(null)}
+            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
+          >
+            <X size={32} />
+          </button>
+          
+          <div className="relative max-w-5xl w-full h-full flex items-center justify-center">
+            {viewingSubmission.filePaths.length > 1 && (
+              <>
+                <button 
+                  onClick={() => setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : viewingSubmission.filePaths.length - 1))}
+                  className="absolute left-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all hover:scale-110 z-10"
+                >
+                  <ChevronLeft size={40} />
+                </button>
+                <button 
+                  onClick={() => setCurrentImageIndex(prev => (prev < viewingSubmission.filePaths.length - 1 ? prev + 1 : 0))}
+                  className="absolute right-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all hover:scale-110 z-10"
+                >
+                  <ChevronRight size={40} />
+                </button>
+              </>
+            )}
+            
+            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+              <div className="relative group">
+                <img 
+                  src={getFileUrl(viewingSubmission.filePaths[currentImageIndex])} 
+                  alt="Homework Work" 
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-transform duration-500"
+                />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="px-6 py-2 bg-white/10 rounded-full text-white font-black text-xs uppercase tracking-widest border border-white/10">
+                  Page {currentImageIndex + 1} of {viewingSubmission.filePaths.length}
+                </div>
+                {viewingSubmission.student && (
+                  <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] bg-black/20 px-4 py-1 rounded-full">
+                    {viewingSubmission.student.fullName} • Roll: {viewingSubmission.student.rollNumber}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
