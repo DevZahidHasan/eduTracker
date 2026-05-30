@@ -93,10 +93,11 @@ export default function RegisterPage() {
       <Card className="w-full max-w-[520px] border-slate-200/60 shadow-xl shadow-slate-200/50 p-2 sm:p-4 rounded-3xl bg-white relative z-10">
         <CardHeader className="pt-8 pb-4 text-center">
           <div className="mx-auto h-20 w-20 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-50 ring-8 ring-emerald-50/30 overflow-hidden relative">
-            <Image 
-              src="/edutrackerLogo.png" 
-              alt="EduTracker Logo" 
+            <Image
+              src="/edutrackerLogo.png"
+              alt="EduTracker Logo"
               fill
+              priority
               sizes="80px"
               className="object-contain p-2"
             />

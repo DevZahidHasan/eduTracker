@@ -117,6 +117,7 @@ export default function LoginPage() {
               src="/edutrackerLogo.png" 
               alt="EduTracker Logo" 
               fill
+              priority
               sizes="80px"
               className="object-contain p-2"
             />

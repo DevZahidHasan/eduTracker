@@ -105,7 +105,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
              <span className="text-[10px] font-bold uppercase tracking-widest">Powered by</span>
              <div className="flex items-center gap-2 grayscale contrast-125">
-               <Image src="/edutrackerLogo.png" alt="EduTracker AI" width={22} height={22} className="object-contain" />
+               <Image src="/edutrackerLogo.png" alt="EduTracker AI" width={22} height={22} priority style={{ width: '22px', height: '22px' }} className="object-contain" />
                <span className="text-sm font-black tracking-tight text-foreground/80">EduTracker AI</span>
              </div>
           </div>
