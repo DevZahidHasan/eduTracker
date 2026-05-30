@@ -102,13 +102,81 @@ export const getParentHomeworks = asyncHandler(async (req: AuthRequest, res: Res
     include: {
       teacher: {
         select: { name: true }
-      }
+      },
+      submissions: true
     },
     orderBy: { dueDate: 'asc' }
   });
 
   return res.status(200).json(
     new ApiResponse(200, homeworks, 'Homeworks fetched successfully')
+  );
+});
+
+/**
+ * Submit homework work (Parent/Student)
+ */
+export const submitHomework = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { homeworkId, studentId } = req.body;
+  const parentId = req.user?.id;
+
+  if (!homeworkId || !studentId) {
+    throw new ApiError(400, 'Homework ID and Student ID are required');
+  }
+
+  const processedFiles = (req as any).processedFiles || [];
+  if (processedFiles.length === 0) {
+    throw new ApiError(400, 'No files uploaded or processing failed');
+  }
+
+  // Verify parent-student relationship
+  const student = await prisma.student.findUnique({
+    where: { id: Number(studentId) },
+    select: { parentId: true }
+  });
+
+  if (!student || student.parentId !== parentId) {
+    throw new ApiError(403, 'Unauthorized to submit for this student');
+  }
+
+  const filePaths = processedFiles.map((f: any) => f.relativePath);
+
+  // Check for existing submission to append if needed
+  const existingSubmission = await prisma.homeworkSubmission.findUnique({
+    where: {
+      homeworkId_studentId: {
+        homeworkId: Number(homeworkId),
+        studentId: Number(studentId)
+      }
+    }
+  });
+
+  const finalFilePaths = existingSubmission 
+    ? [...existingSubmission.filePaths, ...filePaths]
+    : filePaths;
+
+  const submission = await prisma.homeworkSubmission.upsert({
+    where: {
+      homeworkId_studentId: {
+        homeworkId: Number(homeworkId),
+        studentId: Number(studentId)
+      }
+    },
+    update: {
+      filePaths: finalFilePaths,
+      submittedAt: new Date(),
+      status: 'SUBMITTED'
+    },
+    create: {
+      homeworkId: Number(homeworkId),
+      studentId: Number(studentId),
+      filePaths: filePaths,
+      status: 'SUBMITTED'
+    }
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, submission, 'Homework work submitted successfully')
   );
 });
 

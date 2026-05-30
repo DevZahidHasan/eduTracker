@@ -44,13 +44,13 @@ export const getStudentById = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const uploadStudentPhoto = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.file) {
-    throw new ApiError(400, 'No file uploaded');
+  if (!(req as any).processedFile) {
+    throw new ApiError(400, 'No file uploaded or file processing failed');
   }
 
   const protocol = req.protocol;
   const host = req.get('host');
-  const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+  const imageUrl = `${protocol}://${host}${(req as any).processedFile.relativePath}`;
 
   return res.status(200).json(
     new ApiResponse(200, { imageUrl }, 'Student photo uploaded successfully')

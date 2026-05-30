@@ -131,7 +131,8 @@ model Student {
   class         SchoolClass      @relation(fields: [className], references: [name])
   classSection  ClassSection     @relation(fields: [className, section], references: [className, section])
   termResults   TermResult[]
-  parent        User?            @relation("ParentToStudent", fields: [parentId], references: [id])
+  parent              User?                @relation("ParentToStudent", fields: [parentId], references: [id])
+  homeworkSubmissions HomeworkSubmission[]
 
   @@unique([className, section, rollNumber])
 }
@@ -694,7 +695,7 @@ enum AssetStatus {
 }
 
 model Homework {
-  id           Int          @id @default(autoincrement())
+  id           Int                  @id @default(autoincrement())
   className    String
   section      String
   subjectName  String
@@ -702,9 +703,24 @@ model Homework {
   title        String
   description  String
   dueDate      DateTime
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  classSection ClassSection @relation(fields: [className, section], references: [className, section])
-  subject      Subject      @relation(fields: [subjectName], references: [name])
-  teacher      User         @relation(fields: [teacherId], references: [id])
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  classSection ClassSection         @relation(fields: [className, section], references: [className, section])
+  subject      Subject              @relation(fields: [subjectName], references: [name])
+  teacher      User                 @relation(fields: [teacherId], references: [id])
+  submissions  HomeworkSubmission[]
+}
+
+model HomeworkSubmission {
+  id           Int      @id @default(autoincrement())
+  homeworkId   Int
+  studentId    Int
+  filePaths    String[]
+  status       String   @default("SUBMITTED") // SUBMITTED, REVIEWED
+  teacherNotes String?
+  submittedAt  DateTime @default(now())
+  homework     Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([homeworkId, studentId])
 }

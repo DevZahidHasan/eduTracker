@@ -9,11 +9,15 @@ import {
   createHomeworkThunk, 
   deleteHomeworkThunk,
   updateHomeworkThunk,
+  submitHomeworkThunk,
   selectHomeworks, 
   selectParentHomeworks, 
-  selectHomeworkLoading 
+  selectHomeworkLoading,
+  selectHomeworkSubmitting,
+  HomeworkSubmission
 } from '@/lib/features/homeworkSlice';
 import { selectClasses, selectSubjects, fetchConfig } from '@/lib/features/configSlice';
+import { fetchParentDashboard, selectParentDashboardData } from '@/lib/features/parentSlice';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -28,7 +32,13 @@ import {
   AlertCircle,
   FileText,
   Clock,
-  Edit3
+  Edit3,
+  Camera,
+  Image as ImageIcon,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -38,12 +48,17 @@ export default function HomeworkPage() {
   const user = useAppSelector(selectUser);
   const homeworks = useAppSelector(selectHomeworks);
   const parentHomeworks = useAppSelector(selectParentHomeworks);
+  const dashboardData = useAppSelector(selectParentDashboardData);
   const loading = useAppSelector(selectHomeworkLoading);
+  const submitting = useAppSelector(selectHomeworkSubmitting);
   const CLASSES = useAppSelector(selectClasses);
   const SUBJECTS = useAppSelector(selectSubjects);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [viewingSubmission, setViewingSubmission] = useState<HomeworkSubmission | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const [formData, setFormData] = useState({
     className: '',
     section: '',
@@ -57,10 +72,21 @@ export default function HomeworkPage() {
     dispatch(fetchConfig());
     if (user?.role === 'PARENT') {
       dispatch(fetchParentHomeworks());
+      dispatch(fetchParentDashboard());
     } else {
       dispatch(fetchHomeworks({}));
     }
   }, [dispatch, user]);
+
+  const handleFileUpload = async (homeworkId: number, studentId: number, files: FileList) => {
+    try {
+      const fileArray = Array.from(files);
+      await dispatch(submitHomeworkThunk({ homeworkId, studentId, files: fileArray })).unwrap();
+      toast.success('Homework submitted successfully');
+    } catch (error: any) {
+      toast.error(error || 'Failed to submit');
+    }
+  };
 
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +111,14 @@ export default function HomeworkPage() {
     } catch (error: any) {
       toast.error(error || 'Failed to save homework');
     }
+  };
+
+  const getFileUrl = (path: string) => {
+    if (!path) return '';
+    // If path starts with /uploads, remove the /api prefix from base if it exists
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const cleanBase = baseUrl.endsWith('/api') ? baseUrl.slice(0, -4) : baseUrl;
+    return `${cleanBase}${path}`;
   };
 
   const handleEdit = (h: any) => {
@@ -249,64 +283,123 @@ export default function HomeworkPage() {
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <h1 className="text-2xl font-bold text-slate-900">Homework & Assignments</h1>
-        <p className="text-sm text-slate-500 mt-1">Keep track of your child's daily school tasks</p>
+        <p className="text-sm text-slate-500 mt-1">Keep track of your child's daily school tasks and submit completed work</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {parentHomeworks.map((h) => (
-          <Card key={h.id} className="border-slate-200/60 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-primary"></div>
-            <CardContent className="p-0">
-              <div className="p-6 flex flex-col md:flex-row justify-between gap-6">
-                <div className="flex-1 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black">
-                      <FileText size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{h.title}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">{h.subjectName}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class {h.className}-{h.section}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{h.description}</p>
-                  </div>
-                </div>
+        {parentHomeworks.map((h) => {
+          // Find which child this homework belongs to (needed for studentId during submission)
+          const studentForHw = dashboardData.find(d => 
+            d.student.className === h.className && d.student.section === h.section
+          );
+          const studentId = studentForHw?.student.id;
+          
+          // Check if already submitted
+          const submission = studentId ? h.submissions?.find(s => s.studentId === studentId) : null;
 
-                <div className="md:w-64 space-y-4 md:border-l md:border-slate-100 md:pl-6 flex flex-col justify-center">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                        <Clock size={16} />
+          return (
+            <Card key={h.id} className="border-slate-200/60 shadow-sm relative overflow-hidden group">
+              <div className={`absolute top-0 left-0 w-1.5 h-full ${submission ? 'bg-emerald-500' : 'bg-primary'}`}></div>
+              <CardContent className="p-0">
+                <div className="p-6 flex flex-col md:flex-row justify-between gap-6">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900">{h.title}</h3>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">{h.subjectName}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class {h.className}-{h.section}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Due Date</p>
-                        <p className="text-sm font-bold text-slate-900">{format(new Date(h.dueDate), 'MMM dd, yyyy')}</p>
+                      {submission && (
+                        <div className="flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                          <Check size={14} className="stroke-[3px]" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Submitted</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{h.description}</p>
+                    </div>
+                    
+                    {submission && (
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                        <ImageIcon className="text-slate-400" size={16} />
+                        <span className="text-xs font-bold text-slate-600 truncate flex-1">
+                          {submission.filePaths.length} Photo{submission.filePaths.length > 1 ? 's' : ''} Submitted
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 text-xs font-bold text-primary" 
+                          onClick={() => {
+                            setViewingSubmission(submission);
+                            setCurrentImageIndex(0);
+                          }}
+                        >
+                          View Work
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="md:w-64 space-y-4 md:border-l md:border-slate-100 md:pl-6 flex flex-col justify-center">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                          <Clock size={16} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Due Date</p>
+                          <p className="text-sm font-bold text-slate-900">{format(new Date(h.dueDate), 'MMM dd, yyyy')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <User size={16} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assigned By</p>
+                          <p className="text-sm font-bold text-slate-900">{h.teacher?.name || 'Teacher'}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <User size={16} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assigned By</p>
-                        <p className="text-sm font-bold text-slate-900">{h.teacher?.name || 'Teacher'}</p>
-                      </div>
+
+                    <div className="pt-2">
+                      <input
+                        type="file"
+                        id={`file-${h.id}`}
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (files && studentId) handleFileUpload(h.id, studentId, files);
+                        }}
+                      />
+                      <Button 
+                        variant={submission ? "outline" : "primary"} 
+                        className="w-full text-xs font-bold gap-2"
+                        onClick={() => document.getElementById(`file-${h.id}`)?.click()}
+                        disabled={submitting}
+                      >
+                        {submission ? <><Camera size={14} /> Re-submit Work</> : <><Camera size={14} /> Submit Work (Photo)</>}
+                      </Button>
+                      <p className="text-[9px] text-center text-slate-400 mt-2 font-medium">Capture photo(s) of the completed notebook pages</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full text-xs font-bold">
-                    <CheckCircle size={14} className="mr-2" /> Mark as Done
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
 
         {parentHomeworks.length === 0 && !loading && (
           <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -320,6 +413,48 @@ export default function HomeworkPage() {
           </div>
         )}
       </div>
+
+      {/* Carousel Modal */}
+      {viewingSubmission && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <button 
+            onClick={() => setViewingSubmission(null)}
+            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+          >
+            <X size={32} />
+          </button>
+          
+          <div className="relative max-w-4xl w-full h-full flex items-center justify-center">
+            {viewingSubmission.filePaths.length > 1 && (
+              <>
+                <button 
+                  onClick={() => setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : viewingSubmission.filePaths.length - 1))}
+                  className="absolute left-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all"
+                >
+                  <ChevronLeft size={32} />
+                </button>
+                <button 
+                  onClick={() => setCurrentImageIndex(prev => (prev < viewingSubmission.filePaths.length - 1 ? prev + 1 : 0))}
+                  className="absolute right-0 text-white/50 hover:text-white bg-white/10 p-4 rounded-full transition-all"
+                >
+                  <ChevronRight size={32} />
+                </button>
+              </>
+            )}
+            
+            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+              <img 
+                src={getFileUrl(viewingSubmission.filePaths[currentImageIndex])} 
+                alt="Homework Work" 
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border-4 border-white/10"
+              />
+              <div className="px-6 py-2 bg-white/10 rounded-full text-white font-black text-xs uppercase tracking-widest">
+                Page {currentImageIndex + 1} of {viewingSubmission.filePaths.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

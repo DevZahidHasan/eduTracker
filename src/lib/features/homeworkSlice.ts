@@ -2,6 +2,16 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 import api from '@/lib/api';
 
+export interface HomeworkSubmission {
+  id: number;
+  homeworkId: number;
+  studentId: number;
+  filePaths: string[];
+  status: 'SUBMITTED' | 'REVIEWED';
+  teacherNotes?: string;
+  submittedAt: string;
+}
+
 export interface Homework {
   id: number;
   className: string;
@@ -15,12 +25,14 @@ export interface Homework {
   teacher?: {
     name: string;
   };
+  submissions?: HomeworkSubmission[];
 }
 
 interface HomeworkState {
   homeworks: Homework[];
   parentHomeworks: Homework[];
   loading: boolean;
+  submitting: boolean;
   error: string | null;
 }
 
@@ -28,6 +40,7 @@ const initialState: HomeworkState = {
   homeworks: [],
   parentHomeworks: [],
   loading: false,
+  submitting: false,
   error: null,
 };
 
@@ -97,6 +110,28 @@ export const updateHomeworkThunk = createAsyncThunk(
   }
 );
 
+export const submitHomeworkThunk = createAsyncThunk(
+  'homework/submitHomework',
+  async ({ homeworkId, studentId, files }: { homeworkId: number, studentId: number, files: File[] }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('homeworkId', homeworkId.toString());
+      formData.append('studentId', studentId.toString());
+      
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+      
+      const response = await api.post('/homework/submit', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return { homeworkId, submission: response.data.data as HomeworkSubmission };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to submit homework');
+    }
+  }
+);
+
 const homeworkSlice = createSlice({
   name: 'homework',
   initialState,
@@ -138,6 +173,25 @@ const homeworkSlice = createSlice({
       })
       .addCase(deleteHomeworkThunk.fulfilled, (state, action) => {
         state.homeworks = state.homeworks.filter(h => h.id !== action.payload);
+      })
+      .addCase(submitHomeworkThunk.pending, (state) => {
+        state.submitting = true;
+      })
+      .addCase(submitHomeworkThunk.fulfilled, (state, action) => {
+        state.submitting = false;
+        const index = state.parentHomeworks.findIndex(h => h.id === action.payload.homeworkId);
+        if (index !== -1) {
+          if (!state.parentHomeworks[index].submissions) {
+            state.parentHomeworks[index].submissions = [];
+          }
+          // Remove existing submission if any (upsert logic)
+          state.parentHomeworks[index].submissions = state.parentHomeworks[index].submissions!.filter(s => s.studentId !== action.payload.submission.studentId);
+          state.parentHomeworks[index].submissions!.push(action.payload.submission);
+        }
+      })
+      .addCase(submitHomeworkThunk.rejected, (state, action) => {
+        state.submitting = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -145,5 +199,6 @@ const homeworkSlice = createSlice({
 export const selectHomeworks = (state: RootState) => state.homework.homeworks;
 export const selectParentHomeworks = (state: RootState) => state.homework.parentHomeworks;
 export const selectHomeworkLoading = (state: RootState) => state.homework.loading;
+export const selectHomeworkSubmitting = (state: RootState) => state.homework.submitting;
 
 export default homeworkSlice.reducer;
