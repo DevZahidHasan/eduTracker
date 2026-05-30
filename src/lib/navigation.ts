@@ -24,6 +24,7 @@ export const navItems = [
   { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'ACCOUNTANT', 'PRINCIPAL'] },
   { name: 'ID Cards', href: '/id-cards', icon: LayoutGrid, roles: ['ADMIN', 'ACCOUNTANT', 'PRINCIPAL', 'STAFF'] },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck, roles: ['ADMIN', 'TEACHER'] },
+  { name: 'Homework', href: '/homework', icon: BookOpen, roles: ['ADMIN', 'TEACHER', 'PARENT'] },
   { name: 'Marks', href: '/marks', icon: FileSpreadsheet, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Papers', href: '/question-papers', icon: FileText, roles: ['ADMIN', 'TEACHER'] },
   { name: 'Question Bank', href: '/question-bank', icon: BookOpen, roles: ['ADMIN', 'TEACHER'] },

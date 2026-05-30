@@ -24,7 +24,7 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 - [x] **Academic Performance Charts:** Implement visual trend graphs (Recharts) for student exam history.
 - [x] **Interactive Attendance Calendar:** Add a monthly calendar view to visualize attendance history (Present/Absent/Late).
 - [x] **Fee Payment History:** Add a dedicated view for historical fee transactions and statuses.
-- [ ] **Homework & Assignments Module:** Allow teachers to post daily homework/assignments with notifications.
+- [x] **Homework & Assignments Module:** Allow teachers to post daily homework/assignments with notifications.
 - [ ] **Live Bus Tracking (Transport Enhancement):** Add a feature where parents can see if the bus is delayed.
 
 ### 2. Automated Online Payments (Finance)

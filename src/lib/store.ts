@@ -16,6 +16,7 @@ import questionBankReducer from './features/questionBankSlice';
 import financeReducer from './features/financeSlice';
 import licenseReducer from './features/licenseSlice';
 import parentReducer from './features/parentSlice';
+import homeworkReducer from './features/homeworkSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -37,6 +38,7 @@ export const makeStore = () => {
       finance: financeReducer,
       license: licenseReducer,
       parent: parentReducer,
+      homework: homeworkReducer,
     },
   });
 };

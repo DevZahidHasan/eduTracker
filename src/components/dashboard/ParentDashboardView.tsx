@@ -25,6 +25,10 @@ import {
   selectParentAttendanceLoading,
   ParentDashboardData 
 } from '@/lib/features/parentSlice';
+import { 
+  fetchParentHomeworks, 
+  selectParentHomeworks 
+} from '@/lib/features/homeworkSlice';
 import { Card, CardContent } from '@/components/ui/Card';
 import { 
   Calendar, 
@@ -38,7 +42,8 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  BookOpen
 } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -64,12 +69,14 @@ export default function ParentDashboardView() {
   const resultsLoading = useAppSelector(selectParentResultsLoading);
   const attendanceData = useAppSelector(selectParentAttendanceData);
   const attendanceLoading = useAppSelector(selectParentAttendanceLoading);
+  const parentHomeworks = useAppSelector(selectParentHomeworks);
   
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
     dispatch(fetchParentDashboard());
+    dispatch(fetchParentHomeworks());
   }, [dispatch]);
 
   useEffect(() => {
@@ -101,6 +108,11 @@ export default function ParentDashboardView() {
   const getAttendanceForDay = (day: Date) => {
     return attendanceData.find(a => isSameDay(new Date(a.date), day));
   };
+
+  const currentHomeworks = parentHomeworks.filter(h => {
+    const studentData = dashboardData.find(d => d.student.id === selectedStudentId);
+    return h.className === studentData?.student.className && h.section === studentData?.student.section;
+  }).slice(0, 3);
 
   const handleDownloadReport = async (studentId: number, examType: string, studentName: string) => {
     try {
@@ -425,6 +437,45 @@ export default function ParentDashboardView() {
             ) : (
               <div className="p-12 text-center">
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No history found</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Homework Preview Row */}
+      <div className="mt-6">
+        <Card className="border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <BookOpen className="text-amber-500" size={20} />
+              <h3 className="text-lg font-bold text-slate-800">Pending Homework</h3>
+            </div>
+            <Button variant="ghost" size="sm" className="text-primary font-bold hover:bg-primary/5" onClick={() => window.location.href='/homework'}>
+              View All <ChevronRight size={14} className="ml-1" />
+            </Button>
+          </div>
+          <CardContent className="p-0">
+            {currentHomeworks.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                {currentHomeworks.map((h, idx) => (
+                  <div key={idx} className="p-6 hover:bg-slate-50/50 transition-colors">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-black rounded uppercase tracking-widest">
+                        {h.subjectName}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        Due: {format(new Date(h.dueDate), 'MMM dd')}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 mb-2 line-clamp-1">{h.title}</h4>
+                    <p className="text-xs text-slate-500 line-clamp-2">{h.description}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No pending assignments</p>
               </div>
             )}
           </CardContent>

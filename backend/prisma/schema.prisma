@@ -34,6 +34,7 @@ model User {
   staffAttendances  StaffAttendance[]
   salary            StaffSalary?
   children          Student[]         @relation("ParentToStudent")
+  homeworks         Homework[]
 }
 
 model Role {
@@ -151,6 +152,7 @@ model ClassSection {
   teacher   User?       @relation(fields: [teacherId], references: [id])
   routines  Routine[]
   students  Student[]
+  homeworks Homework[]
 
   @@unique([className, section])
 }
@@ -196,9 +198,10 @@ model Mark {
 }
 
 model Subject {
-  name    String   @id
-  marks   Mark[]
-  periods Period[]
+  name      String     @id
+  marks     Mark[]
+  periods   Period[]
+  homeworks Homework[]
 }
 
 model ExamType {
@@ -688,4 +691,20 @@ enum AssetStatus {
   SCRAPPED
   DISPOSED
   LOST
+}
+
+model Homework {
+  id           Int          @id @default(autoincrement())
+  className    String
+  section      String
+  subjectName  String
+  teacherId    Int
+  title        String
+  description  String
+  dueDate      DateTime
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  classSection ClassSection @relation(fields: [className, section], references: [className, section])
+  subject      Subject      @relation(fields: [subjectName], references: [name])
+  teacher      User         @relation(fields: [teacherId], references: [id])
 }
