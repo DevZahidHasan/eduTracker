@@ -143,18 +143,35 @@ export default function ParentDashboardView() {
         </Card>
 
         {/* Academic Card */}
-        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden">
+        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden md:col-span-3 lg:col-span-1">
           <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
           <CardContent className="p-6 flex flex-col h-full justify-between">
             <div>
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Latest Result</p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Latest Result</p>
+                {latestResult && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{latestResult.examType}</span>}
+              </div>
+              
               {latestResult ? (
                 <>
-                  <div className="flex items-baseline gap-2 mt-1">
+                  <div className="flex items-baseline gap-2 mb-4 pb-4 border-b border-slate-100">
                     <h2 className="text-3xl font-black tracking-tight text-slate-900">{latestResult.percentage.toFixed(1)}%</h2>
                     {latestResult.grade && <span className="text-lg font-bold text-blue-600">({latestResult.grade})</span>}
                   </div>
-                  <p className="text-xs font-medium text-slate-500 mt-1">{latestResult.examType}</p>
+                  
+                  {latestResult.marks && latestResult.marks.length > 0 && (
+                    <div className="space-y-3 mb-4 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                      {latestResult.marks.map((mark, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">{mark.subject}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900">{mark.score}</span>
+                            <span className="text-xs text-slate-400">/ {mark.maxScore}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="flex items-center gap-2 mt-4 text-slate-400">

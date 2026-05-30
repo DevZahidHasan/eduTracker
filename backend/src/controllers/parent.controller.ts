@@ -68,12 +68,30 @@ export const getParentDashboard = asyncHandler(async (req: AuthRequest, res: Res
       take: 1
     });
 
+    let subjectMarks: { subject: string; score: number; maxScore: number }[] = [];
+    if (recentReports.length > 0) {
+      subjectMarks = await prisma.mark.findMany({
+        where: {
+          studentId: student.id,
+          examType: recentReports[0].examType
+        },
+        select: {
+          subject: true,
+          score: true,
+          maxScore: true
+        }
+      });
+    }
+
     return {
       student,
       attendanceToday: todayAttendance?.status || 'NOT_MARKED',
       unpaidVouchers,
       totalDue: unpaidVouchers.reduce((sum, v) => sum + v.totalAmount, 0),
-      latestResult: recentReports.length > 0 ? recentReports[0] : null
+      latestResult: recentReports.length > 0 ? {
+        ...recentReports[0],
+        marks: subjectMarks
+      } : null
     };
   }));
 
@@ -146,11 +164,61 @@ export const getParentResults = asyncHandler(async (req: AuthRequest, res: Respo
     );
   }
 
-  // Otherwise, get historical TermResult aggregates
-  const results = await prisma.termResult.findMany({
-    where: { studentId: Number(studentId) },
-    orderBy: { createdAt: 'desc' }
-  });
+  // Otherwise, get historical TermResult aggregates with subject marks
+  // We construct the BD standard terms (Term 1, Term 2, Term 3)
+  const terms = [1, 2, 3];
+  const results = [];
+
+  for (const term of terms) {
+    const reportData = await reportsService.getStudentReportData(Number(studentId), `TERM_${term}`);
+    
+    if (reportData && reportData.marks.length > 0) {
+      // Check if both tutorial and final are published
+      const termExamTypes = await prisma.examType.findMany({
+        where: { termNumber: term }
+      });
+      
+      const publishedResults = await prisma.termResult.findMany({
+        where: {
+          studentId: Number(studentId),
+          examType: { in: termExamTypes.map(e => e.name) }
+        }
+      });
+      
+      const tutorialTypes = termExamTypes.filter(e => e.category === 'TUTORIAL').map(e => e.name);
+      const finalTypes = termExamTypes.filter(e => e.category === 'FINAL').map(e => e.name);
+
+      const hasTutorial = tutorialTypes.length === 0 || publishedResults.some(pr => tutorialTypes.includes(pr.examType));
+      const hasFinal = finalTypes.length === 0 || publishedResults.some(pr => finalTypes.includes(pr.examType));
+      
+      results.push({
+        examType: `TERM_${term}`,
+        title: `Term ${term} Result`,
+        percentage: reportData.gpa ? (reportData.gpa / 5) * 100 : 0, // Approx percentage
+        gpa: reportData.gpa,
+        grade: reportData.grade,
+        marks: reportData.marks, // Contains { subject, tutorial, final, score, maxScore, grade }
+        canDownload: hasTutorial && hasFinal
+      });
+    }
+  }
+
+  // Also fetch Annual Result if it exists
+  const annualReportData = await reportsService.getStudentReportData(Number(studentId), 'Annual Result');
+  if (annualReportData && annualReportData.marks.length > 0) {
+     const isAnnualPublished = await prisma.termResult.findFirst({
+        where: { studentId: Number(studentId), examType: 'Annual Result' }
+     });
+     results.push({
+        examType: 'Annual Result',
+        title: 'Annual Master Report',
+        percentage: annualReportData.gpa ? (annualReportData.gpa / 5) * 100 : 0,
+        gpa: annualReportData.gpa,
+        grade: annualReportData.grade,
+        marks: annualReportData.marks,
+        canDownload: !!isAnnualPublished
+     });
+  }
 
   return res.status(200).json(
     new ApiResponse(200, results, 'Aggregate results fetched successfully')

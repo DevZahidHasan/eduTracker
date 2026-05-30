@@ -25,6 +25,11 @@ export interface LatestResult {
   percentage: number;
   grade: string | null;
   status: string;
+  marks?: {
+    subject: string;
+    score: number;
+    maxScore: number;
+  }[];
 }
 
 export interface ParentDashboardData {

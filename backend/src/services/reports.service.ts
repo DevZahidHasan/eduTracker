@@ -13,10 +13,13 @@ export const calculateGPA = async (marks: { score: number, maxScore: number }[])
     orderBy: { minScore: 'desc' }
   });
 
+  let hasFailedSubject = false;
+
   // If no scales defined, use a default fallback
   if (scales.length === 0) {
     const totalPoints = marks.reduce((acc, mark) => {
       const percentage = (mark.score / mark.maxScore) * 100;
+      if (percentage < 33) hasFailedSubject = true;
       if (percentage >= 80) return acc + 5.0;
       if (percentage >= 70) return acc + 4.0;
       if (percentage >= 60) return acc + 3.5;
@@ -25,6 +28,11 @@ export const calculateGPA = async (marks: { score: number, maxScore: number }[])
       if (percentage >= 33) return acc + 1.0;
       return acc + 0;
     }, 0);
+
+    if (hasFailedSubject) {
+      return { gpa: 0, grade: 'F' };
+    }
+
     const gpa = Math.round((totalPoints / marks.length) * 100) / 100;
     
     const totalObtained = marks.reduce((acc, m) => acc + m.score, 0);
@@ -53,8 +61,15 @@ export const calculateGPA = async (marks: { score: number, maxScore: number }[])
   let totalPoints = 0;
   for (const mark of marks) {
     const percentage = (mark.score / mark.maxScore) * 100;
-    const { points } = getPointsAndGrade(percentage);
+    const { points, grade } = getPointsAndGrade(percentage);
+    if (grade === 'F' || points === 0) {
+      hasFailedSubject = true;
+    }
     totalPoints += points;
+  }
+
+  if (hasFailedSubject) {
+    return { gpa: 0, grade: 'F' };
   }
 
   const avgPoints = Math.round((totalPoints / marks.length) * 100) / 100;
