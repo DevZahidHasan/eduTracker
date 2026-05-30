@@ -22,6 +22,7 @@ import inventoryRoutes from './inventory.routes';
 import documentRoutes from './document.routes';
 import licenseRoutes from './license.routes';
 import importRoutes from './import.routes';
+import parentRoutes from './parent.routes';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { licenseCheckMiddleware } from '../middleware/license.middleware';
 
@@ -56,5 +57,6 @@ router.use('/admissions', authMiddleware, admissionsRoutes);
 router.use('/hr', authMiddleware, hrRoutes);
 router.use('/inventory', authMiddleware, inventoryRoutes);
 router.use('/documents', authMiddleware, documentRoutes);
+router.use('/parent', authMiddleware, parentRoutes);
 
 export default router;

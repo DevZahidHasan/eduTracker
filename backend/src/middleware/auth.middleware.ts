@@ -6,7 +6,7 @@ import prisma from '../prisma';
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
-export type Role = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'STAFF' | 'LIBRARIAN' | 'ACCOUNTANT' | 'CLERK' | 'SECURITY' | 'CLEANER';
+export type Role = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'STAFF' | 'LIBRARIAN' | 'ACCOUNTANT' | 'CLERK' | 'SECURITY' | 'CLEANER' | 'PARENT';
 
 export interface AuthUser {
   id: number;

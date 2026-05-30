@@ -33,6 +33,7 @@ model User {
   refreshTokens     RefreshToken[]
   staffAttendances  StaffAttendance[]
   salary            StaffSalary?
+  children          Student[]         @relation("ParentToStudent")
 }
 
 model Role {
@@ -117,6 +118,7 @@ model Student {
   className     String
   busRouteId    Int?
   busStopId     Int?
+  parentId      Int?
   reports       AcademicReport[]
   attendances   Attendance[]
   payments      FeePayment[]
@@ -128,6 +130,7 @@ model Student {
   class         SchoolClass      @relation(fields: [className], references: [name])
   classSection  ClassSection     @relation(fields: [className, section], references: [className, section])
   termResults   TermResult[]
+  parent        User?            @relation("ParentToStudent", fields: [parentId], references: [id])
 
   @@unique([className, section, rollNumber])
 }

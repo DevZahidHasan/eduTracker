@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'TEACHER' | 'STAFF' | 'LIBRARIAN' | 'ACCOUNTANT' | 'CLERK' | 'SECURITY' | 'CLEANER';
+export type Role = 'ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'STAFF' | 'LIBRARIAN' | 'ACCOUNTANT' | 'CLERK' | 'SECURITY' | 'CLEANER' | 'PARENT';
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';

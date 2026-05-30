@@ -6,7 +6,8 @@ import {
   updateStudent,
   deleteStudent,
   uploadStudentPhoto,
-  generateStudentCredentials
+  generateStudentCredentials,
+  linkParentToStudent
 } from '../controllers/students.controller';
 import { validate } from '../middleware/validation.middleware';
 import { studentSchema, studentQuerySchema, idParamSchema } from '../validations';
@@ -21,5 +22,6 @@ router.get('/:id', validate(idParamSchema), getStudentById);
 router.post('/', validate(studentSchema), createStudent);
 router.put('/:id', validate({ ...studentSchema, ...idParamSchema }), updateStudent);
 router.delete('/:id', validate(idParamSchema), deleteStudent);
+router.post('/:id/link-parent', validate(idParamSchema), linkParentToStudent);
 
 export default router;

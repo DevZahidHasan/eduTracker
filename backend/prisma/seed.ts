@@ -196,6 +196,7 @@ async function main() {
     { name: 'CLERK', description: 'Front desk and admissions' },
     { name: 'SECURITY', description: 'Campus security' },
     { name: 'CLEANER', description: 'Maintenance staff' },
+    { name: 'PARENT', description: 'Parent portal access' },
   ];
 
   for (const role of roles) {
@@ -227,15 +228,12 @@ async function main() {
 
   // 3. Seed Subjects & Exam Types
   const subjects = ['BANGLA', 'ENGLISH', 'MATH', 'SCIENCE', 'ICT', 'RELIGION', 'SOCIAL_SCIENCE'];
-  const examTypes = ['CLASS_TEST', 'MONTHLY_EXAM', 'MID_TERM', 'FINAL_EXAM'];
+  // Removed duplicate examTypes declaration.
 
   for (const name of subjects) {
     await prisma.subject.upsert({ where: { name }, update: {}, create: { name } });
   }
-  for (const name of examTypes) {
-    await prisma.examType.upsert({ where: { name }, update: {}, create: { name } });
-  }
-  console.log('Subjects and Exam Types seeded.');
+  console.log('Subjects seeded.');
 
   // 4. Seed Classes and Sections
   const classes = ['CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6', 'CLASS_7', 'CLASS_8', 'CLASS_9', 'CLASS_10'];

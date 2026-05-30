@@ -253,7 +253,6 @@ export const updateStudent = asyncHandler(async (req: AuthRequest, res: Response
 
 export const deleteStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  
   const oldStudent = await prisma.student.findUnique({
     where: { id: Number(id) }
   });
@@ -272,5 +271,50 @@ export const deleteStudent = asyncHandler(async (req: AuthRequest, res: Response
 
   return res.status(200).json(
     new ApiResponse(200, null, 'Student deleted successfully')
+  );
+});
+
+export const linkParentToStudent = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { parentEmail } = req.body;
+
+  if (!parentEmail) {
+    throw new ApiError(400, 'Parent email is required');
+  }
+
+  // 1. Check if student exists
+  const student = await prisma.student.findUnique({
+    where: { id: Number(id) }
+  });
+
+  if (!student) {
+    throw new ApiError(404, 'Student not found');
+  }
+
+  // 2. Find the parent user
+  const parentUser = await prisma.user.findUnique({
+    where: { email: parentEmail }
+  });
+
+  if (!parentUser) {
+    throw new ApiError(404, `No user found with email ${parentEmail}`);
+  }
+
+  if (parentUser.role !== 'PARENT') {
+    throw new ApiError(400, `User with email ${parentEmail} is not a PARENT`);
+  }
+
+  // 3. Update the student
+  const updatedStudent = await prisma.student.update({
+    where: { id: Number(id) },
+    data: { parentId: parentUser.id }
+  });
+
+  if (req.user) {
+    await AuditService.logChange('UPDATE', 'Student', id, req.user.id, student, updatedStudent);
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, updatedStudent, 'Student linked to parent successfully')
   );
 });

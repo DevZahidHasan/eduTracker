@@ -42,6 +42,7 @@ import { selectClasses } from '@/lib/features/configSlice';
 import { generateInsights } from '@/lib/features/aiInsightsSlice';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { selectSchoolProfile, fetchSchoolProfile, fetchUsers, selectUsers } from '@/lib/features/settingsSlice';
+import ParentDashboardView from '@/components/dashboard/ParentDashboardView';
 
 // Lazy load Recharts components
 const ResponsiveContainer = dynamic(
@@ -179,6 +180,10 @@ export default function DashboardPage() {
       { name: 'Girls', value: girls, fill: '#ec4899' },
     ].filter(d => d.value > 0);
   }, [allStudents]);
+
+  if (userRole === 'PARENT') {
+    return <ParentDashboardView />;
+  }
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-700">

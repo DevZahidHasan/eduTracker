@@ -68,6 +68,18 @@ export const deleteStudentThunk = createAsyncThunk(
   }
 );
 
+export const linkParentThunk = createAsyncThunk(
+  'students/linkParent',
+  async ({ studentId, parentEmail }: { studentId: number, parentEmail: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/students/${studentId}/link-parent`, { parentEmail });
+      return response.data.data as Student;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to link parent');
+    }
+  }
+);
+
 const studentsSlice = createSlice({
   name: 'students',
   initialState,
@@ -140,6 +152,13 @@ const studentsSlice = createSlice({
         if (state.previousList) {
           state.list = state.previousList;
           state.previousList = null;
+        }
+      })
+      // Link Parent
+      .addCase(linkParentThunk.fulfilled, (state, action) => {
+        const index = state.list.findIndex((s) => s.id === action.payload.id);
+        if (index !== -1) {
+          state.list[index] = action.payload;
         }
       });
   },

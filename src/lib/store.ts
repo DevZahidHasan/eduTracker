@@ -15,6 +15,7 @@ import questionPaperReducer from './features/questionPaperSlice';
 import questionBankReducer from './features/questionBankSlice';
 import financeReducer from './features/financeSlice';
 import licenseReducer from './features/licenseSlice';
+import parentReducer from './features/parentSlice';
 
 export const makeStore = () => {
   return configureStore({
@@ -35,6 +36,7 @@ export const makeStore = () => {
       questionBank: questionBankReducer,
       finance: financeReducer,
       license: licenseReducer,
+      parent: parentReducer,
     },
   });
 };

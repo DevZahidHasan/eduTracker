@@ -19,8 +19,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { selectClasses } from '@/lib/features/configSlice';
 import { StudentFormData } from '@/lib/validations';
 import { StudentForm } from '@/components/students/StudentForm';
-import { Edit2, Trash2, FileUp } from 'lucide-react';
+import { Edit2, Trash2, FileUp, Link as LinkIcon } from 'lucide-react';
 import { CSVImporter } from '@/components/ui/CSVImporter';
+import { LinkParentModal } from '@/components/students/LinkParentModal';
 
 export default function StudentsPage() {
   const dispatch = useAppDispatch();
@@ -37,6 +38,8 @@ export default function StudentsPage() {
   const [sectionFilter, setSectionFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isLinkParentModalOpen, setIsLinkParentModalOpen] = useState(false);
+  const [studentToLink, setStudentToLink] = useState<Student | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -410,6 +413,16 @@ export default function StudentsPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-1 transition-standard">
                           <button
+                            onClick={() => {
+                              setStudentToLink(student);
+                              setIsLinkParentModalOpen(true);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 hover:scale-110 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            title="Link Parent Account"
+                          >
+                            <LinkIcon size={18} />
+                          </button>
+                          <button
                             onClick={() => handleViewMarksClick(student)}
                             className="p-2 text-emerald-600 hover:bg-emerald-50 hover:scale-110 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="Academic Records"
@@ -546,6 +559,18 @@ export default function StudentsPage() {
                       </div>
                       
                       <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/60 mt-4">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setStudentToLink(student);
+                            setIsLinkParentModalOpen(true);
+                          }}
+                          className="flex-1 text-indigo-700 border-indigo-200 hover:bg-indigo-50 bg-white"
+                        >
+                          <LinkIcon size={14} className="mr-1.5" /> Link Parent
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -730,6 +755,14 @@ export default function StudentsPage() {
           onClose={() => setIsImportModalOpen(false)}
         />
       </Modal>
+
+      {studentToLink && (
+        <LinkParentModal
+          isOpen={isLinkParentModalOpen}
+          onClose={() => setIsLinkParentModalOpen(false)}
+          student={studentToLink}
+        />
+      )}
     </div>
   );
 }
