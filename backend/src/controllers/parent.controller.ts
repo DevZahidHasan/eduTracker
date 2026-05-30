@@ -134,6 +134,85 @@ export const getParentReportCard = asyncHandler(async (req: AuthRequest, res: Re
   return res.send(pdfBuffer);
 });
 
+export const getParentAttendance = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { studentId } = req.params;
+  const { startDate, endDate } = req.query;
+  const parentId = req.user?.id;
+
+  if (!studentId) {
+    throw new ApiError(400, 'Student ID is required');
+  }
+
+  // Verify parent-student relationship
+  const student = await prisma.student.findUnique({
+    where: { id: Number(studentId) },
+    select: { parentId: true }
+  });
+
+  if (!student || student.parentId !== parentId) {
+    throw new ApiError(403, 'You are not authorized to access this data');
+  }
+
+  const where: any = { studentId: Number(studentId) };
+
+  if (startDate && endDate) {
+    where.date = {
+      gte: new Date(startDate as string),
+      lte: new Date(endDate as string)
+    };
+  }
+
+  const attendance = await prisma.attendance.findMany({
+    where,
+    select: {
+      date: true,
+      status: true
+    },
+    orderBy: { date: 'asc' }
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, attendance, 'Attendance fetched successfully')
+  );
+});
+
+export const getParentFees = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { studentId } = req.params;
+  const parentId = req.user?.id;
+
+  if (!studentId) {
+    throw new ApiError(400, 'Student ID is required');
+  }
+
+  // Verify parent-student relationship
+  const student = await prisma.student.findUnique({
+    where: { id: Number(studentId) },
+    select: { parentId: true }
+  });
+
+  if (!student || student.parentId !== parentId) {
+    throw new ApiError(403, 'You are not authorized to access this data');
+  }
+
+  // Fetch all vouchers for the student
+  const vouchers = await prisma.feeVoucher.findMany({
+    where: { studentId: Number(studentId) },
+    include: {
+      items: {
+        include: {
+          feeType: true
+        }
+      },
+      payments: true
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, vouchers, 'Fee history fetched successfully')
+  );
+});
+
 export const getParentResults = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { studentId } = req.params;
   const { examType } = req.query;
@@ -194,7 +273,7 @@ export const getParentResults = asyncHandler(async (req: AuthRequest, res: Respo
       results.push({
         examType: `TERM_${term}`,
         title: `Term ${term} Result`,
-        percentage: reportData.gpa ? (reportData.gpa / 5) * 100 : 0, // Approx percentage
+        percentage: (reportData as any).percentage || (reportData.gpa ? (reportData.gpa / 5) * 100 : 0), 
         gpa: reportData.gpa,
         grade: reportData.grade,
         marks: reportData.marks, // Contains { subject, tutorial, final, score, maxScore, grade }
@@ -212,7 +291,7 @@ export const getParentResults = asyncHandler(async (req: AuthRequest, res: Respo
      results.push({
         examType: 'Annual Result',
         title: 'Annual Master Report',
-        percentage: annualReportData.gpa ? (annualReportData.gpa / 5) * 100 : 0,
+        percentage: (annualReportData as any).percentage || (annualReportData.gpa ? (annualReportData.gpa / 5) * 100 : 0),
         gpa: annualReportData.gpa,
         grade: annualReportData.grade,
         marks: annualReportData.marks,
