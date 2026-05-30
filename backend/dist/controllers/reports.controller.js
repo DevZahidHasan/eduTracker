@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAttendanceSummary = exports.getClassPerformance = exports.updateTeacherRemarks = exports.exportClassReportCardsPdf = exports.exportReportCardPdf = exports.getConsolidatedReport = exports.getStudentReport = void 0;
+exports.generateAnnualResult = exports.getAttendanceSummary = exports.getClassPerformance = exports.updateTeacherRemarks = exports.exportClassReportCardsPdf = exports.exportReportCardPdf = exports.getConsolidatedReport = exports.getStudentReport = void 0;
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
 const apiError_1 = require("../utils/apiError");
@@ -182,4 +182,15 @@ exports.getAttendanceSummary = (0, asyncHandler_1.asyncHandler)((req, res) => __
         return Object.assign(Object.assign({}, s), { attendanceRate: rate });
     })));
     return res.status(200).json(new apiResponse_1.ApiResponse(200, summary, 'Attendance summary fetched successfully'));
+}));
+exports.generateAnnualResult = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { studentId } = req.params;
+    if (!studentId) {
+        throw new apiError_1.ApiError(400, 'Student ID is required');
+    }
+    const result = yield reportsService.calculateAnnualResult(Number(studentId));
+    if (!result) {
+        throw new apiError_1.ApiError(400, 'Not enough data to calculate an annual result for this student.');
+    }
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, result, 'Annual Result calculated successfully'));
 }));

@@ -59,6 +59,19 @@ export const fetchParentDashboard = createAsyncThunk(
   }
 );
 
+export const fetchParentResults = createAsyncThunk(
+  'parent/fetchResults',
+  async ({ studentId, examType }: { studentId: number, examType?: string }, { rejectWithValue }) => {
+    try {
+      const url = examType ? `/parent/results/${studentId}?examType=${examType}` : `/parent/results/${studentId}`;
+      const response = await api.get(url);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch results');
+    }
+  }
+);
+
 const parentSlice = createSlice({
   name: 'parent',
   initialState,

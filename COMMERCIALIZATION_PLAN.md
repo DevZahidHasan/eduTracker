@@ -18,9 +18,14 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
 
 ### 1. Parent Portal & Communication
 *Schools buy software that makes them look good to parents.*
-- [ ] **Dedicated Parent Dashboard:** Build a specific, mobile-friendly view where parents can log in and instantly see their child's attendance today, upcoming exams, due fees, and latest report cards.
-- [ ] **Homework & Assignments Module:** Allow teachers to post daily homework or assignments, with automated push/WhatsApp notifications to parents.
-- [ ] **Live Bus Tracking (Transport Enhancement):** Add a feature where parents can see if the bus is delayed (via GPS or manual driver updates).
+- [x] **Parent Authentication & Linking:** Create Parent accounts and map them to Students.
+- [ ] **Parent Dashboard UI (Foundational):** Implement the basic mobile-first card layout (Child selector, Attendance status, Due fees overview).
+- [ ] **Downloadable Report Cards:** Enable PDF report card generation via DocumentTemplates within the dashboard.
+- [ ] **Academic Performance Charts:** Implement visual trend graphs (Recharts) for student exam history.
+- [ ] **Interactive Attendance Calendar:** Add a monthly calendar view to visualize attendance history (Present/Absent/Late).
+- [ ] **Fee Payment History:** Add a dedicated view for historical fee transactions and statuses.
+- [ ] **Homework & Assignments Module:** Allow teachers to post daily homework/assignments with notifications.
+- [ ] **Live Bus Tracking (Transport Enhancement):** Add a feature where parents can see if the bus is delayed.
 
 ### 2. Automated Online Payments (Finance)
 *Solve the immense struggle of fee collection and tracking.*

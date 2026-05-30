@@ -12,13 +12,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateExamType = exports.createExamType = exports.createSubject = exports.createSection = exports.createClass = exports.getConfig = void 0;
+exports.deleteExamType = exports.deleteSubject = exports.deleteSection = exports.deleteClass = exports.updateExamType = exports.createExamType = exports.createSubject = exports.createSection = exports.createClass = exports.getConfig = void 0;
+exports.formatLabel = formatLabel;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiResponse_1 = require("../utils/apiResponse");
 const apiError_1 = require("../utils/apiError");
+// Trigger nodemon restart
 exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const classes = yield prisma_1.default.schoolClass.findMany({
+        include: { sections: true },
         orderBy: { name: 'asc' }
     });
     const subjects = yield prisma_1.default.subject.findMany({
@@ -37,7 +40,11 @@ exports.getConfig = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(voi
     });
     // Map to the format the frontend expects (value/label)
     const config = {
-        classes: classes.map(c => ({ value: c.name, label: formatLabel(c.name) })),
+        classes: classes.map(c => ({
+            value: c.name,
+            label: formatLabel(c.name),
+            sections: c.sections.map(s => ({ value: s.section, label: s.section }))
+        })),
         subjects: subjects.map(s => ({ value: s.name, label: formatLabel(s.name) })),
         examTypes: examTypes.map(e => ({ value: e.name, label: formatLabel(e.name), baseMark: e.baseMark })),
         roles: roles.map(r => ({ value: r.name, label: formatLabel(r.name) })),
@@ -80,23 +87,82 @@ exports.createSubject = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     return res.status(201).json(new apiResponse_1.ApiResponse(201, subject, 'Subject created successfully'));
 }));
 exports.createExamType = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, baseMark } = req.body;
+    const { name, baseMark, weightage, isFinal, category, termNumber } = req.body;
     const examType = yield prisma_1.default.examType.create({
         data: {
             name: name.toUpperCase().replace(/\s+/g, '_'),
-            baseMark: baseMark ? Number(baseMark) : 100
+            baseMark: baseMark ? Number(baseMark) : 100,
+            weightage: weightage ? Number(weightage) : 100,
+            isFinal: isFinal === true,
+            category: category || 'FINAL',
+            termNumber: termNumber ? Number(termNumber) : 1
         }
     });
     return res.status(201).json(new apiResponse_1.ApiResponse(201, examType, 'Exam type created successfully'));
 }));
 exports.updateExamType = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name } = req.params;
-    const { baseMark } = req.body;
+    const { baseMark, weightage, isFinal, category, termNumber } = req.body;
     const examType = yield prisma_1.default.examType.update({
         where: { name },
-        data: { baseMark: Number(baseMark) }
+        data: {
+            baseMark: baseMark !== undefined ? Number(baseMark) : undefined,
+            weightage: weightage !== undefined ? Number(weightage) : undefined,
+            isFinal: isFinal !== undefined ? isFinal : undefined,
+            category: category !== undefined ? category : undefined,
+            termNumber: termNumber !== undefined ? Number(termNumber) : undefined
+        }
     });
     return res.status(200).json(new apiResponse_1.ApiResponse(200, examType, 'Exam type updated successfully'));
+}));
+exports.deleteClass = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.params;
+    // Safe Delete: Check if students exist in this class
+    const studentCount = yield prisma_1.default.student.count({ where: { className: name } });
+    if (studentCount > 0) {
+        throw new apiError_1.ApiError(400, `Cannot delete class '${name}' because it contains ${studentCount} students. Please reassign or delete the students first.`);
+    }
+    yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        // Clean up empty sections and fee structures
+        yield tx.classSection.deleteMany({ where: { className: name } });
+        yield tx.feeStructure.deleteMany({ where: { className: name } });
+        yield tx.schoolClass.delete({ where: { name } });
+    }));
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Class deleted successfully'));
+}));
+exports.deleteSection = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { className, section } = req.params;
+    // Safe Delete: Check if students exist in this section
+    const studentCount = yield prisma_1.default.student.count({ where: { className, section } });
+    if (studentCount > 0) {
+        throw new apiError_1.ApiError(400, `Cannot delete Section '${section}' because it contains ${studentCount} students.`);
+    }
+    yield prisma_1.default.classSection.delete({
+        where: {
+            className_section: { className, section }
+        }
+    });
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Section deleted successfully'));
+}));
+exports.deleteSubject = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.params;
+    // Safe Delete: Check if marks exist for this subject
+    const markCount = yield prisma_1.default.mark.count({ where: { subject: name } });
+    if (markCount > 0) {
+        throw new apiError_1.ApiError(400, `Cannot delete subject '${name}' because it has ${markCount} recorded marks. Delete the marks first.`);
+    }
+    yield prisma_1.default.subject.delete({ where: { name } });
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Subject deleted successfully'));
+}));
+exports.deleteExamType = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name } = req.params;
+    // Safe Delete: Check if marks or results exist
+    const markCount = yield prisma_1.default.mark.count({ where: { examType: name } });
+    if (markCount > 0) {
+        throw new apiError_1.ApiError(400, `Cannot delete '${name}' because it has ${markCount} recorded marks.`);
+    }
+    yield prisma_1.default.examType.delete({ where: { name } });
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Exam type deleted successfully'));
 }));
 function formatLabel(str) {
     // Convert UPPER_CASE to Title Case (e.g. CLASS_1 -> Class 1)

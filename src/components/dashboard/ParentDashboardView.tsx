@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { fetchParentDashboard, selectParentDashboardData, selectParentLoading, ParentDashboardData } from '@/lib/features/parentSlice';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Calendar, CreditCard, GraduationCap, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Calendar, CreditCard, GraduationCap, CheckCircle, XCircle, AlertCircle, Clock, FileText } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function ParentDashboardView() {
   const dispatch = useAppDispatch();
@@ -21,6 +23,22 @@ export default function ParentDashboardView() {
       setSelectedStudentId(dashboardData[0].student.id);
     }
   }, [dashboardData, selectedStudentId]);
+
+  const handleDownloadReport = async (studentId: number, examType: string, studentName: string) => {
+    try {
+      const response = await api.get(`/parent/report/${studentId}/${examType}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ReportCard_${studentName.replace(/\s+/g, '_')}_${examType}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Report downloaded successfully');
+    } catch (error: any) {
+      toast.error('Failed to download report');
+    }
+  };
 
   if (loading) {
     return (
@@ -145,6 +163,15 @@ export default function ParentDashboardView() {
                 </div>
               )}
             </div>
+            {latestResult && (
+              <Button 
+              variant="outline"
+              className="w-full mt-4 text-blue-700 border-blue-200 hover:bg-blue-50 bg-white"
+              onClick={() => handleDownloadReport(student.id, latestResult.examType, student.fullName)}
+              >
+              <FileText size={16} className="mr-2" /> Download Report
+              </Button>
+            )}
           </CardContent>
         </Card>
 

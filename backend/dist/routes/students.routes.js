@@ -13,4 +13,5 @@ router.get('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSc
 router.post('/', (0, validation_middleware_1.validate)(validations_1.studentSchema), students_controller_1.createStudent);
 router.put('/:id', (0, validation_middleware_1.validate)(Object.assign(Object.assign({}, validations_1.studentSchema), validations_1.idParamSchema)), students_controller_1.updateStudent);
 router.delete('/:id', (0, validation_middleware_1.validate)(validations_1.idParamSchema), students_controller_1.deleteStudent);
+router.post('/:id/link-parent', (0, validation_middleware_1.validate)(validations_1.idParamSchema), students_controller_1.linkParentToStudent);
 exports.default = router;

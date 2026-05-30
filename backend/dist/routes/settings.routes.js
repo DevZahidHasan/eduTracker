@@ -20,5 +20,11 @@ router.post('/grade-scale', (0, auth_middleware_1.authorize)('ADMIN'), settings_
 router.put('/grade-scale/:id', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.updateGradeScale);
 router.delete('/grade-scale/:id', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.deleteGradeScale);
 router.post('/end-of-day', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.triggerEndOfDay);
+// Backup Management
 router.post('/backup', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.triggerBackup);
+router.get('/backups', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.getBackups);
+router.get('/backups/download/:filename', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.downloadBackup);
+router.delete('/backups/:filename', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.deleteBackup);
+// WhatsApp Testing
+router.post('/whatsapp-test', (0, auth_middleware_1.authorize)('ADMIN'), settings_controller_1.sendTestWhatsApp);
 exports.default = router;

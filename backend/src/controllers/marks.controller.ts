@@ -8,6 +8,15 @@ import { sendMarkFinalizationAlert } from '../services/email.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { AuditService } from '../services/audit.service';
 import { createNotification } from './notifications.controller';
+import * as reportsService from '../services/reports.service';
+
+const getMidnightUTCDate = (dateVal: string | Date | undefined | null): Date => {
+  if (!dateVal) {
+    return new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
+  }
+  const dStr = typeof dateVal === 'string' ? dateVal.split('T')[0] : new Date(dateVal).toISOString().split('T')[0];
+  return new Date(`${dStr}T00:00:00.000Z`);
+};
 
 export const getMarks = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, subject, examType, className, section } = req.query;
@@ -60,8 +69,7 @@ export const bulkCreateMarks = asyncHandler(async (req: AuthRequest, res: Respon
   const results = await prisma.$transaction(
     records.map((record) => {
       const { studentId, subject, examType, score, maxScore, date } = record;
-      const markDate = new Date(date || new Date());
-      markDate.setHours(0, 0, 0, 0);
+      const markDate = getMidnightUTCDate(date);
       
       return prisma.mark.upsert({
         where: {
@@ -117,8 +125,7 @@ export const createMark = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new ApiError(400, 'Student ID, subject, exam type and score are required');
   }
 
-  const markDate = new Date(date || new Date());
-  markDate.setHours(0, 0, 0, 0);
+  const markDate = getMidnightUTCDate(date);
 
   const mark = await prisma.mark.create({
     data: {
@@ -151,8 +158,7 @@ export const updateMark = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new ApiError(404, 'Mark not found');
   }
 
-  const markDate = date ? new Date(date) : undefined;
-  if (markDate) markDate.setHours(0, 0, 0, 0);
+  const markDate = date ? getMidnightUTCDate(date) : undefined;
 
   const mark = await prisma.mark.update({
     where: { id: Number(id) },
@@ -210,8 +216,7 @@ export const finalizeMarks = asyncHandler(async (req: AuthRequest, res: Response
     throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
   }
 
-  const lockDate = new Date(date);
-  lockDate.setHours(0, 0, 0, 0);
+  const lockDate = getMidnightUTCDate(date);
 
   const markLock = await prisma.markLock.upsert({
     where: {
@@ -247,8 +252,17 @@ export const finalizeMarks = asyncHandler(async (req: AuthRequest, res: Response
   // Trigger email notification
   sendMarkFinalizationAlert(className, subject, examType, user.name || user.email);
 
+  // Trigger Report Generation for affected students
+  const students = await prisma.student.findMany({
+    where: { className }
+  });
+
+  for (const student of students) {
+    await reportsService.generateOrUpdateReport(student.id, examType);
+  }
+
   return res.status(200).json(
-    new ApiResponse(200, markLock, 'Marks finalized and locked successfully')
+    new ApiResponse(200, markLock, 'Marks finalized and reports updated successfully')
   );
 });
 
@@ -268,8 +282,7 @@ export const unlockMarks = asyncHandler(async (req: AuthRequest, res: Response) 
     throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
   }
 
-  const lockDate = new Date(date);
-  lockDate.setHours(0, 0, 0, 0);
+  const lockDate = getMidnightUTCDate(date);
 
   const oldLock = await prisma.markLock.findUnique({
     where: {
@@ -297,8 +310,7 @@ export const checkMarkLock = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, 'Class, Subject, Exam Type and Date are required');
   }
 
-  const lockDate = new Date(date as string);
-  lockDate.setHours(0, 0, 0, 0);
+  const lockDate = getMidnightUTCDate(date as string);
 
   const markLock = await prisma.markLock.findUnique({
     where: {

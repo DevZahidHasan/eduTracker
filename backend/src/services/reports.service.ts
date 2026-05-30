@@ -1,6 +1,7 @@
 import prisma from '../prisma';
 import { generatePerformanceInsights } from './ai.service';
 import { formatLabel } from '../controllers/config.controller';
+import { createNotification } from '../controllers/notifications.controller';
 
 /**
  * Calculate GPA based on marks and GradeScale table.
@@ -188,11 +189,9 @@ export const getStudentReportData = async (studentId: number, examType: string) 
   }
 
   // --- Handle 'Bangladesh Standard' (Tutorial + Final Exam) specially ---
-  // Triggered if the examType includes "TERM_" (e.g., TERM_1, TERM_2)
   if (examType.startsWith('TERM_')) {
     const termNum = parseInt(examType.split('_')[1]);
     
-    // Find all exam types belonging to this term number
     const termExamTypes = await prisma.examType.findMany({
       where: { termNumber: termNum }
     });
@@ -206,7 +205,6 @@ export const getStudentReportData = async (studentId: number, examType: string) 
       }
     });
 
-    // Group by subject
     const subjectMap: Record<string, { tutorial: number; final: number; total: number; max: number }> = {};
     
     allTermMarks.forEach(m => {
@@ -227,7 +225,6 @@ export const getStudentReportData = async (studentId: number, examType: string) 
     const marksWithBreakdown = Object.entries(subjectMap).map(([subject, data], index) => {
       const percentage = (data.total / (data.max || 100)) * 100;
       
-      // Calculate individual subject GPA from scales
       let subjectGpa = 0;
       if (scales.length > 0) {
         for (const scale of scales) {
@@ -291,7 +288,7 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
 
   let aiInsights = data.aiInsights;
   if (!aiInsights) {
-    aiInsights = await generatePerformanceInsights(data.marks as any, []); // Simplified call
+    aiInsights = await generatePerformanceInsights(data.marks as any, []);
   }
 
   const report = await prisma.academicReport.upsert({
@@ -314,9 +311,20 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
     }
   });
 
-  // Also update TermResult for historical records
-  const totalMarks = data.marks.reduce((acc, m) => acc + m.maxScore, 0);
-  const obtainedMarks = data.marks.reduce((acc, m) => acc + m.score, 0);
+  let totalMarks = 0;
+  let obtainedMarks = 0;
+
+  if (data.isAnnual) {
+     totalMarks = 100;
+     obtainedMarks = Math.round((data.gpa || 0) * 20); 
+  } else if (data.isBDStandard) {
+    totalMarks = data.marks.reduce((acc, m) => acc + m.maxScore, 0);
+    obtainedMarks = data.marks.reduce((acc, m) => acc + m.score, 0);
+  } else {
+    totalMarks = data.marks.reduce((acc, m) => acc + m.maxScore, 0);
+    obtainedMarks = data.marks.reduce((acc, m) => acc + m.score, 0);
+  }
+
   const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
 
   const existingTermResult = await prisma.termResult.findFirst({
@@ -348,6 +356,18 @@ export const generateOrUpdateReport = async (studentId: number, examType: string
         teacherRemarks: teacherRemarks || data.teacherRemarks
       }
     });
+
+    // Notify Parent
+    const student = await prisma.student.findUnique({ where: { id: studentId }, select: { parentId: true, fullName: true } });
+    if (student?.parentId) {
+      await createNotification({
+        userId: student.parentId,
+        title: 'New Exam Result Published',
+        message: `${student.fullName}'s ${examType} result has been published.`,
+        type: 'INFO',
+        link: '/results'
+      });
+    }
   }
 
   return report;
@@ -396,7 +416,6 @@ export const getClassPerformance = async (className: string, examType: string, s
  * Calculates a blended Annual Result based on the defined weightages of different ExamTypes.
  */
 export const calculateAnnualResult = async (studentId: number) => {
-  // 1. Fetch all TermResults and Marks to handle cases where TermReports aren't generated yet
   const termResults = await prisma.termResult.findMany({
     where: { studentId }
   });
@@ -407,14 +426,12 @@ export const calculateAnnualResult = async (studentId: number) => {
 
   if (termResults.length === 0 && marks.length === 0) return null;
 
-  // 2. Fetch ExamTypes to get weightages
   const examTypes = await prisma.examType.findMany();
   const weightageMap: Record<string, number> = {};
   examTypes.forEach(e => {
     weightageMap[e.name] = e.weightage;
   });
 
-  // Group raw marks if TermResult is missing
   const termResultMap = new Map(termResults.map(tr => [tr.examType, tr]));
   const marksByExamType: Record<string, { obtained: number, total: number }> = {};
   
@@ -429,21 +446,17 @@ export const calculateAnnualResult = async (studentId: number) => {
     }
   });
 
-  // 3. Calculate weighted average percentage
   let totalWeightedPercentage = 0;
   let totalWeightageUsed = 0;
 
-  // Process existing TermResults
   for (const tr of termResults) {
-    // Ignore any existing Annual Results to prevent recursive calculation
     if (tr.examType === 'Annual Result' || tr.examType === 'Final Result') continue;
 
-    const weight = weightageMap[tr.examType] || 100; // Default to 100% if not found
+    const weight = weightageMap[tr.examType] || 100;
     totalWeightedPercentage += tr.percentage * weight;
     totalWeightageUsed += weight;
   }
 
-  // Process raw Marks
   for (const [examType, data] of Object.entries(marksByExamType)) {
     const percentage = data.total > 0 ? (data.obtained / data.total) * 100 : 0;
     const weight = weightageMap[examType] || 100;
@@ -455,7 +468,6 @@ export const calculateAnnualResult = async (studentId: number) => {
 
   const finalPercentage = totalWeightedPercentage / totalWeightageUsed;
 
-  // 4. Convert final percentage back to Grade and GPA
   const scales = await prisma.gradeScale.findMany({
     orderBy: { minScore: 'desc' }
   });
@@ -473,7 +485,6 @@ export const calculateAnnualResult = async (studentId: number) => {
     }
   }
 
-  // 5. Upsert the "Annual Result" into TermResult
   const annualResult = await prisma.termResult.upsert({
     where: {
       id: (await prisma.termResult.findFirst({ where: { studentId, examType: 'Annual Result' } }))?.id || -1
@@ -482,8 +493,8 @@ export const calculateAnnualResult = async (studentId: number) => {
       percentage: finalPercentage,
       grade: finalGrade,
       gpa: finalGpa,
-      obtainedMarks: finalPercentage, // Symbolic representation
-      totalMarks: 100, // Symbolic representation
+      obtainedMarks: finalPercentage,
+      totalMarks: 100,
       updatedAt: new Date()
     },
     create: {

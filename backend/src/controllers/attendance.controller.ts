@@ -10,6 +10,14 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { AuditService } from '../services/audit.service';
 import { createNotification } from './notifications.controller';
 
+const getMidnightUTCDate = (dateVal: string | Date | undefined | null): Date => {
+  if (!dateVal) {
+    return new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
+  }
+  const dStr = typeof dateVal === 'string' ? dateVal.split('T')[0] : new Date(dateVal).toISOString().split('T')[0];
+  return new Date(`${dStr}T00:00:00.000Z`);
+};
+
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, date, className } = req.query;
   const whereClause: Prisma.AttendanceWhereInput = {};
@@ -59,9 +67,7 @@ export const bulkCreateAttendance = asyncHandler(async (req: AuthRequest, res: R
     throw new ApiError(404, 'Student not found');
   }
   
-  const attendanceDate = new Date(records[0].date);
-  // Reset time to midnight for consistency
-  attendanceDate.setHours(0, 0, 0, 0);
+  const attendanceDate = getMidnightUTCDate(records[0].date);
 
   // Check if attendance is locked for this class/section/date
   const existingLock = await prisma.attendanceLock.findUnique({
@@ -183,8 +189,7 @@ export const getAttendanceLockStatus = asyncHandler(async (req: Request, res: Re
     throw new ApiError(400, 'className, section, and date are required');
   }
 
-  const attendanceDate = new Date(date as string);
-  attendanceDate.setHours(0, 0, 0, 0);
+  const attendanceDate = getMidnightUTCDate(date as string);
 
   const lock = await prisma.attendanceLock.findUnique({
     where: {
@@ -213,8 +218,7 @@ export const unlockAttendance = asyncHandler(async (req: AuthRequest, res: Respo
     throw new ApiError(403, 'Only Admins and Principals can unlock attendance');
   }
 
-  const attendanceDate = new Date(date as string);
-  attendanceDate.setHours(0, 0, 0, 0);
+  const attendanceDate = getMidnightUTCDate(date as string);
 
   const lock = await prisma.attendanceLock.findUnique({
     where: {

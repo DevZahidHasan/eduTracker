@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -20,6 +53,14 @@ const apiResponse_1 = require("../utils/apiResponse");
 const email_service_1 = require("../services/email.service");
 const audit_service_1 = require("../services/audit.service");
 const notifications_controller_1 = require("./notifications.controller");
+const reportsService = __importStar(require("../services/reports.service"));
+const getMidnightUTCDate = (dateVal) => {
+    if (!dateVal) {
+        return new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
+    }
+    const dStr = typeof dateVal === 'string' ? dateVal.split('T')[0] : new Date(dateVal).toISOString().split('T')[0];
+    return new Date(`${dStr}T00:00:00.000Z`);
+};
 exports.getMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { studentId, subject, examType, className, section } = req.query;
     const whereClause = {};
@@ -57,8 +98,7 @@ exports.bulkCreateMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __await
     }
     const results = yield prisma_1.default.$transaction(records.map((record) => {
         const { studentId, subject, examType, score, maxScore, date } = record;
-        const markDate = new Date(date || new Date());
-        markDate.setHours(0, 0, 0, 0);
+        const markDate = getMidnightUTCDate(date);
         return prisma_1.default.mark.upsert({
             where: {
                 studentId_subject_examType_date: {
@@ -100,8 +140,7 @@ exports.createMark = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(vo
     if (!studentId || !subject || !examType || score === undefined) {
         throw new apiError_1.ApiError(400, 'Student ID, subject, exam type and score are required');
     }
-    const markDate = new Date(date || new Date());
-    markDate.setHours(0, 0, 0, 0);
+    const markDate = getMidnightUTCDate(date);
     const mark = yield prisma_1.default.mark.create({
         data: {
             studentId: Number(studentId),
@@ -126,9 +165,7 @@ exports.updateMark = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(vo
     if (!oldMark) {
         throw new apiError_1.ApiError(404, 'Mark not found');
     }
-    const markDate = date ? new Date(date) : undefined;
-    if (markDate)
-        markDate.setHours(0, 0, 0, 0);
+    const markDate = date ? getMidnightUTCDate(date) : undefined;
     const mark = yield prisma_1.default.mark.update({
         where: { id: Number(id) },
         data: {
@@ -169,8 +206,7 @@ exports.finalizeMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     if (!className || !subject || !examType || !date) {
         throw new apiError_1.ApiError(400, 'Class, Subject, Exam Type and Date are required');
     }
-    const lockDate = new Date(date);
-    lockDate.setHours(0, 0, 0, 0);
+    const lockDate = getMidnightUTCDate(date);
     const markLock = yield prisma_1.default.markLock.upsert({
         where: {
             className_subject_examType_date: { className, subject, examType, date: lockDate }
@@ -201,7 +237,14 @@ exports.finalizeMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     }
     // Trigger email notification
     (0, email_service_1.sendMarkFinalizationAlert)(className, subject, examType, user.name || user.email);
-    return res.status(200).json(new apiResponse_1.ApiResponse(200, markLock, 'Marks finalized and locked successfully'));
+    // Trigger Report Generation for affected students
+    const students = yield prisma_1.default.student.findMany({
+        where: { className }
+    });
+    for (const student of students) {
+        yield reportsService.generateOrUpdateReport(student.id, examType);
+    }
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, markLock, 'Marks finalized and reports updated successfully'));
 }));
 exports.unlockMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { className, subject, examType, date } = req.body;
@@ -215,8 +258,7 @@ exports.unlockMarks = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     if (!className || !subject || !examType || !date) {
         throw new apiError_1.ApiError(400, 'Class, Subject, Exam Type and Date are required');
     }
-    const lockDate = new Date(date);
-    lockDate.setHours(0, 0, 0, 0);
+    const lockDate = getMidnightUTCDate(date);
     const oldLock = yield prisma_1.default.markLock.findUnique({
         where: {
             className_subject_examType_date: { className, subject, examType, date: lockDate }
@@ -235,8 +277,7 @@ exports.checkMarkLock = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     if (!className || !subject || !examType || !date) {
         throw new apiError_1.ApiError(400, 'Class, Subject, Exam Type and Date are required');
     }
-    const lockDate = new Date(date);
-    lockDate.setHours(0, 0, 0, 0);
+    const lockDate = getMidnightUTCDate(date);
     const markLock = yield prisma_1.default.markLock.findUnique({
         where: {
             className_subject_examType_date: {

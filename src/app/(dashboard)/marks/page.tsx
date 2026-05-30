@@ -202,7 +202,7 @@ export default function MarksPage() {
           m.examType === selectedExamType &&
           m.date === selectedDate
         );
-        marksMap[`student_${student.id}`] = existingMark ? existingMark.score : '';
+        marksMap[`student_${student.id}`] = existingMark !== undefined ? existingMark.score : '';
       });
       reset({ scores: marksMap });
     }

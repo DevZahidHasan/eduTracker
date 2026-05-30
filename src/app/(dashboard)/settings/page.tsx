@@ -69,16 +69,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { schoolProfileSchema, SchoolProfileFormData } from '@/lib/validations';
 import BackupManager from '@/components/settings/BackupManager';
 import { CSVImporter } from '@/components/ui/CSVImporter';
+import { selectRole } from '@/lib/features/authSlice';
 
 type TabId = 'profile' | 'academic' | 'grading' | 'users' | 'theme' | 'notifications' | 'security' | 'database';
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
+  const userRole = useAppSelector(selectRole);
   const [activeTab, setActiveTab] = useState<TabId>('profile');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [testWhatsAppPhone, setTestWhatsAppPhone] = useState('');
 
-  // Selectors
+  // ... rest of component
   const schoolProfile = useAppSelector(selectSchoolProfile);
   const systemSettings = useAppSelector(selectSystemSettings);
   const users = useAppSelector(selectUsers);

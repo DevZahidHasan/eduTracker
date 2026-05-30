@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getParentDashboard } from '../controllers/parent.controller';
+import { getParentDashboard, getParentReportCard, getParentResults } from '../controllers/parent.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -9,5 +9,7 @@ router.use(authMiddleware);
 router.use(authorize('PARENT'));
 
 router.get('/dashboard', getParentDashboard);
+router.get('/report/:studentId/:examType', getParentReportCard);
+router.get('/results/:studentId', getParentResults);
 
 export default router;

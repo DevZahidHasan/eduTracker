@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteStudent = exports.updateStudent = exports.createStudent = exports.generateStudentCredentials = exports.uploadStudentPhoto = exports.getStudentById = exports.getAllStudents = void 0;
+exports.linkParentToStudent = exports.deleteStudent = exports.updateStudent = exports.createStudent = exports.generateStudentCredentials = exports.uploadStudentPhoto = exports.getStudentById = exports.getAllStudents = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const asyncHandler_1 = require("../utils/asyncHandler");
 const apiError_1 = require("../utils/apiError");
@@ -128,37 +128,20 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     if (existingId) {
         throw new apiError_1.ApiError(400, `Student ID '${studentId}' is already assigned to another student.`);
     }
-    // Check if email already exists
-    if (email) {
-        const existingEmail = yield prisma_1.default.student.findUnique({
-            where: { email }
-        });
-        if (existingEmail) {
-            throw new apiError_1.ApiError(400, `Email address '${email}' is already in use.`);
-        }
-    }
-    // Check if phone already exists
-    if (phone) {
-        const existingPhone = yield prisma_1.default.student.findFirst({
-            where: { phone }
-        });
-        if (existingPhone) {
-            throw new apiError_1.ApiError(400, `Phone number '${phone}' is already in use.`);
-        }
-    }
-    // Check if Roll Number already exists in the same Class and Section
+    // Check if roll number already exists in that class/section
     const existingRoll = yield prisma_1.default.student.findUnique({
         where: {
             className_section_rollNumber: {
                 className,
                 section,
-                rollNumber
+                rollNumber: String(rollNumber)
             }
         }
     });
     if (existingRoll) {
-        throw new apiError_1.ApiError(400, `Roll Number '${rollNumber}' is already taken in ${className} Section ${section}.`);
+        throw new apiError_1.ApiError(400, `Roll number '${rollNumber}' already exists in ${className} Section ${section}.`);
     }
+    // Note: Email and Phone uniqueness checks were removed to allow siblings to share parent contact info.
     try {
         const student = yield prisma_1.default.student.create({
             data: {
@@ -191,8 +174,6 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
 }));
 exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    // Log the incoming body to see what the frontend is sending
-    console.log(`[BACKEND DEBUG] Updating student ${id}. Body:`, req.body);
     const { fullName, rollNumber, className, section, gender, email, dateOfBirth, bloodGroup, phone, parentName, parentPhone, address, admissionDate, profileImage } = req.body;
     const oldStudent = yield prisma_1.default.student.findUnique({
         where: { id: Number(id) }
@@ -245,4 +226,37 @@ exports.deleteStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
         yield audit_service_1.AuditService.logChange('DELETE', 'Student', id, req.user.id, oldStudent, null);
     }
     return res.status(200).json(new apiResponse_1.ApiResponse(200, null, 'Student deleted successfully'));
+}));
+exports.linkParentToStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { parentEmail } = req.body;
+    if (!parentEmail) {
+        throw new apiError_1.ApiError(400, 'Parent email is required');
+    }
+    // 1. Check if student exists
+    const student = yield prisma_1.default.student.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!student) {
+        throw new apiError_1.ApiError(404, 'Student not found');
+    }
+    // 2. Find the parent user
+    const parentUser = yield prisma_1.default.user.findUnique({
+        where: { email: parentEmail }
+    });
+    if (!parentUser) {
+        throw new apiError_1.ApiError(404, `No user found with email ${parentEmail}`);
+    }
+    if (parentUser.role !== 'PARENT') {
+        throw new apiError_1.ApiError(400, `User with email ${parentEmail} is not a PARENT`);
+    }
+    // 3. Update the student
+    const updatedStudent = yield prisma_1.default.student.update({
+        where: { id: Number(id) },
+        data: { parentId: parentUser.id }
+    });
+    if (req.user) {
+        yield audit_service_1.AuditService.logChange('UPDATE', 'Student', id, req.user.id, student, updatedStudent);
+    }
+    return res.status(200).json(new apiResponse_1.ApiResponse(200, updatedStudent, 'Student linked to parent successfully'));
 }));

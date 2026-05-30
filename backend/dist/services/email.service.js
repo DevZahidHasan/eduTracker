@@ -31,7 +31,6 @@ const sendDailyAttendanceReport = () => __awaiter(void 0, void 0, void 0, functi
         where: { key: 'attendanceAlerts' }
     });
     if ((settings === null || settings === void 0 ? void 0 : settings.value) !== 'true') {
-        console.log('Attendance alerts are disabled in settings. Skipping daily report.');
         return;
     }
     const transporter = getTransporter();
@@ -60,7 +59,6 @@ const sendDailyAttendanceReport = () => __awaiter(void 0, void 0, void 0, functi
     const admins = yield prisma_1.default.user.findMany({ where: { role: 'ADMIN' } });
     const adminEmails = admins.map(a => a.email).filter(Boolean);
     if (adminEmails.length === 0) {
-        console.log('No admins found to send report to.');
         return;
     }
     try {
@@ -70,11 +68,6 @@ const sendDailyAttendanceReport = () => __awaiter(void 0, void 0, void 0, functi
             subject: `Daily Attendance Report - ${today.toLocaleDateString()}`,
             html,
         });
-        console.log('Daily report sent: %s', info.messageId);
-        // Log preview URL if using ethereal email
-        if (info.messageId && process.env.SMTP_HOST === undefined) {
-            console.log('Preview URL: %s', nodemailer_1.default.getTestMessageUrl(info));
-        }
     }
     catch (error) {
         console.error('Error sending daily report:', error);
@@ -123,7 +116,6 @@ const sendParentAttendanceNotification = (attendanceId) => __awaiter(void 0, voi
             subject: `Attendance Notification: ${student.fullName} - ${status}`,
             html,
         });
-        console.log(`Parent notification sent for student ${student.fullName}`);
     }
     catch (error) {
         console.error('Error sending parent notification:', error);
@@ -171,7 +163,6 @@ const sendMarkFinalizationAlert = (className, subject, examType, lockedBy) => __
             subject: `[ALERT] Marks Finalized: ${className} - ${subject} - ${examType}`,
             html,
         });
-        console.log(`Mark finalization alert sent to ${admins.length} admins`);
     }
     catch (error) {
         console.error('Error sending mark finalization alert:', error);
@@ -216,7 +207,6 @@ const sendVoucherGenerationNotification = (voucherId) => __awaiter(void 0, void 
             subject: `Fee Voucher Issued: ${monthName} ${voucher.year} - ${voucher.student.fullName}`,
             html,
         });
-        console.log(`Voucher notification sent to ${voucher.student.email}`);
     }
     catch (error) {
         console.error('Error sending voucher notification:', error);
@@ -265,7 +255,6 @@ const sendPaymentConfirmationNotification = (paymentId) => __awaiter(void 0, voi
             subject: `Payment Confirmation: $${payment.amount} - ${payment.student.fullName}`,
             html,
         });
-        console.log(`Payment confirmation sent to ${payment.student.email}`);
     }
     catch (error) {
         console.error('Error sending payment confirmation:', error);
