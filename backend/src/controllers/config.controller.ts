@@ -188,6 +188,9 @@ export const deleteExamType = asyncHandler(async (req: Request, res: Response) =
 });
 
 export function formatLabel(str: string): string {
+  // Only transform if it looks like an UPPER_CASE_CONSTANT
+  if (!str.includes('_') && str !== str.toUpperCase()) return str;
+  
   // Convert UPPER_CASE to Title Case (e.g. CLASS_1 -> Class 1)
   return str
     .split('_')

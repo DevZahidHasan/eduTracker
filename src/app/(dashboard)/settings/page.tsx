@@ -423,7 +423,7 @@ export default function SettingsPage() {
     setAcademicModal({ 
       isOpen: true, 
       type: 'examType', 
-      value: exam.label, 
+      value: exam.value, 
       baseMark: exam.baseMark,
       weightage: exam.weightage || 100,
       isFinal: exam.isFinal || false,
@@ -447,7 +447,7 @@ export default function SettingsPage() {
       if (isEditing) {
         thunk = updateExamTypeThunk;
         payload = { 
-          name: value.toUpperCase().replace(/\s+/g, '_'), 
+          name: value, 
           baseMark: baseMark || 100,
           weightage: weightage || 100,
           isFinal: isFinal || false,
