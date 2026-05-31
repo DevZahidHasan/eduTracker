@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Bus, Users, Map, Settings, Trash2, Edit, UserPlus, Info } from 'lucide-react';
+import { Bus, Users, Map, Settings, Trash2, Edit, UserPlus, Info, Activity, Clock, CheckCircle, AlertTriangle, Navigation } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
@@ -32,6 +32,11 @@ export default function TransportPage() {
   const [isStopsModalOpen, setIsStopsModalOpen] = useState(false);
   const [selectedRouteForStops, setSelectedRouteForStops] = useState<any>(null);
   const [newStop, setNewStop] = useState({ name: '', pickupTime: '', dropTime: '', fare: '' });
+
+  // Live Tracking States
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedRouteForStatus, setSelectedRouteForStatus] = useState<any>(null);
+  const [statusForm, setStatusStatusForm] = useState({ currentStatus: 'ON_TIME', delayMinutes: 0, lastLocation: '' });
 
   // Modals
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void }>({
@@ -103,6 +108,29 @@ export default function TransportPage() {
       toast.error(err.response?.data?.message || 'Failed to fetch data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- Live Status ---
+  const handleUpdateStatus = async () => {
+    if (!selectedRouteForStatus) return;
+    try {
+      await api.put(`/transport/routes/${selectedRouteForStatus.id}/status`, statusForm);
+      toast.success('Bus status updated successfully');
+      setIsStatusModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ON_TIME': return 'bg-emerald-500 text-white';
+      case 'DELAYED': return 'bg-amber-500 text-white';
+      case 'BREAKDOWN': return 'bg-red-500 text-white';
+      case 'COMPLETED': return 'bg-blue-500 text-white';
+      default: return 'bg-slate-500 text-white';
     }
   };
 
@@ -539,6 +567,34 @@ export default function TransportPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Live Tracking Status Bar */}
+                      <div className={`mb-4 flex items-center justify-between px-3 py-2 rounded-xl border ${getStatusColor(r.currentStatus)}`}>
+                        <div className="flex items-center gap-2">
+                          <Activity size={16} />
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-80">Live Status</p>
+                            <p className="text-xs font-bold leading-tight">{r.currentStatus.replace('_', ' ')} {r.delayMinutes > 0 ? `(${r.delayMinutes}m delay)` : ''}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-[10px] font-black uppercase tracking-widest bg-white/20 hover:bg-white/30 border-none text-white"
+                          onClick={() => {
+                            setSelectedRouteForStatus(r);
+                            setStatusStatusForm({ 
+                              currentStatus: r.currentStatus, 
+                              delayMinutes: r.delayMinutes, 
+                              lastLocation: r.lastLocation || '' 
+                            });
+                            setIsStatusModalOpen(true);
+                          }}
+                        >
+                          Update Status
+                        </Button>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4 mt-4 bg-muted/30 p-3 rounded-lg border border-border/30">
                         <div className="space-y-0.5">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Vehicle</p>
@@ -690,7 +746,7 @@ export default function TransportPage() {
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Bus Stop (Optional)</label>
                 <Select
-                  options={(routes.find(r => r.id.toString() === newAssignment.busRouteId)?.stops || []).map((s: any) => ({ value: s.id, label: s.name }))}
+                  options={(routes.find(r => r.id == newAssignment.busRouteId)?.stops || []).map((s: any) => ({ value: s.id, label: s.name }))}
                   value={newAssignment.busStopId}
                   onChange={e => setNewAssignment({ ...newAssignment, busStopId: e.target.value })}
                   placeholder="Select Stop"
@@ -794,6 +850,75 @@ export default function TransportPage() {
         destructive={confirmModal.title.includes('Delete') || confirmModal.title.includes('Remove')}
         confirmText={confirmModal.title.includes('Delete') ? 'Delete' : confirmModal.title.includes('Remove') ? 'Remove' : 'Confirm'}
       />
+
+      {/* Live Status Update Modal */}
+      {isStatusModalOpen && selectedRouteForStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <Card className="w-full max-w-md shadow-2xl overflow-hidden">
+            <div className={`h-1.5 w-full ${getStatusColor(statusForm.currentStatus)}`}></div>
+            <CardHeader className="border-b border-border/50 pb-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity size={18} className="text-primary" />
+                  Live Status: {selectedRouteForStatus.name}
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setIsStatusModalOpen(false)} className="rounded-full w-8 h-8 p-0 text-muted-foreground">✕</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Route Status</label>
+                  <Select
+                    value={statusForm.currentStatus}
+                    onChange={(e) => setStatusStatusForm({ ...statusForm, currentStatus: e.target.value })}
+                    options={[
+                      { value: 'ON_TIME', label: '✅ On Time' },
+                      { value: 'DELAYED', label: '⏳ Delayed' },
+                      { value: 'BREAKDOWN', label: '⚠️ Breakdown / Alert' }
+                    ]}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Delay (Minutes)</label>
+                    <Input 
+                      type="number" 
+                      value={statusForm.delayMinutes} 
+                      onChange={(e) => setStatusStatusForm({ ...statusForm, delayMinutes: parseInt(e.target.value) || 0 })} 
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-1.5 text-center flex flex-col justify-center bg-muted/30 rounded-xl border border-border/50">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Estimated</p>
+                    <p className="text-sm font-bold text-foreground">{statusForm.delayMinutes} min late</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Location (Optional)</label>
+                  <Input 
+                    value={statusForm.lastLocation} 
+                    onChange={(e) => setStatusStatusForm({ ...statusForm, lastLocation: e.target.value })} 
+                    placeholder="e.g. Near City Center Mall"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-border/30 flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
+                  <Button className="flex-1 gap-2" onClick={handleUpdateStatus}>
+                    <Activity size={16} /> Broadcast Update
+                  </Button>
+                </div>
+                <p className="text-[9px] text-center text-muted-foreground font-medium italic">
+                  * Updating status will immediately notify all linked parents.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
