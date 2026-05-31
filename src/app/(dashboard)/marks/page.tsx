@@ -134,8 +134,9 @@ export default function MarksPage() {
   // Check lock status
   useEffect(() => {
     if (selectedClass && selectedSubject && selectedExamType && selectedDate) {
+      const year = new Date(selectedDate).getFullYear();
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      fetch(`${API_URL}/marks/lock-status?className=${selectedClass}&subject=${selectedSubject}&examType=${selectedExamType}&date=${selectedDate}`, {
+      fetch(`${API_URL}/marks/lock-status?className=${selectedClass}&subject=${selectedSubject}&examType=${selectedExamType}&year=${year}`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       })
       .then(res => res.json())
@@ -211,7 +212,8 @@ export default function MarksPage() {
   const onSave = (data: { scores: Record<string, number | string> }) => {
     if (!selectedClass || !selectedSubject || !selectedExamType) return;
 
-    const recordsToSave: Partial<Mark>[] = [];
+    const recordsToSave: any[] = [];
+    const year = new Date(selectedDate).getFullYear();
     
     Object.entries(data.scores).forEach(([idStr, score]) => {
       if (score !== '' && score !== null && score !== undefined) {
@@ -229,7 +231,8 @@ export default function MarksPage() {
           examType: selectedExamType,
           score: scoreNum,
           maxScore: maxScore,
-          date: selectedDate
+          date: selectedDate,
+          year: year
         });
       }
     });
@@ -251,10 +254,12 @@ export default function MarksPage() {
   const handleFinalize = () => {
     if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
     
+    const year = new Date(selectedDate).getFullYear();
+
     setConfirmModal({
       isOpen: true,
       title: 'Finalize Marks',
-      message: 'Finalizing marks will lock them for regular editing and notify all administrators. Are you sure?',
+      message: `Finalizing marks will lock them for the entire year ${year}. Are you sure?`,
       confirmText: 'Finalize',
       destructive: false,
       onConfirm: () => {
@@ -262,7 +267,7 @@ export default function MarksPage() {
           className: selectedClass,
           subject: selectedSubject,
           examType: selectedExamType,
-          date: selectedDate
+          year: year
         }))
         .unwrap()
         .then(() => {
@@ -277,10 +282,12 @@ export default function MarksPage() {
   const handleUnlock = () => {
     if (!selectedClass || !selectedSubject || !selectedExamType || !selectedDate) return;
 
+    const year = new Date(selectedDate).getFullYear();
+
     setConfirmModal({
       isOpen: true,
       title: 'Unlock Marks',
-      message: 'Are you sure you want to unlock these marks? This will allow editing by teachers.',
+      message: `Are you sure you want to unlock these marks for ${year}? This will allow editing by teachers.`,
       confirmText: 'Unlock',
       destructive: false,
       onConfirm: () => {
@@ -288,7 +295,7 @@ export default function MarksPage() {
           className: selectedClass,
           subject: selectedSubject,
           examType: selectedExamType,
-          date: selectedDate
+          year: year
         }))
         .unwrap()
         .then(() => {

@@ -55,9 +55,9 @@ export const addMarksBulkThunk = createAsyncThunk(
 
 export const finalizeMarksThunk = createAsyncThunk(
   'marks/finalizeMarks',
-  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue }) => {
+  async ({ className, subject, examType, year }: { className: string, subject: string, examType: string, year: number }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/marks/finalize', { className, subject, examType, date });
+      const response = await api.post('/marks/finalize', { className, subject, examType, year });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to finalize marks');
@@ -67,9 +67,9 @@ export const finalizeMarksThunk = createAsyncThunk(
 
 export const unlockMarksThunk = createAsyncThunk(
   'marks/unlockMarks',
-  async ({ className, subject, examType, date }: { className: string, subject: string, examType: string, date: string }, { rejectWithValue }) => {
+  async ({ className, subject, examType, year }: { className: string, subject: string, examType: string, year: number }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/marks/unlock', { className, subject, examType, date });
+      const response = await api.post('/marks/unlock', { className, subject, examType, year });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to unlock marks');
@@ -113,7 +113,7 @@ const marksSlice = createSlice({
         };
         
         const existingIndex = state.data.findIndex(
-          (m) => m.studentId === newMark.studentId && m.subject === newMark.subject && m.examType === newMark.examType
+          (m) => m.studentId === newMark.studentId && m.subject === newMark.subject && m.examType === newMark.examType && m.year === newMark.year
         );
 
         if (existingIndex !== -1) {
@@ -134,7 +134,7 @@ const marksSlice = createSlice({
           };
 
           const existingIndex = state.data.findIndex(
-            (rec) => rec.studentId === newMark.studentId && rec.subject === newMark.subject && rec.examType === newMark.examType
+            (rec) => rec.studentId === newMark.studentId && rec.subject === newMark.subject && rec.examType === newMark.examType && rec.year === newMark.year
           );
 
           if (existingIndex !== -1) {

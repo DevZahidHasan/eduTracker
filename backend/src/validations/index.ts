@@ -113,31 +113,32 @@ export const updateQuestionPaperSchema = {
 export const bulkMarksSchema = {
   body: z.object({
     records: z.array(z.object({
-      studentId: z.number(),
-      subject: z.string(),
-      examType: z.string(),
-      score: z.number().min(0),
-      maxScore: z.number().min(1),
+      studentId: z.coerce.number(),
+      subject: z.string().min(1),
+      examType: z.string().min(1),
+      score: z.coerce.number().min(0),
+      maxScore: z.coerce.number().min(1),
       date: z.string().optional(),
+      year: z.coerce.number().optional(),
     })),
   }),
 };
 
 export const finalizeMarksSchema = {
   body: z.object({
-    className: z.string(),
-    subject: z.string(),
-    examType: z.string(),
-    date: z.string(),
+    className: z.string().min(1),
+    subject: z.string().min(1),
+    examType: z.string().min(1),
+    year: z.coerce.number().int().min(2000).max(2100),
   }),
 };
 
 export const lockStatusQuerySchema = {
   query: z.object({
-    className: z.string(),
-    subject: z.string(),
-    examType: z.string(),
-    date: z.string(),
+    className: z.string().min(1),
+    subject: z.string().min(1),
+    examType: z.string().min(1),
+    year: z.coerce.number().int(),
   }),
 };
 
