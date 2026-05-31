@@ -182,6 +182,7 @@ model Mark {
   score       Float
   maxScore    Float    @default(100)
   date        DateTime @default(now())
+  year        Int      @default(2026)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   examType    String
@@ -189,7 +190,7 @@ model Mark {
   student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subjectObj  Subject  @relation(fields: [subject], references: [name])
 
-  @@unique([studentId, subject, examType, date])
+  @@unique([studentId, subject, examType, year])
 }
 
 model Subject {
@@ -214,11 +215,11 @@ model MarkLock {
   className String
   subject   String
   examType  String
+  year      Int      @default(2026)
   lockedAt  DateTime @default(now())
   lockedBy  Int
-  date      DateTime @default(now())
 
-  @@unique([className, subject, examType, date])
+  @@unique([className, subject, examType, year])
 }
 
 model AcademicReport {
