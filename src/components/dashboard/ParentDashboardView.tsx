@@ -23,6 +23,9 @@ import {
   fetchParentAttendance,
   selectParentAttendanceData,
   selectParentAttendanceLoading,
+  fetchParentTransport,
+  selectParentTransportData,
+  selectParentTransportLoading,
   ParentDashboardData 
 } from '@/lib/features/parentSlice';
 import { 
@@ -43,7 +46,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  BookOpen
+  BookOpen,
+  MapPin,
+  Activity,
+  Bus
 } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -70,6 +76,8 @@ export default function ParentDashboardView() {
   const attendanceData = useAppSelector(selectParentAttendanceData);
   const attendanceLoading = useAppSelector(selectParentAttendanceLoading);
   const parentHomeworks = useAppSelector(selectParentHomeworks);
+  const transportData = useAppSelector(selectParentTransportData);
+  const transportLoading = useAppSelector(selectParentTransportLoading);
   
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -88,6 +96,7 @@ export default function ParentDashboardView() {
   useEffect(() => {
     if (selectedStudentId) {
       dispatch(fetchParentResults({ studentId: selectedStudentId }));
+      dispatch(fetchParentTransport({ studentId: selectedStudentId }));
       
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
@@ -113,6 +122,15 @@ export default function ParentDashboardView() {
     const studentData = dashboardData.find(d => d.student.id === selectedStudentId);
     return h.className === studentData?.student.className && h.section === studentData?.student.section;
   }).slice(0, 3);
+
+  const getTransportStatusColor = (status: string) => {
+    switch (status) {
+      case 'ON_TIME': return 'text-emerald-500 bg-emerald-50';
+      case 'DELAYED': return 'text-amber-500 bg-amber-50';
+      case 'BREAKDOWN': return 'text-red-500 bg-red-50';
+      default: return 'text-blue-500 bg-blue-50';
+    }
+  };
 
   const handleDownloadReport = async (studentId: number, examType: string, studentName: string) => {
     try {
@@ -284,6 +302,99 @@ export default function ParentDashboardView() {
 
       </div>
 
+      {/* Live Bus Tracking & Homework Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Live Bus Tracking Preview */}
+        <Card className="border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <Bus className="text-primary" size={20} />
+              <h3 className="text-lg font-bold text-slate-800">Live Bus Tracking</h3>
+            </div>
+            <Button variant="ghost" size="sm" className="text-primary font-bold hover:bg-primary/5" onClick={() => window.location.href='/transport-tracking'}>
+              View Map <ChevronRight size={14} className="ml-1" />
+            </Button>
+          </div>
+          <CardContent className="p-6">
+            {transportLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              </div>
+            ) : transportData?.route ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-lg">
+                      <Bus size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">{transportData.route.name}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{transportData.route.vehicle?.registrationNumber}</p>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getTransportStatusColor(transportData.route.currentStatus)}`}>
+                    {transportData.route.currentStatus.replace('_', ' ')}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Location</p>
+                    <p className="text-xs font-bold text-slate-700 truncate flex items-center gap-1.5">
+                      <MapPin size={12} className="text-blue-500" />
+                      {transportData.route.lastLocation || 'At Station'}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Est. Delay</p>
+                    <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Activity size={12} className="text-amber-500" />
+                      {transportData.route.delayMinutes} Mins
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No transport assigned</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Homework Preview */}
+        <Card className="border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <BookOpen className="text-amber-500" size={20} />
+              <h3 className="text-lg font-bold text-slate-800">Pending Homework</h3>
+            </div>
+            <Button variant="ghost" size="sm" className="text-primary font-bold hover:bg-primary/5" onClick={() => window.location.href='/homework'}>
+              View All <ChevronRight size={14} className="ml-1" />
+            </Button>
+          </div>
+          <CardContent className="p-0">
+            {currentHomeworks.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {currentHomeworks.map((h, idx) => (
+                  <div key={idx} className="p-4 hover:bg-slate-50/50 transition-colors flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{h.title}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{h.subjectName} • Due {format(new Date(h.dueDate), 'MMM dd')}</p>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-300" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No pending assignments</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Attendance Calendar & Recent Results Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Attendance Calendar */}
@@ -437,45 +548,6 @@ export default function ParentDashboardView() {
             ) : (
               <div className="p-12 text-center">
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No history found</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Homework Preview Row */}
-      <div className="mt-6">
-        <Card className="border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-2">
-              <BookOpen className="text-amber-500" size={20} />
-              <h3 className="text-lg font-bold text-slate-800">Pending Homework</h3>
-            </div>
-            <Button variant="ghost" size="sm" className="text-primary font-bold hover:bg-primary/5" onClick={() => window.location.href='/homework'}>
-              View All <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </div>
-          <CardContent className="p-0">
-            {currentHomeworks.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-                {currentHomeworks.map((h, idx) => (
-                  <div key={idx} className="p-6 hover:bg-slate-50/50 transition-colors">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-black rounded uppercase tracking-widest">
-                        {h.subjectName}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        Due: {format(new Date(h.dueDate), 'MMM dd')}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 mb-2 line-clamp-1">{h.title}</h4>
-                    <p className="text-xs text-slate-500 line-clamp-2">{h.description}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No pending assignments</p>
               </div>
             )}
           </CardContent>

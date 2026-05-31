@@ -4,7 +4,8 @@ import {
   getDrivers, createDriver, updateDriver, deleteDriver,
   getRoutes, createRoute, updateRoute, deleteRoute,
   addStopToRoute, deleteStop,
-  assignTransport, getAssignedStudents
+  assignTransport, getAssignedStudents,
+  updateRouteStatus
 } from '../controllers/transport.controller';
 import { authMiddleware, authorize } from '../middleware/auth.middleware';
 
@@ -35,6 +36,10 @@ router.route('/routes')
 router.route('/routes/:id')
   .put(authorize('ADMIN', 'PRINCIPAL', 'ACCOUNTANT'), updateRoute)
   .delete(authorize('ADMIN', 'PRINCIPAL'), deleteRoute);
+
+// Live Tracking Status Update
+router.route('/routes/:id/status')
+  .put(authorize('ADMIN', 'PRINCIPAL', 'TEACHER', 'ACCOUNTANT'), updateRouteStatus);
 
 // Stops
 router.route('/routes/:routeId/stops')

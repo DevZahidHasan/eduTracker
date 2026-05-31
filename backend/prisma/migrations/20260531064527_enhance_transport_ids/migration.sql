@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "BusRoute" ADD COLUMN     "currentStatus" TEXT NOT NULL DEFAULT 'ON_TIME',
+ADD COLUMN     "delayMinutes" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastLocation" TEXT,
+ADD COLUMN     "lastStatusUpdate" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;

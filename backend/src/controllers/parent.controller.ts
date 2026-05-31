@@ -213,6 +213,42 @@ export const getParentFees = asyncHandler(async (req: AuthRequest, res: Response
   );
 });
 
+export const getParentTransport = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { studentId } = req.params;
+  const parentId = req.user?.id;
+
+  if (!studentId) {
+    throw new ApiError(400, 'Student ID is required');
+  }
+
+  // Verify parent-student relationship
+  const student = await prisma.student.findUnique({
+    where: { id: Number(studentId) },
+    select: { 
+      parentId: true,
+      busRoute: {
+        include: {
+          vehicle: true,
+          driver: true,
+          stops: { orderBy: { id: 'asc' } }
+        }
+      },
+      busStop: true
+    }
+  });
+
+  if (!student || student.parentId !== parentId) {
+    throw new ApiError(403, 'You are not authorized to access this data');
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      route: student.busRoute,
+      assignedStop: student.busStop
+    }, 'Transport info fetched successfully')
+  );
+});
+
 export const getParentResults = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { studentId } = req.params;
   const { examType } = req.query;

@@ -211,3 +211,23 @@ export const getAssignedStudents = asyncHandler(async (req: Request, res: Respon
   });
   res.status(200).json(new ApiResponse(200, students, 'Assigned students fetched successfully'));
 });
+
+// --- Live Tracking ---
+
+export const updateRouteStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { currentStatus, delayMinutes, lastLocation } = req.body;
+
+  const route = await prisma.busRoute.update({
+    where: { id: parseInt(id) },
+    data: {
+      currentStatus,
+      delayMinutes: parseInt(delayMinutes) || 0,
+      lastLocation,
+      lastStatusUpdate: new Date()
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, route, 'Bus route status updated successfully'));
+});
+

@@ -20,6 +20,7 @@ export const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'ACCOUNTANT', 'PRINCIPAL', 'PARENT'] },
   { name: 'Results', href: '/results', icon: FileSpreadsheet, roles: ['PARENT'] },
   { name: 'Fees', href: '/fees', icon: Wallet, roles: ['PARENT'] },
+  { name: 'Bus Tracking', href: '/transport-tracking', icon: Bus, roles: ['PARENT'] },
   { name: 'Admissions', href: '/admissions', icon: UserPlus, roles: ['ADMIN', 'PRINCIPAL', 'ACCOUNTANT'] },
   { name: 'Students', href: '/students', icon: Users, roles: ['ADMIN', 'ACCOUNTANT', 'PRINCIPAL'] },
   { name: 'ID Cards', href: '/id-cards', icon: LayoutGrid, roles: ['ADMIN', 'ACCOUNTANT', 'PRINCIPAL', 'STAFF'] },

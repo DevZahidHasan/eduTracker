@@ -51,10 +51,12 @@ interface ParentState {
   resultsData: any[];
   attendanceData: AttendanceRecord[];
   feesData: any[];
+  transportData: any | null;
   loading: boolean;
   resultsLoading: boolean;
   attendanceLoading: boolean;
   feesLoading: boolean;
+  transportLoading: boolean;
   error: string | null;
 }
 
@@ -63,10 +65,12 @@ const initialState: ParentState = {
   resultsData: [],
   attendanceData: [],
   feesData: [],
+  transportData: null,
   loading: false,
   resultsLoading: false,
   attendanceLoading: false,
   feesLoading: false,
+  transportLoading: false,
   error: null,
 };
 
@@ -119,6 +123,18 @@ export const fetchParentFees = createAsyncThunk(
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch fees');
+    }
+  }
+);
+
+export const fetchParentTransport = createAsyncThunk(
+  'parent/fetchTransport',
+  async ({ studentId }: { studentId: number }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/parent/transport/${studentId}`);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch transport');
     }
   }
 );
@@ -176,6 +192,18 @@ const parentSlice = createSlice({
       .addCase(fetchParentFees.rejected, (state, action) => {
         state.feesLoading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchParentTransport.pending, (state) => {
+        state.transportLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchParentTransport.fulfilled, (state, action) => {
+        state.transportLoading = false;
+        state.transportData = action.payload;
+      })
+      .addCase(fetchParentTransport.rejected, (state, action) => {
+        state.transportLoading = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -187,6 +215,8 @@ export const selectParentAttendanceData = (state: RootState) => state.parent.att
 export const selectParentAttendanceLoading = (state: RootState) => state.parent.attendanceLoading;
 export const selectParentFeesData = (state: RootState) => state.parent.feesData;
 export const selectParentFeesLoading = (state: RootState) => state.parent.feesLoading;
+export const selectParentTransportData = (state: RootState) => state.parent.transportData;
+export const selectParentTransportLoading = (state: RootState) => state.parent.transportLoading;
 export const selectParentLoading = (state: RootState) => state.parent.loading;
 
 export default parentSlice.reducer;

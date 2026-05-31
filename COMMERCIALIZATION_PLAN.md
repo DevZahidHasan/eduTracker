@@ -29,7 +29,7 @@ This document outlines the strategic roadmap to transform eduTracker into a prof
   - [x] **Database & Storage:** Add `HomeworkSubmission` model and local file storage for student work photos.
   - [x] **Parent Portal (Uploads):** Allow parents to snap photos of completed homework and upload them directly.
   - [x] **Teacher Portal (Review Gallery):** Create a grid view for teachers to see all submissions for a task and mark them as "Reviewed".
-- [ ] **Live Bus Tracking (Transport Enhancement):** Add a feature where parents can see if the bus is delayed.
+- [x] **Live Bus Tracking (Transport Enhancement):** Add a feature where parents can see if the bus is delayed.
 
 ### 2. Automated Online Payments (Finance)
 *Solve the immense struggle of fee collection and tracking.*
