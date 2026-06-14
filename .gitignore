@@ -35,6 +35,8 @@ yarn-error.log*
 
 # vercel
 .vercel
+# business documents (ignored to prevent client data/guides from tracking if desired)
+/business_document
 
 # typescript
 *.tsbuildinfo
