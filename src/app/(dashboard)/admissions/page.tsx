@@ -55,7 +55,7 @@ export default function AdmissionsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
 
-  const { control, handleSubmit, reset, setValue } = useForm({
+  const { control, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(inquirySchema),
     defaultValues: {
       studentName: '', parentName: '', phone: '', email: '',
@@ -295,24 +295,24 @@ export default function AdmissionsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Student Name *</label>
-              <Controller name="studentName" control={control} render={({field}) => <Input {...field} placeholder="John Doe" />} />
+              <Controller name="studentName" control={control} render={({field}) => <Input {...field} placeholder="John Doe" error={errors.studentName?.message} />} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Parent Name *</label>
-              <Controller name="parentName" control={control} render={({field}) => <Input {...field} placeholder="Jane Doe" />} />
+              <Controller name="parentName" control={control} render={({field}) => <Input {...field} placeholder="Jane Doe" error={errors.parentName?.message} />} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Phone *</label>
-              <Controller name="phone" control={control} render={({field}) => <Input {...field} placeholder="+1234567890" />} />
+              <Controller name="phone" control={control} render={({field}) => <Input {...field} placeholder="+1234567890" error={errors.phone?.message} />} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Email</label>
-              <Controller name="email" control={control} render={({field}) => <Input {...field} placeholder="email@example.com" />} />
+              <Controller name="email" control={control} render={({field}) => <Input {...field} placeholder="email@example.com" error={errors.email?.message} />} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Interested Grade *</label>
               <Controller name="interestedGrade" control={control} render={({field}) => (
-                <Select {...field} options={classOptions} />
+                <Select {...field} options={classOptions} error={errors.interestedGrade?.message} />
               )} />
             </div>
             <div>
@@ -322,7 +322,7 @@ export default function AdmissionsPage() {
                   { value: 'WALK_IN', label: 'Walk-In' }, { value: 'PHONE', label: 'Phone' },
                   { value: 'WEBSITE', label: 'Website' }, { value: 'FACEBOOK', label: 'Facebook' },
                   { value: 'REFERENCE', label: 'Reference' }, { value: 'OTHER', label: 'Other' }
-                ]} />
+                ]} error={errors.source?.message} />
               )} />
             </div>
             {selectedInquiry && (
@@ -333,17 +333,17 @@ export default function AdmissionsPage() {
                     { value: 'NEW', label: 'New' }, { value: 'CONTACTED', label: 'Contacted' },
                     { value: 'INTERESTED', label: 'Interested' }, { value: 'NOT_INTERESTED', label: 'Not Interested' },
                     { value: 'REJECTED', label: 'Rejected' }
-                  ]} />
+                  ]} error={errors.status?.message} />
                 )} />
               </div>
             )}
             <div className="col-span-2">
               <label className="text-sm font-medium mb-1 block">Previous School</label>
-              <Controller name="previousSchool" control={control} render={({field}) => <Input {...field} placeholder="Previous School Name" />} />
+              <Controller name="previousSchool" control={control} render={({field}) => <Input {...field} placeholder="Previous School Name" error={errors.previousSchool?.message} />} />
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium mb-1 block">Notes</label>
-              <Controller name="notes" control={control} render={({field}) => <Input {...field} placeholder="Any discussion notes..." />} />
+              <Controller name="notes" control={control} render={({field}) => <Input {...field} placeholder="Any discussion notes..." error={errors.notes?.message} />} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4">

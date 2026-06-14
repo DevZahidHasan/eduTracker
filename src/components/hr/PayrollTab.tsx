@@ -23,7 +23,7 @@ export function PayrollTab() {
     fetchRecords();
   }, [month, year]);
 
-  const fetchRecords = async () => {
+  async function fetchRecords() {
     try {
       setLoading(true);
       const data = await hrService.getPayrollRecords(parseInt(month), parseInt(year));
@@ -33,7 +33,7 @@ export function PayrollTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleGenerate = async () => {
     try {

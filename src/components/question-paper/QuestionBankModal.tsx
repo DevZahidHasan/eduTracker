@@ -21,10 +21,17 @@ export function QuestionBankModal({ isOpen, onClose, onSelect, subject, classNam
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (prevIsOpen !== isOpen) {
+    if (isOpen) {
+      setSelectedIds(new Set());
+    }
+    setPrevIsOpen(isOpen);
+  }
+
   useEffect(() => {
     if (isOpen) {
       dispatch(fetchBankQuestions({ subject, className }));
-      setSelectedIds(new Set());
     }
   }, [isOpen, dispatch, subject, className]);
 

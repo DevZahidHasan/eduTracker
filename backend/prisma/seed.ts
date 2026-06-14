@@ -227,12 +227,12 @@ async function main() {
 
   // 3. Seed Subjects & Exam Types
   const subjects = ['BANGLA', 'ENGLISH', 'MATH', 'SCIENCE', 'ICT', 'RELIGION', 'SOCIAL_SCIENCE'];
-  const examTypes = ['CLASS_TEST', 'MONTHLY_EXAM', 'MID_TERM', 'FINAL_EXAM'];
+  const genericExamTypes = ['CLASS_TEST', 'MONTHLY_EXAM', 'MID_TERM', 'FINAL_EXAM'];
 
   for (const name of subjects) {
     await prisma.subject.upsert({ where: { name }, update: {}, create: { name } });
   }
-  for (const name of examTypes) {
+  for (const name of genericExamTypes) {
     await prisma.examType.upsert({ where: { name }, update: {}, create: { name } });
   }
   console.log('Subjects and Exam Types seeded.');

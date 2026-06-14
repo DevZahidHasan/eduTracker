@@ -110,6 +110,24 @@ export default function StaffManagementPage() {
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation
+    if (!formData.name || formData.name.trim().length < 2) {
+      toast.error('Full name must be at least 2 characters.');
+      return;
+    }
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (!editingUser && (!formData.password || formData.password.length < 6)) {
+      toast.error('Password must be at least 6 characters for new staff.');
+      return;
+    }
+    if (formData.phone && !/^\+?[\d\s-]{10,}$/.test(formData.phone)) {
+      toast.error('Please enter a valid phone number (at least 10 digits).');
+      return;
+    }
+
     // Logic: Teachers and Admins MUST have canLogin = true in this UI for consistency,
     // though the DB allows it. If it's a cleaner/security etc, we might default to false.
     const submissionData = { ...formData };

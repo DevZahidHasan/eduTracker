@@ -22,6 +22,18 @@ const generatePdfFromHtml = (html) => __awaiter(void 0, void 0, void 0, function
     try {
         const page = yield browser.newPage();
         yield page.setContent(html, { waitUntil: 'load' });
+        // Wait for all images to fully load
+        yield page.evaluate(() => {
+            const selectors = Array.from(document.querySelectorAll('img'));
+            return Promise.all(selectors.map(img => {
+                if (img.complete)
+                    return Promise.resolve();
+                return new Promise((resolve) => {
+                    img.addEventListener('load', resolve);
+                    img.addEventListener('error', resolve);
+                });
+            }));
+        });
         // Generate PDF with A4 format and print background
         const pdfBuffer = yield page.pdf({
             format: 'A4',

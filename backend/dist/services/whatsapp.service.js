@@ -19,20 +19,32 @@ const twilio_1 = __importDefault(require("twilio"));
  * WhatsApp Service
  * Dynamically switches between Real Twilio API and Mock Logging
  */
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER; // e.g., 'whatsapp:+14155238886'
-const isTwilioConfigured = TWILIO_SID && TWILIO_TOKEN && TWILIO_NUMBER;
+const getTwilioConfig = () => __awaiter(void 0, void 0, void 0, function* () {
+    const settings = yield prisma_1.default.systemSetting.findMany({
+        where: {
+            key: { in: ['twilioSid', 'twilioToken', 'twilioNumber'] }
+        }
+    });
+    const config = settings.reduce((acc, curr) => {
+        acc[curr.key] = curr.value;
+        return acc;
+    }, {});
+    return {
+        sid: config.twilioSid || process.env.TWILIO_ACCOUNT_SID,
+        token: config.twilioToken || process.env.TWILIO_AUTH_TOKEN,
+        number: config.twilioNumber || process.env.TWILIO_WHATSAPP_NUMBER
+    };
+});
 const sendWhatsAppMessage = (to, message) => __awaiter(void 0, void 0, void 0, function* () {
-    if (isTwilioConfigured) {
+    const config = yield getTwilioConfig();
+    if (config.sid && config.token && config.number) {
         try {
-            const client = (0, twilio_1.default)(TWILIO_SID, TWILIO_TOKEN);
+            const client = (0, twilio_1.default)(config.sid, config.token);
             yield client.messages.create({
-                from: TWILIO_NUMBER,
+                from: config.number.startsWith('whatsapp:') ? config.number : `whatsapp:${config.number}`,
                 to: `whatsapp:${to.replace(/\s+/g, '')}`, // Remove spaces for API
                 body: message
             });
-            console.log(`[REAL WHATSAPP] Message sent to ${to}`);
             return true;
         }
         catch (error) {
@@ -42,7 +54,7 @@ const sendWhatsAppMessage = (to, message) => __awaiter(void 0, void 0, void 0, f
     }
     else {
         // FALLBACK TO MOCK FOR DEVELOPMENT
-        console.log(`[WHATSAPP MOCK] Sending message to ${to}: ${message}`);
+        console.log(`[MOCK WHATSAPP] To: ${to}, Message: ${message}`);
         return true;
     }
 });

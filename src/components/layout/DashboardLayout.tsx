@@ -40,23 +40,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     dispatch(fetchSystemSettings());
   }, [dispatch]);
 
-  // ... (RBAC useEffect) ...
-  useEffect(() => {
+  const [prevPathnameRole, setPrevPathnameRole] = useState({ pathname, role });
+  if (prevPathnameRole.pathname !== pathname || prevPathnameRole.role !== role) {
     const currentNavItem = navItems.find(item => 
       pathname === item.href || pathname.startsWith(item.href + '/')
     );
-
     if (currentNavItem && currentNavItem.roles && role) {
-      const isAuthorized = currentNavItem.roles.includes(role.toUpperCase());
-      if (!isAuthorized) {
-        setIsAccessDeniedOpen(true);
-      } else {
-        setIsAccessDeniedOpen(false);
-      }
+      setIsAccessDeniedOpen(!currentNavItem.roles.includes(role.toUpperCase()));
     } else {
       setIsAccessDeniedOpen(false);
     }
-  }, [pathname, role]);
+    setPrevPathnameRole({ pathname, role });
+  }
 
   // Apply accent color to document root
   useEffect(() => {
@@ -68,10 +63,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     document.documentElement.style.setProperty('--primary-foreground', '#ffffff');
   }, [systemSettings.accentColor]);
 
-  // Close mobile sidebar on navigation
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
     setIsMobileOpen(false);
-  }, [pathname]);
+    setPrevPathname(pathname);
+  }
 
   if (licenseStatus === 'EXPIRED' || licenseStatus === 'MISSING') {
     return <LicenseLockout status={licenseStatus} />;

@@ -12,4 +12,5 @@ router.get('/export-bulk/:className/:examType', (0, auth_middleware_1.authorize)
 router.post('/remarks', (0, auth_middleware_1.authorize)('ADMIN', 'TEACHER'), reports_controller_1.updateTeacherRemarks);
 router.get('/performance', (0, auth_middleware_1.authorize)('ADMIN', 'PRINCIPAL', 'TEACHER', 'ACCOUNTANT'), reports_controller_1.getClassPerformance);
 router.get('/attendance', (0, auth_middleware_1.authorize)('ADMIN', 'PRINCIPAL', 'TEACHER', 'ACCOUNTANT'), reports_controller_1.getAttendanceSummary);
+router.post('/annual-result/:studentId', (0, auth_middleware_1.authorize)('ADMIN', 'PRINCIPAL'), reports_controller_1.generateAnnualResult);
 exports.default = router;

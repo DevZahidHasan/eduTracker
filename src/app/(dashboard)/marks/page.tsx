@@ -210,18 +210,22 @@ export default function MarksPage() {
   }, [allMarks, selectedClass, selectedSubject, selectedExamType, selectedDate, classStudents, reset]);
 
   const onSave = (data: { scores: Record<string, number | string> }) => {
-    if (!selectedClass || !selectedSubject || !selectedExamType) return;
+    if (!selectedClass || !selectedSubject || !selectedExamType) {
+      toast.error('Please complete all selections before saving.');
+      return;
+    }
 
     const recordsToSave: any[] = [];
     const year = new Date(selectedDate).getFullYear();
+    let hasError = false;
     
     Object.entries(data.scores).forEach(([idStr, score]) => {
       if (score !== '' && score !== null && score !== undefined) {
         const studentId = Number(idStr.replace('student_', ''));
         const scoreNum = Number(score);
         
-        if (scoreNum > maxScore) {
-          // Handled visually, but as a safety:
+        if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > maxScore) {
+          hasError = true;
           return;
         }
 
@@ -236,6 +240,11 @@ export default function MarksPage() {
         });
       }
     });
+
+    if (hasError) {
+      toast.error(`One or more scores are invalid. They must be between 0 and ${maxScore}.`);
+      return;
+    }
 
     if (recordsToSave.length === 0) {
       toast.error('No valid marks entered to save');

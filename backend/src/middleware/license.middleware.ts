@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../prisma';
 import { verifyLicenseToken } from '../utils/license.util';
+import { logger } from '../utils/logger';
 
 export const licenseCheckMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -21,8 +22,8 @@ export const licenseCheckMiddleware = async (req: Request, res: Response, next: 
     // Pass the license info along in case a route needs it
     (req as any).licenseInfo = decoded;
     next();
-  } catch (error) {
-    console.error('License verification error:', error);
+  } catch (error: any) {
+    logger.error('License verification error: ' + error.message);
     return res.status(500).json({ error: 'SERVER_ERROR', message: 'Failed to verify license status' });
   }
 };

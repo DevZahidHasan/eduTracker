@@ -75,9 +75,12 @@ app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
 // app.use('/api', apiLimiter);
 // Routes
 app.use('/api', routes_1.default);
-// Health check
+// Health check & Version
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Backend is running' });
+    res.status(200).json({ status: 'ok', message: 'Backend is running', version: '1.0.0' });
+});
+app.get('/api/version', (req, res) => {
+    res.status(200).json({ version: '1.0.0', buildDate: new Date().toISOString() });
 });
 // Error Handling Middleware (must be after routes)
 app.use(error_middleware_1.errorMiddleware);

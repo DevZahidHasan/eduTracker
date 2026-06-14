@@ -29,7 +29,7 @@ export function LeaveRequestsTab() {
     fetchLeaves();
   }, []);
 
-  const fetchLeaves = async () => {
+  async function fetchLeaves() {
     try {
       setLoading(true);
       const data = await hrService.getLeaves();

@@ -20,7 +20,7 @@ export function AttendanceTab() {
     fetchData();
   }, [date]);
 
-  const fetchData = async () => {
+  async function fetchData() {
     try {
       setLoading(true);
       const [staffData, attendanceData] = await Promise.all([

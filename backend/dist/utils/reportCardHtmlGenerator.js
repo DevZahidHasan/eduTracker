@@ -223,6 +223,7 @@ exports.reportCardStyles = `
     </style>
 `;
 const generateReportCardHtml = (data, schoolProfile) => {
+    var _a;
     const { student, marks, gpa, grade, attendanceRate, teacherRemarks, aiInsights } = data;
     const schoolName = (schoolProfile === null || schoolProfile === void 0 ? void 0 : schoolProfile.name) || 'EduTrack Academy';
     const schoolAddress = (schoolProfile === null || schoolProfile === void 0 ? void 0 : schoolProfile.address) || '';
@@ -280,25 +281,50 @@ const generateReportCardHtml = (data, schoolProfile) => {
             </div>
         </div>
 
-        <table>
+        <table style="width:100%; table-layout: fixed; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th>Subject</th>
-                    <th>Max Marks</th>
-                    <th>Obtained</th>
-                    <th>Grade</th>
+                    <th style="width: 25%; text-align:left;">Subject</th>
+                    ${data.isBDStandard ? `
+                        <th style="width: 15%; text-align:center;">Tutorial</th>
+                        <th style="width: 15%; text-align:center;">Final Exam</th>
+                    ` : ''}
+                    ${data.isAnnual && data.contributingTerms ? `
+                        ${data.contributingTerms.map((t) => `<th style="text-align:center; font-size:10px;">${t.label}</th>`).join('')}
+                    ` : ''}
+                    <th style="width: 15%; text-align:center;">${data.isAnnual ? 'Average' : 'Total'}</th>
+                    <th style="width: 10%; text-align:center;">GP</th>
+                    <th style="width: 10%; text-align:center;">Grade</th>
                 </tr>
             </thead>
-            <tbody>
-                ${marks.map((m) => `
+            <tbody style="font-size: 12px;">
+                ${marks.map((m) => {
+        var _a, _b, _c;
+        return `
                     <tr>
-                        <td>${m.subject.replace(/_/g, ' ')}</td>
-                        <td>${m.maxScore}</td>
-                        <td>${m.score}</td>
-                        <td>${m.grade || '-'}</td>
+                        <td style="font-weight:600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.subject.replace(/_/g, ' ')}</td>
+                        ${data.isBDStandard ? `
+                            <td style="text-align:center;">${(_a = m.tutorial) !== null && _a !== void 0 ? _a : '-'}</td>
+                            <td style="text-align:center;">${(_b = m.final) !== null && _b !== void 0 ? _b : '-'}</td>
+                        ` : ''}
+                        ${data.isAnnual && data.contributingTerms ? `
+                            ${data.contributingTerms.map((t) => { var _a, _b; return `<td style="text-align:center;">${(_b = (_a = m.termScores) === null || _a === void 0 ? void 0 : _a[t.value]) !== null && _b !== void 0 ? _b : '-'}</td>`; }).join('')}
+                        ` : ''}
+                        <td style="text-align:center; font-weight:700;">${m.score}</td>
+                        <td style="text-align:center; font-weight:700;">${((_c = m.gpa) === null || _c === void 0 ? void 0 : _c.toFixed(2)) || '0.00'}</td>
+                        <td style="text-align:center; font-weight:700;">${m.grade || '-'}</td>
                     </tr>
-                `).join('')}
+                `;
+    }).join('')}
             </tbody>
+            ${(data.isAnnual || data.isBDStandard) ? `
+            <tfoot style="background-color: #f8fafc; font-weight: bold;">
+                <tr>
+                    <td colspan="${data.isAnnual ? (1 + (((_a = data.contributingTerms) === null || _a === void 0 ? void 0 : _a.length) || 0)) : 3}" style="text-align:right; text-transform:uppercase; font-size:10px;">Grade Point Average (GPA)</td>
+                    <td colspan="3" style="text-align:center; font-size:16px; color:#1e3a8a;">${gpa.toFixed(2)}</td>
+                </tr>
+            </tfoot>
+            ` : ''}
         </table>
 
         <div class="summary-box">

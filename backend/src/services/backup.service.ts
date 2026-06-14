@@ -4,6 +4,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 import prisma from '../prisma';
 import { uploadToGoogleDrive } from './googleDrive.service';
+import { logger } from '../utils/logger';
 
 const execPromise = promisify(exec);
 
@@ -55,7 +56,7 @@ export const performDatabaseBackup = async (customPath?: string) => {
         env: { ...process.env, PGPASSWORD: password }
       });
     } catch (execError: any) {
-      console.error('pg_dump execution failed:', execError.message);
+      logger.error('pg_dump execution failed: ' + execError.message);
       
       // If the hardcoded path failed, try the simple command as a last resort
       if (pgDumpBin !== 'pg_dump') {
@@ -70,6 +71,8 @@ export const performDatabaseBackup = async (customPath?: string) => {
       }
     }
     
+    logger.info(`Backup successful: ${filename}`);
+
     // Log in system settings
     await prisma.systemSetting.upsert({
       where: { key: 'lastBackupRun' },
@@ -82,8 +85,8 @@ export const performDatabaseBackup = async (customPath?: string) => {
     try {
       const cloudFileId = await uploadToGoogleDrive(filename, fullPath);
       cloudSynced = !!cloudFileId;
-    } catch (err) {
-      console.error('Non-blocking cloud sync failure:', err);
+    } catch (err: any) {
+      logger.error('Non-blocking cloud sync failure: ' + err.message);
     }
 
     return { 
@@ -94,7 +97,7 @@ export const performDatabaseBackup = async (customPath?: string) => {
       cloudSynced
     };
   } catch (error: any) {
-    console.error('Backup failed:', error);
+    logger.error('Backup failed: ' + error.message);
     throw error;
   }
 };

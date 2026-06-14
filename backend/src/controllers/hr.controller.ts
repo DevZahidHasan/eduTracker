@@ -102,7 +102,7 @@ export const markStaffAttendance = asyncHandler(async (req: Request, res: Respon
 export const getStaffAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { date, month, year } = req.query;
 
-  let where: any = {};
+  const where: any = {};
 
   if (date) {
     const searchDate = new Date(date as string);
@@ -312,7 +312,7 @@ export const generatePayroll = asyncHandler(async (req: Request, res: Response) 
 export const getPayrollRecords = asyncHandler(async (req: Request, res: Response) => {
   const { month, year, userId } = req.query;
 
-  let where: any = {};
+  const where: any = {};
   if (month) where.month = parseInt(month as string, 10);
   if (year) where.year = parseInt(year as string, 10);
   if (userId) where.userId = parseInt(userId as string, 10);

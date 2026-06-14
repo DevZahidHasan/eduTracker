@@ -25,12 +25,19 @@ const admissions_routes_1 = __importDefault(require("./admissions.routes"));
 const hr_routes_1 = __importDefault(require("./hr.routes"));
 const inventory_routes_1 = __importDefault(require("./inventory.routes"));
 const document_routes_1 = __importDefault(require("./document.routes"));
+const license_routes_1 = __importDefault(require("./license.routes"));
+const import_routes_1 = __importDefault(require("./import.routes"));
 const auth_middleware_1 = require("../middleware/auth.middleware");
+const license_middleware_1 = require("../middleware/license.middleware");
 const router = (0, express_1.Router)();
 // Public routes
 router.use('/auth', auth_routes_1.default);
 router.use('/config', config_routes_1.default);
-// Protected routes (require valid JWT)
+router.use('/license', license_routes_1.default); // License checking and updating
+// Enforce valid license for all subsequent (protected) routes
+router.use(license_middleware_1.licenseCheckMiddleware);
+// Protected routes (require valid JWT and valid License)
+router.use('/import', import_routes_1.default);
 router.use('/students', auth_middleware_1.authMiddleware, students_routes_1.default);
 router.use('/marks', auth_middleware_1.authMiddleware, marks_routes_1.default);
 router.use('/attendance', auth_middleware_1.authMiddleware, attendance_routes_1.default);

@@ -24,22 +24,22 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    async function loadTemplates() {
+      setLoading(true);
+      try {
+        const data = await questionPaperService.getTemplates();
+        setTemplates(data);
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     if (isOpen) {
       loadTemplates();
     }
   }, [isOpen]);
-
-  const loadTemplates = async () => {
-    setLoading(true);
-    try {
-      const data = await questionPaperService.getTemplates();
-      setTemplates(data);
-    } catch (error) {
-      console.error('Error loading templates:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredTemplates = templates.filter(t => 
     t.title.toLowerCase().includes(search.toLowerCase()) ||

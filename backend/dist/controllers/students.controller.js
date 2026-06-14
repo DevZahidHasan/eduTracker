@@ -128,37 +128,20 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
     if (existingId) {
         throw new apiError_1.ApiError(400, `Student ID '${studentId}' is already assigned to another student.`);
     }
-    // Check if email already exists
-    if (email) {
-        const existingEmail = yield prisma_1.default.student.findUnique({
-            where: { email }
-        });
-        if (existingEmail) {
-            throw new apiError_1.ApiError(400, `Email address '${email}' is already in use.`);
-        }
-    }
-    // Check if phone already exists
-    if (phone) {
-        const existingPhone = yield prisma_1.default.student.findFirst({
-            where: { phone }
-        });
-        if (existingPhone) {
-            throw new apiError_1.ApiError(400, `Phone number '${phone}' is already in use.`);
-        }
-    }
-    // Check if Roll Number already exists in the same Class and Section
+    // Check if roll number already exists in that class/section
     const existingRoll = yield prisma_1.default.student.findUnique({
         where: {
             className_section_rollNumber: {
                 className,
                 section,
-                rollNumber
+                rollNumber: String(rollNumber)
             }
         }
     });
     if (existingRoll) {
-        throw new apiError_1.ApiError(400, `Roll Number '${rollNumber}' is already taken in ${className} Section ${section}.`);
+        throw new apiError_1.ApiError(400, `Roll number '${rollNumber}' already exists in ${className} Section ${section}.`);
     }
+    // Note: Email and Phone uniqueness checks were removed to allow siblings to share parent contact info.
     try {
         const student = yield prisma_1.default.student.create({
             data: {
@@ -191,8 +174,6 @@ exports.createStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter
 }));
 exports.updateStudent = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    // Log the incoming body to see what the frontend is sending
-    console.log(`[BACKEND DEBUG] Updating student ${id}. Body:`, req.body);
     const { fullName, rollNumber, className, section, gender, email, dateOfBirth, bloodGroup, phone, parentName, parentPhone, address, admissionDate, profileImage } = req.body;
     const oldStudent = yield prisma_1.default.student.findUnique({
         where: { id: Number(id) }

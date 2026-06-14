@@ -107,29 +107,30 @@ exports.updateQuestionPaperSchema = {
 exports.bulkMarksSchema = {
     body: zod_1.z.object({
         records: zod_1.z.array(zod_1.z.object({
-            studentId: zod_1.z.number(),
-            subject: zod_1.z.string(),
-            examType: zod_1.z.string(),
-            score: zod_1.z.number().min(0),
-            maxScore: zod_1.z.number().min(1),
+            studentId: zod_1.z.coerce.number(),
+            subject: zod_1.z.string().min(1),
+            examType: zod_1.z.string().min(1),
+            score: zod_1.z.coerce.number().min(0),
+            maxScore: zod_1.z.coerce.number().min(1),
             date: zod_1.z.string().optional(),
+            year: zod_1.z.coerce.number().optional(),
         })),
     }),
 };
 exports.finalizeMarksSchema = {
     body: zod_1.z.object({
-        className: zod_1.z.string(),
-        subject: zod_1.z.string(),
-        examType: zod_1.z.string(),
-        date: zod_1.z.string(),
+        className: zod_1.z.string().min(1),
+        subject: zod_1.z.string().min(1),
+        examType: zod_1.z.string().min(1),
+        year: zod_1.z.coerce.number().int().min(2000).max(2100),
     }),
 };
 exports.lockStatusQuerySchema = {
     query: zod_1.z.object({
-        className: zod_1.z.string(),
-        subject: zod_1.z.string(),
-        examType: zod_1.z.string(),
-        date: zod_1.z.string(),
+        className: zod_1.z.string().min(1),
+        subject: zod_1.z.string().min(1),
+        examType: zod_1.z.string().min(1),
+        year: zod_1.z.coerce.number().int(),
     }),
 };
 // Attendance Schemas

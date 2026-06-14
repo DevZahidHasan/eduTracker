@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import prisma from '../prisma';
 import { sendDailyAttendanceReport } from './email.service';
 import { performDatabaseBackup } from './backup.service';
+import { logger } from '../utils/logger';
 
 export const runEndOfDayTasks = async () => {
   const todayDateString = new Date().toISOString().split('T')[0];
@@ -31,15 +32,18 @@ export const initCronJobs = () => {
   // Run at 16:00 (4 PM) every day
   // You can customize the cron expression based on school hours
   cron.schedule('0 16 * * *', async () => {
+    logger.info('Running end of day tasks (Cron)');
     await runEndOfDayTasks();
   });
 
   // Run at 02:00 (2 AM) every day for database backup
   cron.schedule('0 2 * * *', async () => {
+    logger.info('Starting scheduled database backup (Cron)...');
     try {
       await performDatabaseBackup();
-    } catch (error) {
-      console.error('Scheduled backup failed:', error);
+      logger.info('Scheduled database backup completed successfully.');
+    } catch (error: any) {
+      logger.error('Scheduled backup failed: ' + error.message);
     }
   });
 };

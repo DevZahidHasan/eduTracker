@@ -10,7 +10,7 @@ import {
   unlockMarks,
   checkMarkLock
 } from '../controllers/marks.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware, authorize } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { bulkMarksSchema, finalizeMarksSchema, lockStatusQuerySchema, idParamSchema } from '../validations';
 
@@ -18,14 +18,14 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', getMarks);
-router.post('/bulk', validate(bulkMarksSchema), bulkCreateMarks);
-router.get('/lock-status', validate(lockStatusQuerySchema), checkMarkLock);
-router.post('/finalize', validate(finalizeMarksSchema), finalizeMarks);
-router.post('/unlock', validate(finalizeMarksSchema), unlockMarks);
-router.get('/:id', validate(idParamSchema), getMarkById);
-router.post('/', createMark);
-router.put('/:id', validate(idParamSchema), updateMark);
-router.delete('/:id', validate(idParamSchema), deleteMark);
+router.get('/', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), getMarks);
+router.post('/bulk', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), validate(bulkMarksSchema), bulkCreateMarks);
+router.get('/lock-status', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), validate(lockStatusQuerySchema), checkMarkLock);
+router.post('/finalize', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), validate(finalizeMarksSchema), finalizeMarks);
+router.post('/unlock', authorize('ADMIN', 'PRINCIPAL'), validate(finalizeMarksSchema), unlockMarks);
+router.get('/:id', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), validate(idParamSchema), getMarkById);
+router.post('/', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), createMark);
+router.put('/:id', authorize('ADMIN', 'PRINCIPAL', 'TEACHER'), validate(idParamSchema), updateMark);
+router.delete('/:id', authorize('ADMIN', 'PRINCIPAL'), validate(idParamSchema), deleteMark);
 
 export default router;

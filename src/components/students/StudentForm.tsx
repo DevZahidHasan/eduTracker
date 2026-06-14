@@ -79,7 +79,7 @@ export function StudentForm({
     // Only auto-generate if we are not editing an existing student
     // and both class and section are selected.
     if (!isEditing && watchClass && watchSection) {
-      const fetchCredentials = async () => {
+      async function fetchCredentials() {
         try {
           const response = await api.get('/students/generate-credentials', {
             params: { className: watchClass, section: watchSection }

@@ -80,6 +80,17 @@ export function AIQuestionGeneratorModal({ isOpen, onClose, onSelect, defaultCla
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="AI Question Generator" size="xl">
       <div className="space-y-6 pt-4">
+        {/* Experimental Warning */}
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-start gap-3 text-sm">
+          <Sparkles className="shrink-0 mt-0.5" size={16} />
+          <div>
+            <p className="font-bold">Experimental Feature (Demo)</p>
+            <p className="mt-1 text-amber-700">
+              This feature currently uses a mocked response for demonstration purposes. In a production environment, this would integrate with a real AI provider like OpenAI or Google Gemini.
+            </p>
+          </div>
+        </div>
+
         {/* Input Form */}
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
           <div className="flex items-center gap-2 mb-2 text-indigo-600 font-medium">

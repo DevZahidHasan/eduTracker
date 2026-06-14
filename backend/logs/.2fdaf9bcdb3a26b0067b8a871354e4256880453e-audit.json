@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "D:\\cli\\eduTracker\\backend\\logs\\.2fdaf9bcdb3a26b0067b8a871354e4256880453e-audit.json",
+    "files": [
+        {
+            "date": 1781464387892,
+            "name": "D:\\cli\\eduTracker\\backend\\logs\\error-2026-06-15.log",
+            "hash": "409f222176751aa3366b255821211cfefb7064e3a72147be9efeefc20f32f339"
+        }
+    ],
+    "hashType": "sha256"
+}

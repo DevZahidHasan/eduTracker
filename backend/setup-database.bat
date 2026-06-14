@@ -33,7 +33,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [3/3] Seeding Initial Data (Default Admin, Settings)...
-call npm run seed
+call npx ts-node prisma/seed-client.ts
 if %errorlevel% neq 0 (
     echo.
     echo ERROR: Database seeding failed.

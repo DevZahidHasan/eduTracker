@@ -24,10 +24,8 @@ const runEndOfDayTasks = () => __awaiter(void 0, void 0, void 0, function* () {
         where: { key: 'lastEndOfDayRun' }
     });
     if ((lastRunSetting === null || lastRunSetting === void 0 ? void 0 : lastRunSetting.value) === todayDateString) {
-        console.log(`End of day tasks already ran for ${todayDateString}. Skipping.`);
         return { status: 'skipped', message: 'Already ran today' };
     }
-    console.log(`Running end of day tasks for ${todayDateString}...`);
     yield (0, email_service_1.sendDailyAttendanceReport)();
     // Mark as run
     yield prisma_1.default.systemSetting.upsert({
@@ -42,12 +40,10 @@ const initCronJobs = () => {
     // Run at 16:00 (4 PM) every day
     // You can customize the cron expression based on school hours
     node_cron_1.default.schedule('0 16 * * *', () => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('Cron triggered: End of day tasks');
         yield (0, exports.runEndOfDayTasks)();
     }));
     // Run at 02:00 (2 AM) every day for database backup
     node_cron_1.default.schedule('0 2 * * *', () => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('Cron triggered: Automated Database Backup');
         try {
             yield (0, backup_service_1.performDatabaseBackup)();
         }
@@ -55,6 +51,5 @@ const initCronJobs = () => {
             console.error('Scheduled backup failed:', error);
         }
     }));
-    console.log('Cron jobs initialized');
 };
 exports.initCronJobs = initCronJobs;

@@ -97,7 +97,7 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
             className="border-purple-200 text-purple-600 hover:bg-purple-50"
           >
             <Sparkles size={16} className="mr-2" />
-            AI Suggest
+            AI Suggest (Beta)
           </Button>
           <Button 
             type="button" 
@@ -161,7 +161,7 @@ export function QuestionBuilder({ control, register, errors }: QuestionBuilderPr
                 className="border-purple-200 text-purple-600 hover:bg-purple-50"
               >
                 <Sparkles size={16} className="mr-2" />
-                AI Suggest
+                AI Suggest (Beta)
               </Button>
               <Button 
                 type="button" 

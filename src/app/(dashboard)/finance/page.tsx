@@ -145,7 +145,16 @@ export default function FinancePage() {
   };
 
   const handleCollectPayment = async () => {
-    if (!selectedVoucher || !paymentData.amount) return;
+    if (!selectedVoucher) return;
+    if (!paymentData.amount || isNaN(parseFloat(paymentData.amount)) || parseFloat(paymentData.amount) <= 0) {
+      toast.error('Please enter a valid payment amount');
+      return;
+    }
+    if (parseFloat(paymentData.amount) > (selectedVoucher.totalAmount - selectedVoucher.paidAmount)) {
+      toast.error('Amount cannot exceed the remaining balance');
+      return;
+    }
+
     try {
       await api.post('/finance/payments/collect', {
         voucherId: selectedVoucher.id,
@@ -169,7 +178,10 @@ export default function FinancePage() {
   };
 
   const handleCreateFeeType = async () => {
-    if (!newFeeType.name) return;
+    if (!newFeeType.name || newFeeType.name.trim().length < 2) {
+      toast.error('Fee category name must be at least 2 characters');
+      return;
+    }
     try {
       if (isEditingFeeType && selectedFeeTypeId) {
         await api.put(`/finance/fee-types/${selectedFeeTypeId}`, newFeeType);
@@ -189,7 +201,18 @@ export default function FinancePage() {
   };
 
   const handleUpdateStructure = async () => {
-    if (!selectedClass || !editingStructure.feeTypeId || !editingStructure.amount) return;
+    if (!selectedClass) {
+      toast.error('Please select a class');
+      return;
+    }
+    if (!editingStructure.feeTypeId) {
+      toast.error('Please select a fee category');
+      return;
+    }
+    if (editingStructure.amount === '' || Number(editingStructure.amount) < 0) {
+      toast.error('Please enter a valid positive amount');
+      return;
+    }
     try {
       await dispatch(upsertFeeStructure({
         className: selectedClass,
@@ -207,6 +230,10 @@ export default function FinancePage() {
   const handleGenerateVouchers = async () => {
     if (!selectedClass) {
       toast.error('Please select a class first');
+      return;
+    }
+    if (!voucherData.month || !voucherData.year || !voucherData.dueDate) {
+      toast.error('Please fill in all required voucher details (Month, Year, Due Date)');
       return;
     }
 

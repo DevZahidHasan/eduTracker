@@ -497,7 +497,10 @@ export default function DashboardPage() {
                   <Sparkles size={18} className="text-blue-100" />
                 </div>
                 <div>
-                   <h3 className="text-base font-black text-white tracking-tight">AI Insights Engine</h3>
+                   <div className="flex items-center gap-2">
+                     <h3 className="text-base font-black text-white tracking-tight">AI Insights Engine</h3>
+                     <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Demo</span>
+                   </div>
                    <p className="text-[10px] text-blue-200 font-bold uppercase tracking-widest mt-0.5">Performance Analysis</p>
                 </div>
               </div>
@@ -509,7 +512,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <p className="text-blue-100 text-xs font-medium leading-relaxed">
-                  Click below to generate a deep-dive analysis of your current academic and attendance metrics using our AI engine.
+                  Click below to generate a simulated analysis of your current academic and attendance metrics using our mocked AI engine. (Requires backend integration in production)
                 </p>
               )}
               <Button

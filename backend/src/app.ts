@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes';
 import { errorMiddleware } from './middleware/error.middleware';
+import { stream } from './utils/logger';
 // import { apiLimiter } from './middleware/rateLimit.middleware';
 
 const app = express();
@@ -43,7 +44,7 @@ app.use(helmet({
 }));
 
 // Logging Middleware
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream }));
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,

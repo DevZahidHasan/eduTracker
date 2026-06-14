@@ -10,10 +10,11 @@ export default function BackupManager() {
   const [backups, setBackups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const fetchBackups = async () => {
+  const fetchBackups = async (showLoading = false) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const res = await api.get('/settings/backups');
       if (res.data.success) {
         setBackups(res.data.data || []);
@@ -26,12 +27,27 @@ export default function BackupManager() {
   };
 
   useEffect(() => {
-    fetchBackups();
+    fetchBackups(false);
   }, []);
+
+  const handleCreateBackup = async () => {
+    try {
+      setIsCreating(true);
+      const res = await api.post('/settings/backup');
+      if (res.data.success) {
+        toast.success(res.data.message || 'Backup created successfully');
+        fetchBackups();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create backup');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleDownload = (filename: string) => {
     // The browser will handle the download natively
-    window.location.href = `http://localhost:3000/api/settings/backups/download/${filename}`; // Note: Ensure URL is dynamic if needed or use api.defaults.baseURL
+    window.location.assign(`http://localhost:3000/api/settings/backups/download/${filename}`); // Note: Ensure URL is dynamic if needed or use api.defaults.baseURL
   };
 
   const handleDelete = async (filename: string) => {
@@ -57,7 +73,13 @@ export default function BackupManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-bold text-foreground text-sm">Available Backups</h4>
-        <Button variant="outline" size="sm" onClick={fetchBackups}>Refresh</Button>
+        <div className="flex gap-2">
+          <Button variant="primary" size="sm" onClick={handleCreateBackup} disabled={isCreating}>
+            {isCreating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+            Create Backup
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fetchBackups(true)}>Refresh</Button>
+        </div>
       </div>
       
       {backups.length === 0 ? (

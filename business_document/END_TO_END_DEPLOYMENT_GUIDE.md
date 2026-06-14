@@ -45,9 +45,10 @@ Ensure the client's server has the following installed:
 
 ### Step 3: Copy Files & Configure `.env`
 1. Copy the `EduTracker_Release` folder from your USB drive to the server's `C:\inetpub\wwwroot` folder (or another permanent location).
-2. Open `EduTracker_Release\backend\.env`.
-3. Set the `DATABASE_URL` with the correct PostgreSQL password for their server.
-4. Verify that the `LICENSE_SECRET` perfectly matches the one you set on your laptop in Part 1.
+2. Open the `EduTracker_Release\backend` folder. Rename `.env.example` to `.env`.
+3. Open `EduTracker_Release\backend\.env`.
+4. Set the `DATABASE_URL` with the correct PostgreSQL password for their server.
+5. Verify that the `LICENSE_SECRET` perfectly matches the one you set on your laptop in Part 1.
 
 ### Step 4: The One-Click Install
 1. Inside the `EduTracker_Release` folder, locate the file named **`install-iis-server.ps1`**.
@@ -81,3 +82,10 @@ The software is running on their server, but if they go to `http://localhost:600
 4. The system will verify the key against the secret, save it to their PostgreSQL database, and unlock the dashboard!
 
 **Deployment Complete.** The school is now successfully onboarded and their software will automatically lock them out in exactly 365 days.
+
+### Step 3: First Login
+Once the system is unlocked, you can log in to the administrator dashboard using the default credentials provisioned by the installer:
+* **Email:** `admin@school.com`
+* **Password:** `admin123`
+
+*(Note: Instruct the school administrator to change this password immediately after the first login.)*

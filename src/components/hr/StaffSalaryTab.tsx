@@ -29,17 +29,17 @@ export function StaffSalaryTab() {
     fetchStaff();
   }, []);
 
-  const fetchStaff = async () => {
+  async function fetchStaff() {
     try {
       setLoading(true);
       const data = await hrService.getStaff();
       setStaff(data);
     } catch (error) {
-      toast.error('Failed to load staff records');
+      toast.error('Failed to load staff list');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const openEditModal = (member: StaffMember) => {
     setSelectedStaff(member);

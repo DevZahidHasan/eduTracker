@@ -18,6 +18,7 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const util_1 = require("util");
 const prisma_1 = __importDefault(require("../prisma"));
+const googleDrive_service_1 = require("./googleDrive.service");
 const execPromise = (0, util_1.promisify)(child_process_1.exec);
 const performDatabaseBackup = (customPath) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -53,7 +54,6 @@ const performDatabaseBackup = (customPath) => __awaiter(void 0, void 0, void 0, 
         const pgDumpBin = (pgDumpPathSetting === null || pgDumpPathSetting === void 0 ? void 0 : pgDumpPathSetting.value) || 'C:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe';
         // Use PGPASSWORD environment variable to avoid interactive prompt
         const command = `"${pgDumpBin}" -h ${host} -p ${port} -U ${user} -d ${dbname} -F p -f "${fullPath}"`;
-        console.log(`Starting backup to ${fullPath} using ${pgDumpBin}...`);
         try {
             yield execPromise(command, {
                 env: Object.assign(Object.assign({}, process.env), { PGPASSWORD: password })
@@ -63,7 +63,6 @@ const performDatabaseBackup = (customPath) => __awaiter(void 0, void 0, void 0, 
             console.error('pg_dump execution failed:', execError.message);
             // If the hardcoded path failed, try the simple command as a last resort
             if (pgDumpBin !== 'pg_dump') {
-                console.log('Retrying with system-wide "pg_dump" command...');
                 const fallbackCommand = `pg_dump -h ${host} -p ${port} -U ${user} -d ${dbname} -F p -f "${fullPath}"`;
                 try {
                     yield execPromise(fallbackCommand, { env: Object.assign(Object.assign({}, process.env), { PGPASSWORD: password }) });
@@ -76,18 +75,27 @@ const performDatabaseBackup = (customPath) => __awaiter(void 0, void 0, void 0, 
                 throw execError;
             }
         }
-        console.log(`Backup completed successfully: ${filename}`);
         // Log in system settings
         yield prisma_1.default.systemSetting.upsert({
             where: { key: 'lastBackupRun' },
             update: { value: new Date().toISOString() },
             create: { key: 'lastBackupRun', value: new Date().toISOString() }
         });
+        // --- OPTIONAL: Cloud Sync (Wrapped in try-catch to be non-blocking) ---
+        let cloudSynced = false;
+        try {
+            const cloudFileId = yield (0, googleDrive_service_1.uploadToGoogleDrive)(filename, fullPath);
+            cloudSynced = !!cloudFileId;
+        }
+        catch (err) {
+            console.error('Non-blocking cloud sync failure:', err);
+        }
         return {
             success: true,
             filename,
             path: fullPath,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            cloudSynced
         };
     }
     catch (error) {
