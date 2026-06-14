@@ -87,42 +87,6 @@ This is not a toy project; it is built for production environments:
 *   **Linting:** ESLint (Strict Mode)
 
 ---
-
-## 🛠️ Local Development Setup
-
-If you wish to run the project locally for development:
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/YourUsername/eduTracker.git
-   cd eduTracker
-   ```
-
-2. **Install Dependencies:**
-   ```bash
-   npm install
-   cd backend && npm install
-   cd ..
-   ```
-
-3. **Configure Environment Variables:**
-   * Create a `.env` in the root (for Next.js).
-   * Create a `.env` in the `backend/` folder (for Node/PostgreSQL).
-   *(Check the source code config for required keys like `DATABASE_URL` and `JWT_SECRET`).*
-
-4. **Initialize Database:**
-   ```bash
-   cd backend
-   npx prisma migrate dev
-   npx ts-node prisma/seed.ts
-   ```
-
-5. **Run the Application:**
-   * **Backend:** `cd backend && npm run dev` (Runs on port 5000)
-   * **Frontend:** `npm run dev` (Runs on port 3000)
-
----
-
 ## 📄 License
 
 This software is a proprietary Enterprise system. Unauthorized distribution, copying, or reverse engineering of the licensing mechanisms is strictly prohibited.
